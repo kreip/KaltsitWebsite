@@ -14065,6 +14065,47 @@
         ]
       }
     },
+    "/api/translators/settings/recommend-rule": {
+      "put": {
+        "tags": [
+          "translators"
+        ],
+        "summary": "Choose the rule that marks a line's recommended variant, for the whole\nteam: `B` (only when the game's text has a mark) or `A` (the best variant\nof every line). The lead only.",
+        "operationId": "set_recommend_rule",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RecommendRuleInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "The rule is set."
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        },
+        "security": [
+          {
+            "bearer_auth": []
+          }
+        ]
+      }
+    },
     "/api/translators/stories/{story_id}/lines": {
       "get": {
         "tags": [
@@ -31411,6 +31452,19 @@
           }
         }
       },
+      "RecommendRuleInput": {
+        "type": "object",
+        "description": "The lead's choice of the \"recommended\" rule.",
+        "required": [
+          "rule"
+        ],
+        "properties": {
+          "rule": {
+            "type": "string",
+            "description": "`A` or `B`."
+          }
+        }
+      },
       "Release": {
         "type": "object",
         "description": "A pack version and what went out in it.",
@@ -38140,7 +38194,8 @@
         "required": [
           "member",
           "roles",
-          "devLogin"
+          "devLogin",
+          "recommendRule"
         ],
         "properties": {
           "devLogin": {
@@ -38157,6 +38212,10 @@
               "null"
             ],
             "description": "The member's game nickname, shown for `{@nickname}`; null when unknown."
+          },
+          "recommendRule": {
+            "type": "string",
+            "description": "The rule that marks a line's recommended variant, the same for the\nwhole team (the lead switches it): `B` (only when the game's text has a\nmark; the default) or `A` (the best variant of every line)."
           },
           "roles": {
             "type": "array",

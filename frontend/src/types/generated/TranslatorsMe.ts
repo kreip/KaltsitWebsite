@@ -25,4 +25,10 @@ export type TranslatorsMe = {
      * The development sign-in is switched on for this backend.
      */
     devLogin: boolean;
+    /**
+     * The rule that marks a line's recommended variant, the same for the
+     * whole team (the lead switches it): `B` (only when the game's text has a
+     * mark; the default) or `A` (the best variant of every line).
+     */
+    recommendRule: string;
 };

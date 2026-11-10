@@ -38,6 +38,15 @@ export const getTranslatorsMeFn = createServerFn({ method: "GET" }).handler(asyn
     return (await res.json()) as TranslatorsMe;
 });
 
+/** The lead's choice of the "recommended" rule, for the whole team: `A` or `B`. */
+export const setRecommendRuleFn = createServerFn({ method: "POST" })
+    .inputValidator((d: { rule: "A" | "B" }) => d)
+    .handler(async ({ data }): Promise<null> => {
+        const res = await backendFetch("/translators/settings/recommend-rule", { method: "PUT", bearerToken: optionalSiteToken(), body: JSON.stringify({ rule: data.rule }) });
+        if (!res.ok) throw await parseError(res);
+        return null;
+    });
+
 export function translatorsMeQueryOptions() {
     return queryOptions({ queryKey: [...TRANSLATORS_QUERY_ROOT, "me"], queryFn: () => getTranslatorsMeFn(), staleTime: 60_000 });
 }

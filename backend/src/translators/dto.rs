@@ -20,6 +20,18 @@ pub struct TranslatorsMe {
     pub nickname: Option<String>,
     /// The development sign-in is switched on for this backend.
     pub dev_login: bool,
+    /// The rule that marks a line's recommended variant, the same for the
+    /// whole team (the lead switches it): `B` (only when the game's text has a
+    /// mark; the default) or `A` (the best variant of every line).
+    pub recommend_rule: String,
+}
+
+/// The lead's choice of the "recommended" rule.
+#[derive(Debug, serde::Deserialize, ToSchema)]
+#[serde(rename_all = "camelCase")]
+pub struct RecommendRuleInput {
+    /// `A` or `B`.
+    pub rule: String,
 }
 
 /// One displayed text of a story with its Russian and the hints.

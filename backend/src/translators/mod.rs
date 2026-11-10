@@ -32,6 +32,7 @@ pub fn dev_login_enabled() -> bool {
 pub fn router() -> OpenApiRouter<AppState> {
     OpenApiRouter::new()
         .routes(routes!(routes::me))
+        .routes(routes!(routes::set_recommend_rule))
         .routes(routes!(routes::story_lines))
         .routes(routes!(routes::run_import, routes::import_status))
         .routes(routes!(routes::dev_login))

@@ -1,6 +1,6 @@
 {
     "generatedBy": "bun run i18n:extract",
-    "generatedAt": "2026-11-10T19:43:23.564Z",
+    "generatedAt": "2026-11-10T20:04:05.208Z",
     "entries": [
         {
             "key": "admin.home.access.everyList",
@@ -55930,6 +55930,41 @@
             "namespace": "translators",
             "source_text": "No translation found",
             "description": "Russian cell when no dictionary line matched the English text.",
+            "placeholders": []
+        },
+        {
+            "key": "translators.rule.A",
+            "namespace": "translators",
+            "source_text": "A — the best variant of every line",
+            "description": "Option of the recommended rule: a star on the best passing variant of every line.",
+            "placeholders": []
+        },
+        {
+            "key": "translators.rule.B",
+            "namespace": "translators",
+            "source_text": "B — only where the game's text has a mark",
+            "description": "Option of the recommended rule: a star only on lines whose game text fails a check. The default.",
+            "placeholders": []
+        },
+        {
+            "key": "translators.rule.failed",
+            "namespace": "translators",
+            "source_text": "Couldn't change the rule.",
+            "description": "Toast when saving the recommended rule failed.",
+            "placeholders": []
+        },
+        {
+            "key": "translators.rule.hint",
+            "namespace": "translators",
+            "source_text": "One rule for the whole team.",
+            "description": "Hint next to the recommended rule select. One short line.",
+            "placeholders": []
+        },
+        {
+            "key": "translators.rule.label",
+            "namespace": "translators",
+            "source_text": "\"Recommended\" rule",
+            "description": "Label of the lead's select above the story table: which rule puts the recommended star on a line's variant.",
             "placeholders": []
         },
         {

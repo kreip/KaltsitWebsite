@@ -7,6 +7,7 @@
  * click on it proposes. With Service on, the stage commands sit between the
  * lines as gray rows, in words.
  */
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Check, X } from "lucide-react";
 import type React from "react";
 import { Fragment, useId, useMemo, useState } from "react";
@@ -16,8 +17,10 @@ import { InfoHint } from "#/components/ui/info-hint";
 import { Label } from "#/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "#/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "#/components/ui/table";
+import { toastManager } from "#/components/ui/toast";
 import { useFormatters, useT } from "#/lib/i18n";
 import type { TypedT } from "#/lib/i18n/messages";
+import { setRecommendRuleFn, translatorsMeQueryOptions } from "#/lib/translators/api";
 import { cn } from "#/lib/utils";
 import type { EditPlace } from "#/types/generated/EditPlace";
 import type { KeyEdits } from "#/types/generated/KeyEdits";
@@ -27,7 +30,7 @@ import type { StoryCommand } from "#/types/generated/StoryCommand";
 import type { TranslatorLine } from "#/types/generated/TranslatorLine";
 import type { TranslatorsMe } from "#/types/generated/TranslatorsMe";
 import { BulkApprove, type IBulkLine } from "./BulkApprove";
-import { type Address, checkVariant, type ICandidate, type IVariantCheck, neighbourAddress, recommend } from "./checks";
+import { type Address, checkVariant, type ICandidate, type IVariantCheck, neighbourAddress, type RecommendRule, recommend } from "./checks";
 import { AgreeButton, ApproveButton, ApprovedVariant, approvedVariant, CellActions, CommentEditor, diffLabels, type EditorState, isLead, LineComments, OutdatedHere, ProposalEditor, Proposals, placeOf, placeVotes, proposalsAt, quotesAt, StatusDot, TONE, Toned, VariantNotes } from "./LineEdits";
 import { LineHistoryDialog } from "./LineHistory";
 import { Marks } from "./Marks";
@@ -137,7 +140,7 @@ export interface IAnalysis {
     recommended: string | null;
 }
 
-export function analyse(line: TranslatorLine, edits: KeyEdits | undefined, place: EditPlace, neighbours: Address | null): IAnalysis {
+export function analyse(line: TranslatorLine, edits: KeyEdits | undefined, place: EditPlace, neighbours: Address | null, rule: RecommendRule): IAnalysis {
     const checks = new Map<string, IVariantCheck>();
     const candidates: ICandidate[] = [];
     const add = (variant: string, text: string | null | undefined, agreements = 0) => {
@@ -152,7 +155,7 @@ export function analyse(line: TranslatorLine, edits: KeyEdits | undefined, place
     add("game", line.ruGame);
     if (edits?.approval) checks.set("approved", checkVariant(edits.approval.text, "approved", line, neighbours));
     const approvedHere = Boolean(edits?.approval) || proposalsAt(edits, place).some((p) => p.context && p.approvedAt !== null);
-    return { checks, recommended: line.editable ? recommend(candidates, approvedHere) : null };
+    return { checks, recommended: line.editable ? recommend(candidates, approvedHere, rule) : null };
 }
 
 interface IRuCellProps {
@@ -293,6 +296,34 @@ function ServiceRow({ commands, columns, nameOf, t }: { commands: readonly Story
     );
 }
 
+/** The lead's switch of the "recommended" rule, for the whole team (B unless switched). */
+function RuleSelect({ rule, t }: { rule: RecommendRule; t: T }): React.ReactElement {
+    const id = useId();
+    const queryClient = useQueryClient();
+    const set = useMutation({
+        mutationFn: (next: RecommendRule) => setRecommendRuleFn({ data: { rule: next } }),
+        onSuccess: () => queryClient.invalidateQueries({ queryKey: translatorsMeQueryOptions().queryKey }),
+        onError: () => toastManager.add({ title: t("rule.failed"), type: "error" }),
+    });
+    return (
+        <div className="flex w-full flex-col gap-1.5 sm:w-80">
+            <span className="flex items-center gap-1">
+                <Label htmlFor={id}>{t("rule.label")}</Label>
+                <InfoHint label={t("rule.hint")}>{t("rule.hint")}</InfoHint>
+            </span>
+            <Select value={rule} onValueChange={(v: string | null) => (v === "A" || v === "B") && v !== rule && set.mutate(v)} disabled={set.isPending}>
+                <SelectTrigger id={id} size="sm">
+                    <SelectValue>{() => t(`rule.${rule}` as "rule.B")}</SelectValue>
+                </SelectTrigger>
+                <SelectContent>
+                    <SelectItem value="B">{t("rule.B")}</SelectItem>
+                    <SelectItem value="A">{t("rule.A")}</SelectItem>
+                </SelectContent>
+            </Select>
+        </div>
+    );
+}
+
 type LineFilter = "all" | "proposals" | "recommended" | "outdated" | "remarks";
 const FILTERS: readonly LineFilter[] = ["all", "proposals", "recommended", "outdated", "remarks"];
 
@@ -333,7 +364,8 @@ export function LinesTable({ storyId, lines, edits, outdated, me, label, showCn,
     const [filter, setFilter] = useState<LineFilter>("all");
     const filterId = useId();
     // Every line's checks and recommendation, for its cell, the filter and the batch approvals.
-    const analyses = useMemo(() => lines.map((line, i) => analyse(line, byKey.get(line.editKey), placeOf(storyId, line), neighbourAddress(lines, i))), [lines, byKey, storyId]);
+    const rule: RecommendRule = me.recommendRule === "A" ? "A" : "B";
+    const analyses = useMemo(() => lines.map((line, i) => analyse(line, byKey.get(line.editKey), placeOf(storyId, line), neighbourAddress(lines, i), rule)), [lines, byKey, storyId, rule]);
     const shows = (line: TranslatorLine, i: number): boolean => {
         if (filter === "all") return true;
         const place = placeOf(storyId, line);
@@ -370,6 +402,7 @@ export function LinesTable({ storyId, lines, edits, outdated, me, label, showCn,
                     </Select>
                 </div>
                 {filter !== "all" ? <span className="pb-1.5 text-subtle-foreground text-xs">{t("filter.count", { shown, total: lines.length })}</span> : null}
+                {isLead(me) ? <RuleSelect rule={rule} t={t} /> : null}
                 {isLead(me) ? <BulkApprove lines={bulk} nickname={nickname} t={t} /> : null}
             </div>
             <Table aria-label={label}>

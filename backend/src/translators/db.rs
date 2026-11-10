@@ -26,6 +26,10 @@ const MIGRATIONS: &[(&str, &str)] = &[
         include_str!("migrations/t008_roles_releases.sql"),
     ),
     ("t009_history", include_str!("migrations/t009_history.sql")),
+    (
+        "t010_settings",
+        include_str!("migrations/t010_settings.sql"),
+    ),
 ];
 
 pub async fn migrate(pool: &PgPool) -> Result<(), sqlx::Error> {
@@ -73,6 +77,29 @@ pub async fn member_role(
     .bind(user_id)
     .fetch_optional(pool)
     .await
+}
+
+/// The rule that marks a line's recommended variant: `A` or `B` (`B` when the lead never chose).
+pub async fn recommend_rule(pool: &PgPool) -> Result<String, sqlx::Error> {
+    let value: Option<String> =
+        sqlx::query_scalar("SELECT value FROM translators.settings WHERE key = 'recommend_rule'")
+            .fetch_optional(pool)
+            .await?;
+    Ok(value.filter(|v| v == "A").unwrap_or_else(|| "B".to_owned()))
+}
+
+/// Set the rule for the whole team (the caller checked it is the lead and the value is `A` or `B`).
+pub async fn set_recommend_rule(pool: &PgPool, rule: &str, by: Uuid) -> Result<(), sqlx::Error> {
+    sqlx::query(
+        "INSERT INTO translators.settings (key, value, updated_by) VALUES ('recommend_rule', $1, $2)
+         ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value, updated_by = EXCLUDED.updated_by,
+             updated_at = NOW()",
+    )
+    .bind(rule)
+    .bind(by)
+    .execute(pool)
+    .await?;
+    Ok(())
 }
 
 pub async fn add_member(pool: &PgPool, user_id: Uuid, note: &str) -> Result<(), sqlx::Error> {

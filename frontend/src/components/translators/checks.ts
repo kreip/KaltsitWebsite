@@ -147,13 +147,16 @@ export interface ICandidate {
 export type RecommendRule = "A" | "B";
 
 /**
- * Rule B (in use): the game's Russian that passes every check needs no
+ * The team's rule is the lead's switch above the story table (kept by the
+ * backend, `TranslatorsMe.recommendRule`); RECOMMEND_RULE is the default.
+ *
+ * Rule B (the default): the game's Russian that passes every check needs no
  * change, so nothing is recommended; only when the game's text has a mark
  * (glossary, tags, substitutions, line breaks, length, ты / вы) is the best
  * passing variant recommended: the proposal with the most "agree", else
  * Sova's, else the AI's.
  *
- * Rule A (switched off): among the variants that pass every check, the
+ * Rule A: among the variants that pass every check, the
  * proposal with the most "agree", else Sova's, else the AI's, else the
  * game's Russian; it put a star on most lines.
  */

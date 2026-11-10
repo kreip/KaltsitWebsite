@@ -2,11 +2,12 @@
 
 use axum::Json;
 use axum::extract::{Path, Query, State};
+use axum::http::StatusCode;
 use uuid::Uuid;
 
 use super::dto::{
     Glossary, GlossaryLine, GlossaryLines, GlossaryLinesQuery, GlossaryTerm, LineTerm, MissingTerm,
-    TranslatorStoryLines, TranslatorsMe, VariantGlossary,
+    RecommendRuleInput, TranslatorStoryLines, TranslatorsMe, VariantGlossary,
 };
 use std::sync::Mutex;
 use std::sync::atomic::{AtomicBool, Ordering};
@@ -87,13 +88,51 @@ pub async fn me(
     auth: MaybeAuthUser,
 ) -> Result<Json<TranslatorsMe>, ApiError> {
     let member = member_of(&state, &auth).await?;
+    let recommend_rule = match member {
+        Some(_) => db::recommend_rule(&state.db).await?,
+        None => "B".to_owned(),
+    };
     Ok(Json(TranslatorsMe {
         member: member.is_some(),
         user_id: member.as_ref().map(|m| m.id.to_string()),
         nickname: member.as_ref().and_then(|m| m.nickname.clone()),
         roles: member.map(|m| m.roles).unwrap_or_default(),
         dev_login: dev_login_enabled(),
+        recommend_rule,
     }))
+}
+
+/// Choose the rule that marks a line's recommended variant, for the whole
+/// team: `B` (only when the game's text has a mark) or `A` (the best variant
+/// of every line). The lead only.
+#[utoipa::path(
+    put,
+    path = "/translators/settings/recommend-rule",
+    tag = "translators",
+    security(("bearer_auth" = [])),
+    request_body = RecommendRuleInput,
+    responses(
+        (status = 204, description = "The rule is set."),
+        (status = 400, response = crate::app::openapi::responses::BadRequest),
+        (status = 401, response = crate::app::openapi::responses::Unauthorized),
+        (status = 403, response = crate::app::openapi::responses::Forbidden),
+        (status = 500, response = crate::app::openapi::responses::InternalError)
+    )
+)]
+pub async fn set_recommend_rule(
+    State(state): State<AppState>,
+    auth: MaybeAuthUser,
+    Json(input): Json<RecommendRuleInput>,
+) -> Result<StatusCode, ApiError> {
+    let member = require_member(&state, &auth).await?;
+    if !member.leads() {
+        return Err(ApiError::Forbidden);
+    }
+    if input.rule != "A" && input.rule != "B" {
+        return Err(ApiError::BadRequest("the rule is A or B".to_owned()));
+    }
+    db::set_recommend_rule(&state.db, &input.rule, member.id).await?;
+    Ok(StatusCode::NO_CONTENT)
 }
 
 /// The caller as a section member, or 403 (401 when signed out). The

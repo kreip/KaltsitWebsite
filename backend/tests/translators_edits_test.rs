@@ -588,3 +588,17 @@ async fn history_of_a_line() {
     );
     drop_db(pool, name).await;
 }
+
+/// The "recommended" rule is B until the lead switches it, for the whole team.
+#[tokio::test]
+#[ignore = "creates and drops a database on the local Postgres"]
+async fn recommend_rule_setting() {
+    let (pool, name) = fresh_db().await;
+    let lead = user(&pool, "lead").await;
+    assert_eq!(tdb::recommend_rule(&pool).await.unwrap(), "B");
+    tdb::set_recommend_rule(&pool, "A", lead).await.unwrap();
+    assert_eq!(tdb::recommend_rule(&pool).await.unwrap(), "A");
+    tdb::set_recommend_rule(&pool, "B", lead).await.unwrap();
+    assert_eq!(tdb::recommend_rule(&pool).await.unwrap(), "B");
+    drop_db(pool, name).await;
+}

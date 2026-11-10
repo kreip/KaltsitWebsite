@@ -1247,6 +1247,26 @@ export const messages = {
         text: "deleted",
         description: "Small mark in the line history: this proposal was deleted since.",
     },
+    "rule.label": {
+        text: '"Recommended" rule',
+        description: "Label of the lead's select above the story table: which rule puts the recommended star on a line's variant.",
+    },
+    "rule.B": {
+        text: "B — only where the game's text has a mark",
+        description: "Option of the recommended rule: a star only on lines whose game text fails a check. The default.",
+    },
+    "rule.A": {
+        text: "A — the best variant of every line",
+        description: "Option of the recommended rule: a star on the best passing variant of every line.",
+    },
+    "rule.hint": {
+        text: "One rule for the whole team.",
+        description: "Hint next to the recommended rule select. One short line.",
+    },
+    "rule.failed": {
+        text: "Couldn't change the rule.",
+        description: "Toast when saving the recommended rule failed.",
+    },
 } satisfies MessageMap;
 
 export const { keys } = defineMessages({ namespace, messages });

@@ -327,5 +327,10 @@
     "lineHistory.approved": "{name}: утверждено",
     "lineHistory.approvedGame": "{name}: текст игры проверен и оставлен",
     "lineHistory.withdrew": "{name}: утверждение снято",
-    "lineHistory.deleted": "удалено"
+    "lineHistory.deleted": "удалено",
+    "rule.label": "Правило «Рекомендуем»",
+    "rule.B": "Б — только где у текста игры есть отметка",
+    "rule.A": "А — лучший вариант у каждой строки",
+    "rule.hint": "Правило одно для всей команды.",
+    "rule.failed": "Не удалось изменить правило."
 }
