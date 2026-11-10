@@ -76,7 +76,7 @@ export const refreshGlossaryFn = createServerFn({ method: "POST" }).handler(asyn
     return (await res.json()) as Glossary;
 });
 
-// ---- Line editing (translators/PLAN-edit.md). Every change refreshes the
+// ---- Line editing. Every change refreshes the
 // story lines and My edits through `invalidateEdits`.
 
 /** The query keys an edit changes: every story's lines and My edits. */

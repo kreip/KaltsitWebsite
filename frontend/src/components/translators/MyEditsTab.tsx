@@ -2,7 +2,7 @@
  * The My edits tab: my proposals (everyone's for the lead) as was (the
  * game's Russian now) / now (the proposal) / where, with its state, and
  * rewrite, delete and the history of its texts. Export to the XUnity
- * dictionaries: the Export… dialog (translators/PLAN-edit.md §6).
+ * dictionaries: the Export… dialog.
  */
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
@@ -203,7 +203,6 @@ export function MyEditsTab(): React.ReactElement {
     return (
         <div className="flex flex-col gap-4">
             <div className="flex flex-wrap items-center justify-between gap-3">
-                <p className="text-muted-foreground text-sm">{t("edits.intro")}</p>
                 <div className="flex flex-wrap items-center gap-4">
                     {lead ? (
                         <label htmlFor={allId} className="flex items-center gap-3">

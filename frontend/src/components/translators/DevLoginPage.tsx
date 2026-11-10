@@ -33,7 +33,7 @@ function DevLogin(): React.ReactElement {
 
     return (
         <div className="page-shell flex flex-col gap-6">
-            <PageHeader title={t("dev.title")} description={t("dev.description")} />
+            <PageHeader title={t("dev.title")} />
             {!me.data ? (
                 <Skeleton className="h-9 w-48" />
             ) : me.data.devLogin ? (

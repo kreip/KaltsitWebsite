@@ -15,10 +15,6 @@ export const messages = {
         text: "For translators",
         description: "Page heading of the translators' section.",
     },
-    "page.description": {
-        text: "Story text side by side: English, Russian as the game shows it now with the ArknightsRU pack, and the Chinese original. Members propose translations and comment on lines.",
-        description: "Line under the heading of the translators' section.",
-    },
     "tabs.label": {
         text: "Section views",
         description: "Accessible name of the tab strip of the translators' section.",
@@ -75,7 +71,7 @@ export const messages = {
         description: "Switch that shows the Chinese column of the table.",
     },
     "toggle.cnHint": {
-        text: "The Chinese original, for the stories already processed in arktr.",
+        text: "The Chinese original.",
         description: "Second line under the Chinese switch.",
     },
     "toggle.service": {
@@ -83,7 +79,7 @@ export const messages = {
         description: "Switch that shows script line numbers and the script's stage commands (scene, background, pause…) between the lines.",
     },
     "toggle.serviceHint": {
-        text: "Stage commands in words between the lines.",
+        text: "Music, background, who is on stage.",
         description: "Second line under the Service switch.",
     },
     "toggle.variants": {
@@ -91,7 +87,7 @@ export const messages = {
         description: "Switch that shows Sova's and the AI's translations under each Russian line.",
     },
     "toggle.variantsHint": {
-        text: "Sova and the AI under the Russian.",
+        text: "Sova and machine translation under the Russian.",
         description: "Second line under the Show variants switch.",
     },
     "book.back": {
@@ -138,7 +134,7 @@ export const messages = {
         description: "Badge on a line whose Russian comes from the RichTextFix plugin's built-in catalog.",
     },
     "plugin.hint": {
-        text: "Line from the plugin: an edit through the dictionary may not take effect.",
+        text: "Shown by the plugin: an edit may not take effect.",
         description: "Explanation behind the Plugin badge.",
     },
     "ambiguous.badge": {
@@ -146,7 +142,7 @@ export const messages = {
         description: "Badge on a line the plugin deliberately shows untranslated.",
     },
     "ambiguous.hint": {
-        text: "The plugin shows this line in English on purpose, whatever the dictionary says.",
+        text: "The game keeps this line in English on purpose.",
         description: "Explanation behind the Left in English badge.",
     },
     "service.label": {
@@ -166,11 +162,11 @@ export const messages = {
         description: "Mark beside a glossary term whose Russian form is not in the line's Russian (by word stem). Not an error.",
     },
     "terms.variant": {
-        text: "Sova's glossary",
+        text: "glossary",
         description: "Mark beside a term from the sheet copied from Sova's glossary: a variant, never checked.",
     },
     "hints.sova": { text: "Sova", description: "Label of Sova's translation of a line." },
-    "hints.ai": { text: "AI", description: "Label of the machine translation of a line." },
+    "hints.ai": { text: "Machine translation", description: "Label of the machine translation of a line." },
     "hints.dict": {
         text: "Dictionary (overridden by the plugin)",
         description: "Label of the dictionary's own Russian when the plugin shows a different one.",
@@ -276,16 +272,12 @@ export const messages = {
         description: "Shown when the search and filter leave no terms.",
     },
     "glossary.tableLabel": {
-        text: "Team glossary",
+        text: "Glossary",
         description: "Accessible name of the glossary table.",
     },
     "dev.title": {
         text: "Development sign-in",
         description: "Heading of the development sign-in page.",
-    },
-    "dev.description": {
-        text: "Signs you in as a local translator account without a game account. Works only on a backend started with TRANSLATORS_DEV_LOGIN=1.",
-        description: "Line under the heading of the development sign-in page.",
     },
     "dev.button": {
         text: "Sign in as translator",
@@ -340,7 +332,7 @@ export const messages = {
         description: "Marks a proposal that started from Sova's translation.",
     },
     "proposal.from.ai": {
-        text: "from the AI's",
+        text: "from machine translation",
         description: "Marks a proposal that started from the AI's translation.",
     },
     "proposal.from.kit": {
@@ -420,7 +412,7 @@ export const messages = {
         description: "Label of the editor when it started from Sova's translation.",
     },
     "editor.label.ai": {
-        text: "My translation, from the AI's",
+        text: "My translation, from machine translation",
         description: "Label of the editor when it started from the AI's translation.",
     },
     "editor.rewrite": {
@@ -428,7 +420,7 @@ export const messages = {
         description: "Label of the rewrite box in My edits.",
     },
     "editor.wholeEntry": {
-        text: "This is one dictionary entry: the edit saves all its lines together.",
+        text: "All its lines are saved together.",
         description: "Under the editor of a multi-line story text.",
     },
     "editor.sameAsGame": {
@@ -515,10 +507,6 @@ export const messages = {
         text: "Outdated",
         description: "State of a proposal whose English is gone from the story since an import.",
     },
-    "edits.intro": {
-        text: "Your proposals: what the game shows now, what you propose and where.",
-        description: "Line at the top of the My edits tab.",
-    },
     "edits.all": {
         text: "Everyone's",
         description: "Switch for the lead in My edits: show every translator's proposals.",
@@ -532,7 +520,7 @@ export const messages = {
         description: "Heading of the empty My edits tab.",
     },
     "edits.emptyHint": {
-        text: "Open a story and use Propose on a line, or Propose this under Sova's or the AI's variant.",
+        text: "Open a story and press Propose on a line.",
         description: "Hint under the empty My edits heading.",
     },
     "edits.count": {
@@ -567,12 +555,8 @@ export const messages = {
         text: "Doctor",
         description: "Shown for {@nickname} in story text when the signed-in member has no game nickname.",
     },
-    "lang.label": {
-        text: "Section language",
-        description: "Accessible name of the RU | EN switch of the translators' section.",
-    },
     "glossary.sovaSheet": {
-        text: "Sova's glossary (not approved)",
+        text: "Glossary",
         description: "Name shown for the glossary sheet copied from Sova's glossary; its terms are variants, not approved.",
     },
     "action.propose": {
@@ -644,7 +628,7 @@ export const messages = {
         description: "Option: the note is about Sova's translation.",
     },
     "note.aboutAi": {
-        text: "The AI's variant",
+        text: "Machine translation",
         description: "Option: the note is about the AI's translation.",
     },
     "note.forGone": {
@@ -656,7 +640,7 @@ export const messages = {
         description: "The fragment of the line a remark or note is about.",
     },
     "comment.quoteHint": {
-        text: "To comment on a fragment, select it in the line before clicking.",
+        text: "Select a fragment first to comment on it.",
         description: "Hint in the remark or note box when no fragment is selected.",
     },
     "comment.dropQuote": {
@@ -688,7 +672,7 @@ export const messages = {
         description: "Option of the save dialog: one translation of this English everywhere.",
     },
     "save.allHint": {
-        text: "The game uses one translation for this English text: it goes to the dictionary export.",
+        text: "The game has one translation for this text in every place.",
         description: "Hint under the all-places option.",
     },
     "save.here": {
@@ -696,7 +680,7 @@ export const messages = {
         description: "Option of the save dialog: a translation tied to this place.",
     },
     "save.hereHint": {
-        text: "Kept apart with this story and line; not in the dictionary export. Listed for a context translation through the plugin.",
+        text: "A translation for this line only.",
         description: "Hint under the this-place-only option.",
     },
     "save.understand": {
@@ -828,7 +812,7 @@ export const messages = {
         description: "Marks the game's word that is the glossary's form.",
     },
     "glossary.sharedHint": {
-        text: "Same English as “{key}”: the story cannot tell them apart, so the lines are counted there.",
+        text: "Same English as “{key}”: the lines are counted there.",
         description: "Tooltip of the dash for a glossary entry spelled like another.",
     },
     "glossary.showLines": {
@@ -868,7 +852,7 @@ export const messages = {
         description: "Badge on the one variant of a line that passes every check and wins by the rule (most agreed proposal, else Sova's, the AI's, the game's).",
     },
     "checks.recommendedHint": {
-        text: "Passes every check; picked by the rule: the most agreed proposal, else Sova's, else the AI's, else the game's.",
+        text: "The best variant without errors.",
         description: "Tooltip of the recommended badge.",
     },
     "checks.glossaryHint": {
@@ -880,11 +864,11 @@ export const messages = {
         description: "Short mark: the variant's markup tags (italics, colour) differ from the English.",
     },
     "checks.tagsHint": {
-        text: "The tags (italics, colour) differ from the English: the emphasis is lost or broken.",
+        text: "Italics or colour differ from the English.",
         description: "Tooltip of the tags mark.",
     },
     "checks.placeholdersHint": {
-        text: "A substitution ({0}, the nickname) is missing or extra compared with the English.",
+        text: "A substitution ({0}, nickname) differs from the English.",
         description: "Tooltip of the substitutions mark; the mark itself lists them.",
     },
     "checks.newlines": {
@@ -900,7 +884,7 @@ export const messages = {
         description: "Short mark: the variant is noticeably longer than the game's Russian; share is how much longer (a percentage).",
     },
     "checks.longerHint": {
-        text: "Noticeably longer than the game's Russian (more than 15% and more than 15 characters): it may not fit the dialogue box.",
+        text: "Longer than in the game: may not fit the dialogue box.",
         description: "Tooltip of the length mark.",
     },
     "checks.address": {
@@ -1016,7 +1000,7 @@ export const messages = {
         description: "Heading of the dialog approving a scene's recommended variants.",
     },
     "bulk.recommendedHint": {
-        text: "Untick the lines to leave out. Each approval holds for every place of its line.",
+        text: "Untick the lines to leave out.",
         description: "Text of the dialog approving recommended variants.",
     },
     "bulk.gameTitle": {
@@ -1024,7 +1008,7 @@ export const messages = {
         description: "Heading of the dialog marking a scene as in the game.",
     },
     "bulk.gameHint": {
-        text: "Lines already approved are left as they are. Checked means the game's text stays; it is never exported.",
+        text: "The game's text stays; approved lines are not changed.",
         description: "Text of the dialog marking a scene as in the game.",
     },
     "bulk.gameSkipped": {
@@ -1120,7 +1104,7 @@ export const messages = {
         description: "Link downloading one exported file.",
     },
     "export.howTo": {
-        text: "Put the file in BepInEx\\Translation\\ru\\Text and press Alt+R in the game (or restart the game).",
+        text: "Put the file in BepInEx\\Translation\\ru\\Text and press Alt+R in the game.",
         description: "Hint in the export dialog: how to try an exported dictionary file in the game. Keep the folder path and the key as they are.",
     },
     "release.in": {
@@ -1132,7 +1116,7 @@ export const messages = {
         description: "Heading of the pack maintainer's block in the export dialog.",
     },
     "release.hint": {
-        text: "After building the pack from this export, mark it: every approved entry not yet out with the same text is marked as gone out in this version.",
+        text: "Mark it once the pack from this export is out.",
         description: "Text of the pack maintainer's block.",
     },
     "release.version": {
@@ -1160,11 +1144,11 @@ export const messages = {
         description: "Toast when marking a pack release fails.",
     },
     "export.format.patchHint": {
-        text: "The pack's own files with the approved values put in; only the changed ones go in the archive.",
+        text: "The pack's files with the approved edits, changed ones only.",
         description: "Hint under the main export format.",
     },
     "export.format.fileHint": {
-        text: "A separate dictionary file to drop into the game and press Alt+R.",
+        text: "Drop it into the game and press Alt+R.",
         description: "Hint under the to-check-at-home export format.",
     },
     "export.story": {
@@ -1172,7 +1156,7 @@ export const messages = {
         description: "Export report: rows of story_lines.tsv and how many are one-place proposals.",
     },
     "export.howToPatch": {
-        text: "Replace the files in BepInEx\\\\Translation\\\\ru\\\\Text with the corrected copies (keep the originals) and press Alt+R in the game (or restart it).",
+        text: "Replace the files in BepInEx\\Translation\\ru\\Text and press Alt+R in the game.",
         description: "Hint in the export dialog for the main format.",
     },
     "export.archive": {
@@ -1181,7 +1165,7 @@ export const messages = {
     },
     "save.hereShort": {
         text: "This text stands in {count} places — the translation changes everywhere.",
-        description: "In the save dialog instead of the one-place choice, for an interface or short line.",
+        description: "In the save dialog instead of the one-place choice, for a line that allows no one-place proposal (not a story line).",
     },
 } satisfies MessageMap;
 

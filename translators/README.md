@@ -48,16 +48,24 @@ regular game-account sign-in is not touched.
 
 ## Members and roles
 
-Only members (`translators.members`) see the section. To add someone or change their
-role (they must have signed in to the site once):
+Only members (`translators.members`) see the section. To add someone or set their
+roles (they must have signed in to the site once; the command replaces the roles):
 
-    ./translators/role.sh <uid> [translator|editor|admin]
+    ./translators/role.sh <uid> [editor] [maintainer] [admin]
 
-`editor` is the lead: the one person who approves lines (translators/PLAN-edit.md §6).
+- every member is a translator: proposes, agrees, comments;
+- `editor` is the lead: the one person who approves lines and exports the approved
+  lines for the game;
+- `maintainer` is the pack maintainer: exports the approved lines for the game and
+  marks them as released in a pack version; cannot approve;
+- `admin` can do everything.
+
+One person can hold several roles (`./translators/role.sh <uid> editor maintainer`).
 
 ## Editing
 
 Proposals, "keep as in the game" and comments are keyed by the English of the
 dictionary entry the import found for a line (`story_lines.edit_key`): one decision
-holds wherever the line stands. See translators/PLAN-edit.md. Storage test against a
-throwaway database: `cargo test --test translators_edits_test -- --ignored`.
+holds wherever the line stands; a proposal can also be made for one story line only.
+Storage test against a throwaway database:
+`cargo test --test translators_edits_test -- --ignored`.

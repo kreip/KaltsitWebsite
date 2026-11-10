@@ -27,9 +27,9 @@ export const messages = {
         text: "GitHub",
         description: "Menu item linking to the source repository. Product name, stays as-is.",
     },
-    "userMenu.support": {
-        text: "Support",
-        description: "Menu item linking to the donation page. 'Support' here means financially supporting the site.",
+    "userMenu.arknightsRuChannel": {
+        text: "ArknightsRU channel",
+        description: "Menu item linking to the channel of ArknightsRU, the Russian translation team of the game. ArknightsRU is a name, stays as-is.",
     },
     "userMenu.adminPanel": {
         text: "Admin",

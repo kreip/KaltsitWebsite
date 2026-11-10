@@ -1,4 +1,4 @@
--- Part 3 (translators/PLAN-edit.md §4): "agree" with any variant, "read the
+-- Part 3: "agree" with any variant, "read the
 -- scene", progress.
 
 -- An agreement names its variant: `game` (keep as in the game), `proposal`

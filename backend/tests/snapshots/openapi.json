@@ -37776,7 +37776,7 @@
           },
           "contextAllowed": {
             "type": "boolean",
-            "description": "A proposal for this place only is offered (story lines that are not short)."
+            "description": "A proposal for this place only is offered (every story line)."
           },
           "editKey": {
             "type": "string",

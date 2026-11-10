@@ -1,4 +1,4 @@
--- Review of part 1 (translators/PLAN-edit.md): proposals for one place only,
+-- Review of part 1: proposals for one place only,
 -- comments on a fragment, the glossary's computed columns, character names
 -- for the Service rows.
 

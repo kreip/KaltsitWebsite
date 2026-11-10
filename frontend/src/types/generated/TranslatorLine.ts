@@ -64,7 +64,7 @@ export type TranslatorLine = {
      */
     editable: boolean;
     /**
-     * A proposal for this place only is offered (story lines that are not short).
+     * A proposal for this place only is offered (every story line).
      */
     contextAllowed: boolean;
     /**

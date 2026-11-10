@@ -1,6 +1,5 @@
 /**
- * The automatic marks on every variant of a line (translators/PLAN-edit.md
- * §3), each shown only when something is wrong, and the one place where the
+ * The automatic marks on every variant of a line, each shown only when something is wrong, and the one place where the
  * "recommended" variant is picked. Pure functions: the glossary check comes
  * from the backend (`TranslatorLine.variantGlossary`), the rest is worked out
  * here from the texts.
@@ -8,7 +7,7 @@
 import type { MissingTerm } from "#/types/generated/MissingTerm";
 import type { TranslatorLine } from "#/types/generated/TranslatorLine";
 
-/** "Noticeably longer than in the game" (SPEC §3): both more than this share longer… */
+/** "Noticeably longer than in the game": both more than this share longer… */
 export const LONGER_SHARE = 0.15;
 /** …and more than this many characters longer (short lines are left alone). */
 export const LONGER_CHARS = 15;
@@ -144,7 +143,7 @@ export interface ICandidate {
     check: IVariantCheck;
 }
 
-/** Which rule picks "recommended": the team's call (translators/PLAN-edit.md §3). */
+/** Which rule picks "recommended": the team's call. */
 export type RecommendRule = "A" | "B";
 
 /**

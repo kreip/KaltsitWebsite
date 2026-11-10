@@ -148,7 +148,8 @@ pub async fn story_lines(
             ai: r.ai,
             terms: Vec::new(),
             editable: super::edits::status::editable(&r.edit_key),
-            context_allowed: super::edits::status::allows_context(&r.edit_key),
+            // Every story line may get a proposal for its place only.
+            context_allowed: true,
             edit_key: r.edit_key,
             places: 1,
             status: String::new(),

@@ -37,7 +37,7 @@ import { GlossaryTab } from "./GlossaryTab";
 import { TONE, Toned, useEditMutation } from "./LineEdits";
 import { LinesTable } from "./LinesTable";
 import { MyEditsTab } from "./MyEditsTab";
-import { SectionLangSwitch, SectionLocale } from "./SectionLocale";
+import { SectionLocale } from "./SectionLocale";
 import { charBase } from "./service";
 import { entryLabel, groupLabel, useRename } from "./storyNames";
 import type { messages } from "./translators.messages";
@@ -369,7 +369,7 @@ function Page({ search, onSearch }: ISearchProps): React.ReactElement {
     const tab: TranslatorsTab = search.tab ?? "story";
     return (
         <div className="page-shell flex flex-col gap-6">
-            <PageHeader title={t("page.title")} description={t("page.description")} actions={<SectionLangSwitch label={t("lang.label")} />} />
+            <PageHeader title={t("page.title")} />
             <MembersOnly>
                 <Tabs value={tab} onValueChange={(v: string) => onSearch({ ...search, tab: v === "story" ? undefined : (v as TranslatorsTab) })}>
                     <TabsList aria-label={t("tabs.label")}>

@@ -1,5 +1,5 @@
 /**
- * Editing one story line (translators/PLAN-edit.md): the approved variant,
+ * Editing one story line: the approved variant,
  * the translators' proposals, remarks and translator's notes under the
  * Russian, the cell's actions on hover (propose, remark, note; a double click
  * on the Russian also proposes), the in-row editor and the save dialog: an
@@ -569,7 +569,7 @@ interface ISaveDialogProps {
     onOpenChange: (open: boolean) => void;
     place: EditPlace;
     places: number;
-    /** Offer "only this place": a story line that is not short (`contextAllowed`); a rewrite keeps its scope. Else the "changes everywhere" note. */
+    /** Offer "only this place" when the line allows it (`contextAllowed`: every story line); a rewrite keeps its scope. Else the "changes everywhere" note. */
     allowContext: boolean;
     pending: boolean;
     onSave: (context: boolean) => void;

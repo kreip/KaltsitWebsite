@@ -5,7 +5,7 @@ database), EN gamedata (operators, NPCs, enemies, teams and nations, operator
 dossiers: race and place of birth, items), the ArknightsRU dictionaries.
 Checks each against arknights.wiki.gg (MediaWiki API, about one request a
 second, cached next to the output in wiki-cache/). Writes one xlsx with a
-sheet per category of the glossary's keeper (SPEC §7).
+sheet per category of the glossary's keeper.
 """
 
 import collections
@@ -430,7 +430,7 @@ for k, c in cands.items():
 with_meanings = {r["raw"] for r in rows if r["meaning"]}
 rows = [r for r in rows if r["meaning"] or r["raw"] not in with_meanings]
 
-# ---------- arknights.wiki.gg (SPEC §7) ----------
+# ---------- arknights.wiki.gg ----------
 import os
 import time
 import urllib.parse
@@ -519,7 +519,7 @@ def wiki_title(r):
 fetch_pages([wiki_title(r) for r in rows] + [r["raw"] for r in rows if r["meaning"] == "раса"])
 fetch_extracts([wiki_title(r) for r in rows if set(cache.get(wiki_title(r), {}).get("categories", [])) & {"Locations", "Lore"}])
 
-# ---------- Romanov's categories (SPEC §7) ----------
+# ---------- Romanov's categories ----------
 CATS = ["Основные термины", "Имена", "Расы", "Страны", "Города", "Локации", "Организации и образования", "Явления", "Животные"]
 CLASSES = {"Vanguard", "Guard", "Defender", "Sniper", "Caster", "Medic", "Supporter", "Specialist"}
 CITY = re.compile(r"\b(city|cities|town|village|metropolis|capital|settlement)\b", re.I)

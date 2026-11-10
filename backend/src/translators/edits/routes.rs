@@ -111,11 +111,6 @@ pub async fn create_proposal(
     }
     let line = editable_place(&state, &input.place).await?;
     let text = proposal_text(&input.text, line.ru_game.as_deref())?;
-    if input.context && !status::allows_context(&line.edit_key) {
-        return Err(ApiError::BadRequest(
-            "a short line is one translation everywhere: no proposal for one place".into(),
-        ));
-    }
     check_many(&state, &line.edit_key, input.confirm_many, input.context).await?;
     let id = db::upsert_proposal(
         &state.db,

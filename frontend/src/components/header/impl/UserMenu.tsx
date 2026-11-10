@@ -1,12 +1,12 @@
 import { Link } from "@tanstack/react-router";
-import { ChevronDown, Cog, Heart, LayoutList, LogOut, ShieldIcon } from "lucide-react";
+import { ChevronDown, Cog, LayoutList, LogOut, Megaphone, ShieldIcon } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "#/components/ui/avatar";
 import { Button } from "#/components/ui/button";
 import { GithubIcon } from "#/components/ui/github-icon";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "#/components/ui/menu";
 import { Spinner } from "#/components/ui/spinner";
 import type { ISession } from "#/lib/auth/server";
-import { REPO_URL } from "#/lib/constants";
+import { ARKNIGHTSRU_CHANNEL_URL, REPO_URL } from "#/lib/constants";
 import { useT } from "#/lib/i18n";
 import type { TypedT } from "#/lib/i18n/messages";
 import { getAvatarSkinId } from "#/lib/utils";
@@ -83,10 +83,13 @@ export default function UserMenu({ user, loading, logout }: { user: ISession | n
                         <GithubIcon className="h-4 w-4 text-muted-foreground" />
                         {t("userMenu.github")}
                     </DropdownMenuItem>
-                    <DropdownMenuItem className="cursor-pointer" render={<Link to="/donate" />}>
-                        <Heart className="h-4 w-4 text-muted-foreground" />
-                        {t("userMenu.support")}
-                    </DropdownMenuItem>
+                    {ARKNIGHTSRU_CHANNEL_URL ? (
+                        // biome-ignore lint/a11y/useAnchorContent: anchor children are slotted in by DropdownMenuItem via the render prop
+                        <DropdownMenuItem className="cursor-pointer" render={<a href={ARKNIGHTSRU_CHANNEL_URL} target="_blank" rel="noreferrer" />}>
+                            <Megaphone className="h-4 w-4 text-muted-foreground" />
+                            {t("userMenu.arknightsRuChannel")}
+                        </DropdownMenuItem>
+                    ) : null}
                     <DropdownMenuSeparator />
                     {user.canAccessAdminPanel ? (
                         <DropdownMenuItem className="cursor-pointer" render={<Link to="/admin" />}>

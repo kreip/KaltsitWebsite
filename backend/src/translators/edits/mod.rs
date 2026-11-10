@@ -1,4 +1,4 @@
-//! Line editing (translators/PLAN-edit.md): proposals, "keep as in the
+//! Line editing: proposals, "keep as in the
 //! game", comments and "My edits". Everything is keyed by the English of the
 //! dictionary entry (`story_lines.edit_key`), so one decision holds wherever
 //! the line stands.

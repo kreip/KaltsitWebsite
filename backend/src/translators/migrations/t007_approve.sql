@@ -1,4 +1,4 @@
--- Part 4 (translators/PLAN-edit.md §6): approving and the export.
+-- Part 4: approving and the export.
 
 -- Which variant the lead approved for an entry: `game` (the game's Russian,
 -- checked; never exported), `proposal` (with `proposal_id`), `sova` or `ai`

@@ -1,4 +1,4 @@
-//! The export to the game (translators/SPEC-translators.md §4).
+//! The export to the game.
 //!
 //! The main export is the pack's own dictionaries corrected: `11_ui.txt`,
 //! `12_story.txt`, `13_names.txt` with the approved values put in. Only the

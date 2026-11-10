@@ -58,7 +58,7 @@ pub struct TranslatorLine {
     pub edit_key: String,
     /// False for a line with nothing to translate (only punctuation).
     pub editable: bool,
-    /// A proposal for this place only is offered (story lines that are not short).
+    /// A proposal for this place only is offered (every story line).
     pub context_allowed: bool,
     /// Story lines holding the same entry, this one included.
     pub places: i32,

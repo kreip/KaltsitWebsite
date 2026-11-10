@@ -1,4 +1,4 @@
--- Line editing (translators/PLAN-edit.md §7). Every decision is keyed by the
+-- Line editing. Every decision is keyed by the
 -- English text of the dictionary entry (`edit_key`): one entry is one
 -- translation in the game, wherever the line stands. The place where it was
 -- made (story, line, part) is kept to show and link it.
