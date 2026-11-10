@@ -20,6 +20,7 @@ import type { ExportResult } from "#/types/generated/ExportResult";
 import type { Glossary } from "#/types/generated/Glossary";
 import type { GlossaryLines } from "#/types/generated/GlossaryLines";
 import type { KeyPlaces } from "#/types/generated/KeyPlaces";
+import type { LineHistory } from "#/types/generated/LineHistory";
 import type { LoginResponse } from "#/types/generated/LoginResponse";
 import type { NameRu } from "#/types/generated/NameRu";
 import type { ProposalVersion } from "#/types/generated/ProposalVersion";
@@ -124,6 +125,20 @@ export const getProposalVersionsFn = createServerFn({ method: "GET" })
 
 export function proposalVersionsQueryOptions(id: number) {
     return queryOptions({ queryKey: [...TRANSLATORS_QUERY_ROOT, "edits", "versions", id], queryFn: () => getProposalVersionsFn({ data: { id } }) });
+}
+
+/** The history of the translation of the line at a place, newest first, each text with the one before it. */
+export const getLineHistoryFn = createServerFn({ method: "GET" })
+    .inputValidator((d: { place: EditPlace }) => d)
+    .handler(async ({ data }): Promise<LineHistory> => {
+        const q = new URLSearchParams({ storyId: data.place.storyId, line: String(data.place.line), part: String(data.place.part) });
+        const res = await send(`/translators/history?${q}`, "GET");
+        return (await res.json()) as LineHistory;
+    });
+
+/** Under the lines' key, so every edit refreshes an open history. */
+export function lineHistoryQueryOptions(place: EditPlace) {
+    return queryOptions({ queryKey: [...TRANSLATORS_QUERY_ROOT, "lines", "history", place.storyId, place.line, place.part], queryFn: () => getLineHistoryFn({ data: { place } }) });
 }
 
 /** Agree with a variant of the line's entry or take it back; `proposalId` null = keep as in the game. */

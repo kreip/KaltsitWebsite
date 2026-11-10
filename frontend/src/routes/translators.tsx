@@ -16,6 +16,7 @@ export const Route = createFileRoute("/translators")({
         if (typeof search.story === "string" && search.story) out.story = search.story;
         if (on(search.cn)) out.cn = true;
         if (on(search.service)) out.service = true;
+        if (on(search.diff)) out.diff = true;
         if (search.variants === false || search.variants === 0 || search.variants === "0" || search.variants === "false") out.variants = false;
         return out;
     },

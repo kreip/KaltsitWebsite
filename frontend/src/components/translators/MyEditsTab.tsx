@@ -27,6 +27,7 @@ import { ExportDialog } from "./ExportDialog";
 import { CONFIRM_PLACES, cleanText, exportsForGame, isLead, marksReleases, SaveDialog, useEditMutation } from "./LineEdits";
 import { StoryText } from "./StoryText";
 import { useStoryNames } from "./storyNames";
+import { TextDiff } from "./TextDiff";
 import { TokenEditor } from "./TokenEditor";
 import type { messages } from "./translators.messages";
 
@@ -60,23 +61,29 @@ function Where({ row, t }: { row: EditRow; t: T }): React.ReactElement {
     );
 }
 
-function Versions({ id, t }: { id: number; t: T }): React.ReactElement {
+/** A proposal's texts, newest first, each compared by words with the one before it (the first with the game's Russian). */
+function Versions({ id, ruGame, t }: { id: number; ruGame: string | null; t: T }): React.ReactElement {
     const f = useFormatters();
     const query = useQuery(proposalVersionsQueryOptions(id));
     if (query.isError) return <LoadFailed layout="inline" message={t("history.load")} onRetry={() => query.refetch()} />;
     if (!query.data) return <Skeleton className="h-10 w-full" />;
+    const versions = query.data;
+    const labels = { added: t("diff.added"), removed: t("diff.removed") };
     return (
         <ol className="flex flex-col gap-1 text-xs" aria-label={t("history.label")}>
-            {query.data.map((v, i) => (
-                <li key={v.id} className="flex flex-col border-s-2 ps-2">
-                    <span className="text-subtle-foreground">
-                        {f.date(v.createdAt * 1000, { dateStyle: "medium", timeStyle: "short" })} · {v.author.name}
-                        {v.source !== "own" ? ` · ${t(`proposal.from.${v.source}` as "proposal.from.sova")}` : ""}
-                        {i === 0 ? ` · ${t("history.current")}` : ""}
-                    </span>
-                    <span className="whitespace-pre-line">{v.text}</span>
-                </li>
-            ))}
+            {versions.map((v, i) => {
+                const before = versions[i + 1]?.text ?? ruGame;
+                return (
+                    <li key={v.id} className="flex flex-col border-s-2 ps-2">
+                        <span className="text-subtle-foreground">
+                            {f.date(v.createdAt * 1000, { dateStyle: "medium", timeStyle: "short" })} · {v.author.name}
+                            {v.source !== "own" ? ` · ${t(`proposal.from.${v.source}` as "proposal.from.sova")}` : ""}
+                            {i === 0 ? ` · ${t("history.current")}` : ""}
+                        </span>
+                        {before === null ? <span className="whitespace-pre-line">{v.text}</span> : <TextDiff before={before} after={v.text} labels={labels} />}
+                    </li>
+                );
+            })}
         </ol>
     );
 }
@@ -167,7 +174,7 @@ function Row({ row, me, all, nickname, t }: { row: EditRow; me: TranslatorsMe; a
                             </CollapsibleTrigger>
                         </div>
                         <CollapsiblePanel className="pt-1">
-                            <Versions id={p.id} t={t} />
+                            <Versions id={p.id} ruGame={row.ruGame} t={t} />
                         </CollapsiblePanel>
                     </Collapsible>
                 </div>

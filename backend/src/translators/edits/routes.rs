@@ -10,8 +10,8 @@ use utoipa::ToSchema;
 
 use super::db::{self, PlaceLine};
 use super::dto::{
-    AgreementInput, CommentInput, EditPlace, EditRows, EditsQuery, KeyPlaces, ProposalInput,
-    ProposalRewrite, ProposalVersion, ResolveInput,
+    AgreementInput, CommentInput, EditPlace, EditRows, EditsQuery, KeyPlaces, LineHistory,
+    ProposalInput, ProposalRewrite, ProposalVersion, ResolveInput,
 };
 use super::status::{self, CONFIRM_PLACES};
 use crate::app::error::ApiError;
@@ -223,6 +223,40 @@ pub async fn proposal_versions(
         .await?
         .ok_or(ApiError::NotFound)?;
     Ok(Json(db::versions(&state.db, id).await?))
+}
+
+/// The history of the translation of the line at a place, newest first: the
+/// pack's changes of the game's Russian, every text of every proposal and
+/// the lead's decisions, each with the text one step back. Members only.
+#[utoipa::path(
+    get,
+    path = "/translators/history",
+    tag = "translators",
+    security(("bearer_auth" = [])),
+    params(EditPlace),
+    responses(
+        (status = 200, description = "The steps, newest first.", body = LineHistory),
+        (status = 401, response = crate::app::openapi::responses::Unauthorized),
+        (status = 403, response = crate::app::openapi::responses::Forbidden),
+        (status = 404, response = crate::app::openapi::responses::NotFound),
+        (status = 500, response = crate::app::openapi::responses::InternalError)
+    )
+)]
+pub async fn line_history(
+    State(state): State<AppState>,
+    auth: MaybeAuthUser,
+    Query(place): Query<EditPlace>,
+) -> Result<Json<LineHistory>, ApiError> {
+    require_member(&state, &auth).await?;
+    let line = db::place_line(&state.db, &place)
+        .await?
+        .ok_or(ApiError::NotFound)?;
+    let events = db::history(&state.db, &line.edit_key, &place, line.ru_game.as_deref()).await?;
+    Ok(Json(LineHistory {
+        edit_key: line.edit_key,
+        ru_game: line.ru_game,
+        events,
+    }))
 }
 
 /// Agree with a variant of the line's entry, or take it back: the game's

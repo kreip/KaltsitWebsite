@@ -25,6 +25,7 @@ const MIGRATIONS: &[(&str, &str)] = &[
         "t008_roles_releases",
         include_str!("migrations/t008_roles_releases.sql"),
     ),
+    ("t009_history", include_str!("migrations/t009_history.sql")),
 ];
 
 pub async fn migrate(pool: &PgPool) -> Result<(), sqlx::Error> {
@@ -138,6 +139,8 @@ pub async fn story_lines(
             speaker_ru: r.speaker_ru,
             en: r.en,
             ru_game: r.ru_game,
+            ru_game_before: None,
+            ru_game_changed_at: None,
             ru_game_source: r.ru_game_source,
             ru_game_match: r.ru_game_match,
             plugin_role: r.plugin_role,

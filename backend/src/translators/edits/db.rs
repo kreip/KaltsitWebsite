@@ -7,8 +7,8 @@ use sqlx::{PgPool, Postgres, Transaction};
 use uuid::Uuid;
 
 use super::dto::{
-    Approval, EditComment, EditPerson, EditPlace, EditRow, KeyEdits, KeyPlace, OutdatedEdit,
-    PlaceAgreement, Proposal, ProposalVersion, StoryProgress, StoryRead,
+    Approval, EditComment, EditPerson, EditPlace, EditRow, HistoryEvent, KeyEdits, KeyPlace,
+    OutdatedEdit, PlaceAgreement, Proposal, ProposalVersion, StoryProgress, StoryRead,
 };
 use super::status;
 use crate::translators::SERVER;
@@ -131,13 +131,16 @@ struct ProposalRow {
     approved_at: Option<DateTime<Utc>>,
     approver_name: Option<String>,
     versions: i64,
+    previous_text: Option<String>,
 }
 
 const PROPOSAL_COLUMNS: &str = "p.id, p.edit_key, p.text, p.source, p.author_id, \
      COALESCE(NULLIF(u.nickname, ''), u.uid) AS author_name, p.created_at, p.updated_at, \
      p.story_id, p.line, p.part, p.outdated_at, p.context, p.approved_by, p.approved_at, \
      (SELECT COALESCE(NULLIF(x.nickname, ''), x.uid) FROM users x WHERE x.id = p.approved_by) AS approver_name, \
-     (SELECT COUNT(*) FROM translators.proposal_versions v WHERE v.proposal_id = p.id) AS versions";
+     (SELECT COUNT(*) FROM translators.proposal_versions v WHERE v.proposal_id = p.id) AS versions, \
+     (SELECT v.text FROM translators.proposal_versions v WHERE v.proposal_id = p.id \
+       ORDER BY v.id DESC OFFSET 1 LIMIT 1) AS previous_text";
 
 impl ProposalRow {
     fn into_proposal(self, agreements: Vec<EditPerson>) -> Proposal {
@@ -152,6 +155,7 @@ impl ProposalRow {
             created_at: self.created_at.timestamp(),
             edited_at: edited.then(|| self.updated_at.timestamp()),
             versions: i32::try_from(self.versions).unwrap_or(i32::MAX),
+            previous_text: self.previous_text,
             agreements,
             place: EditPlace {
                 story_id: self.story_id,
@@ -619,6 +623,151 @@ pub async fn versions(pool: &PgPool, id: i64) -> Result<Vec<ProposalVersion>, sq
             created_at: at.timestamp(),
         })
         .collect())
+}
+
+/// The game's Russian before the last import that changed it, by entry: `(text, when)`.
+pub async fn ru_before(
+    pool: &PgPool,
+    keys: &[String],
+) -> Result<HashMap<String, (String, DateTime<Utc>)>, sqlx::Error> {
+    if keys.is_empty() {
+        return Ok(HashMap::new());
+    }
+    let rows: Vec<(String, String, DateTime<Utc>)> = sqlx::query_as(
+        "SELECT DISTINCT ON (edit_key) edit_key, text, changed_at FROM translators.ru_history
+         WHERE server = $1 AND edit_key = ANY($2) ORDER BY edit_key, id DESC",
+    )
+    .bind(SERVER)
+    .bind(keys)
+    .fetch_all(pool)
+    .await?;
+    Ok(rows.into_iter().map(|(k, t, at)| (k, (t, at))).collect())
+}
+
+/// The history of the entry's translation as seen at a place, newest first:
+/// the pack's changes, every text of every proposal (those for another place
+/// only are left out; deleted ones are kept) and the lead's decisions.
+pub async fn history(
+    pool: &PgPool,
+    key: &str,
+    place: &EditPlace,
+    ru_game: Option<&str>,
+) -> Result<Vec<HistoryEvent>, sqlx::Error> {
+    let mut events: Vec<HistoryEvent> = Vec::new();
+    // The pack: each row is the Russian before a change; what followed it is the next row's, then today's.
+    let game: Vec<(String, DateTime<Utc>)> = sqlx::query_as(
+        "SELECT text, changed_at FROM translators.ru_history WHERE server = $1 AND edit_key = $2 ORDER BY id",
+    )
+    .bind(SERVER)
+    .bind(key)
+    .fetch_all(pool)
+    .await?;
+    for (i, (before, at)) in game.iter().enumerate() {
+        events.push(HistoryEvent {
+            kind: "game".to_owned(),
+            at: at.timestamp(),
+            by: None,
+            text: game
+                .get(i + 1)
+                .map(|(t, _)| t.clone())
+                .or_else(|| ru_game.map(str::to_owned)),
+            before: Some(before.clone()),
+            proposal_id: None,
+            source: None,
+            context: false,
+            deleted: false,
+        });
+    }
+    #[allow(clippy::type_complexity)]
+    let versions: Vec<(i64, String, String, Uuid, String, DateTime<Utc>, bool, bool)> =
+        sqlx::query_as(&format!(
+            "SELECT p.id, v.text, v.source, v.author_id, {NAME}, v.created_at, p.context,
+                    (p.deleted_at IS NOT NULL)
+             FROM translators.proposal_versions v
+             JOIN translators.proposals p ON p.id = v.proposal_id
+             JOIN users u ON u.id = v.author_id
+             WHERE p.edit_key = $1
+               AND (NOT p.context OR (p.story_id = $2 AND p.line = $3 AND p.part = $4))
+             ORDER BY v.id"
+        ))
+        .bind(key)
+        .bind(&place.story_id)
+        .bind(place.line)
+        .bind(place.part)
+        .fetch_all(pool)
+        .await?;
+    let mut last: HashMap<i64, String> = HashMap::new();
+    for (id, text, source, author, name, at, context, deleted) in versions {
+        let before = last
+            .insert(id, text.clone())
+            .or_else(|| ru_game.map(str::to_owned));
+        events.push(HistoryEvent {
+            kind: "proposal".to_owned(),
+            at: at.timestamp(),
+            by: Some(person(author, name)),
+            text: Some(text),
+            before,
+            proposal_id: Some(id),
+            source: Some(source),
+            context,
+            deleted,
+        });
+    }
+    #[allow(clippy::type_complexity)]
+    let log: Vec<(
+        String,
+        Option<i64>,
+        Option<String>,
+        Option<String>,
+        Uuid,
+        String,
+        DateTime<Utc>,
+    )> = sqlx::query_as(&format!(
+        "SELECT l.action, l.proposal_id, l.text, l.variant, l.user_id, {NAME}, l.created_at
+             FROM translators.approval_log l JOIN users u ON u.id = l.user_id
+             WHERE l.edit_key = $1 ORDER BY l.id"
+    ))
+    .bind(key)
+    .fetch_all(pool)
+    .await?;
+    // A decision about a one-place proposal shows at that place only.
+    let elsewhere: std::collections::HashSet<i64> = sqlx::query_scalar(
+        "SELECT id FROM translators.proposals
+         WHERE edit_key = $1 AND context AND NOT (story_id = $2 AND line = $3 AND part = $4)",
+    )
+    .bind(key)
+    .bind(&place.story_id)
+    .bind(place.line)
+    .bind(place.part)
+    .fetch_all(pool)
+    .await?
+    .into_iter()
+    .collect();
+    for (action, proposal, text, variant, user, name, at) in log {
+        if proposal.is_some_and(|id| elsewhere.contains(&id)) {
+            continue;
+        }
+        events.push(HistoryEvent {
+            kind: if action == "withdraw" {
+                "withdraw"
+            } else {
+                "approve"
+            }
+            .to_owned(),
+            at: at.timestamp(),
+            by: Some(person(user, name)),
+            text,
+            before: None,
+            proposal_id: proposal,
+            source: variant,
+            context: false,
+            deleted: false,
+        });
+    }
+    // Newest first; steps of one moment keep their order (a proposal before its approval).
+    events.reverse();
+    events.sort_by_key(|e| std::cmp::Reverse(e.at));
+    Ok(events)
 }
 
 /// One member's vote for a variant of an entry: `game`, a `proposal`, or

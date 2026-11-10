@@ -38,6 +38,11 @@ pub struct TranslatorLine {
     pub en: String,
     /// The Russian the game shows now.
     pub ru_game: Option<String>,
+    /// The Russian the game showed before the last import that changed it (a new pack), if one did.
+    pub ru_game_before: Option<String>,
+    /// Unix seconds of that import.
+    #[ts(type = "number | null")]
+    pub ru_game_changed_at: Option<i64>,
     /// `plugin:story` or the dictionary file it came from.
     pub ru_game_source: Option<String>,
     /// `exact`, `normalized`, `lines` or `plugin`.

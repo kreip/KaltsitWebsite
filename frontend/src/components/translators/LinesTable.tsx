@@ -16,7 +16,7 @@ import { InfoHint } from "#/components/ui/info-hint";
 import { Label } from "#/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "#/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "#/components/ui/table";
-import { useT } from "#/lib/i18n";
+import { useFormatters, useT } from "#/lib/i18n";
 import type { TypedT } from "#/lib/i18n/messages";
 import { cn } from "#/lib/utils";
 import type { EditPlace } from "#/types/generated/EditPlace";
@@ -28,10 +28,12 @@ import type { TranslatorLine } from "#/types/generated/TranslatorLine";
 import type { TranslatorsMe } from "#/types/generated/TranslatorsMe";
 import { BulkApprove, type IBulkLine } from "./BulkApprove";
 import { type Address, checkVariant, type ICandidate, type IVariantCheck, neighbourAddress, recommend } from "./checks";
-import { AgreeButton, ApproveButton, ApprovedVariant, approvedVariant, CellActions, CommentEditor, type EditorState, isLead, LineComments, OutdatedHere, ProposalEditor, Proposals, placeOf, placeVotes, proposalsAt, quotesAt, StatusDot, TONE, VariantNotes } from "./LineEdits";
+import { AgreeButton, ApproveButton, ApprovedVariant, approvedVariant, CellActions, CommentEditor, diffLabels, type EditorState, isLead, LineComments, OutdatedHere, ProposalEditor, Proposals, placeOf, placeVotes, proposalsAt, quotesAt, StatusDot, TONE, Toned, VariantNotes } from "./LineEdits";
+import { LineHistoryDialog } from "./LineHistory";
 import { Marks } from "./Marks";
 import { StoryText } from "./StoryText";
 import { DISPLAYED_KINDS, describeCommands } from "./service";
+import { TextDiff } from "./TextDiff";
 import type { messages } from "./translators.messages";
 
 type T = TypedT<typeof messages>;
@@ -159,6 +161,8 @@ interface IRuCellProps {
     storyId: string;
     nickname: string;
     showVariants: boolean;
+    /** Compare: the proposals and the approved text as changes against the text one step back. */
+    showDiff: boolean;
     edits: KeyEdits | undefined;
     outdated: readonly OutdatedEdit[];
     me: TranslatorsMe;
@@ -167,7 +171,9 @@ interface IRuCellProps {
     t: T;
 }
 
-function RuCell({ line, analysis, storyId, nickname, showVariants, edits, outdated, me, editor, onEditor, t }: IRuCellProps): React.ReactElement {
+function RuCell({ line, analysis, storyId, nickname, showVariants, showDiff, edits, outdated, me, editor, onEditor, t }: IRuCellProps): React.ReactElement {
+    const f = useFormatters();
+    const [history, setHistory] = useState(false);
     const place = placeOf(storyId, line);
     const quotes = quotesAt(edits, place);
     const notes = { edits, place, me, t };
@@ -194,6 +200,7 @@ function RuCell({ line, analysis, storyId, nickname, showVariants, edits, outdat
                 <CellActions
                     line={line}
                     onOpen={onEditor}
+                    onHistory={() => setHistory(true)}
                     game={
                         line.ruGame && line.editable ? (
                             <>
@@ -205,7 +212,8 @@ function RuCell({ line, analysis, storyId, nickname, showVariants, edits, outdat
                     t={t}
                 />
             ) : null}
-            <ApprovedVariant edits={edits} place={place} me={me} nickname={nickname} marks={marks("approved")} t={t} />
+            {history ? <LineHistoryDialog place={place} open={history} onOpenChange={setHistory} nickname={nickname} t={t} /> : null}
+            <ApprovedVariant edits={edits} place={place} me={me} nickname={nickname} marks={marks("approved")} compareWith={showDiff ? line.ruGame : null} t={t} />
             {/* biome-ignore lint/a11y/noStaticElementInteractions: a shortcut; the Propose button is the accessible way */}
             <div
                 onDoubleClick={() => {
@@ -218,6 +226,11 @@ function RuCell({ line, analysis, storyId, nickname, showVariants, edits, outdat
                 {marks("game", true)}
                 {line.ruGame && line.editable && (edits?.gameAgreements.length ?? 0) > 0 ? <AgreeButton place={place} variant="game" people={edits?.gameAgreements ?? []} me={me} t={t} /> : null}
             </div>
+            {showDiff && line.ruGame && line.ruGameBefore && line.ruGameChangedAt !== null ? (
+                <Toned tone={TONE.remark} label={t("diff.gameChanged", { date: f.date(line.ruGameChangedAt * 1000, { dateStyle: "medium" }) })}>
+                    <TextDiff before={line.ruGameBefore} after={line.ruGame} labels={diffLabels(t)} />
+                </Toned>
+            ) : null}
             <VariantNotes {...notes} variant="game" />
             {line.pluginRole === "story" ? (
                 <span className="flex items-center gap-1">
@@ -237,7 +250,7 @@ function RuCell({ line, analysis, storyId, nickname, showVariants, edits, outdat
             ) : null}
             {line.ruGameMatch === "lines" ? <span className="text-subtle-foreground text-xs">{t("ru.lineByLine")}</span> : null}
             <Terms terms={line.terms} t={t} />
-            <Proposals {...notes} nickname={nickname} marks={(p) => marks(`proposal:${p.id}`)} onEdit={(p) => onEditor({ kind: "proposal", text: p.text, source: p.source === "sova" || p.source === "ai" ? p.source : "own", context: p.context })} />
+            <Proposals {...notes} nickname={nickname} compare={showDiff} ruGame={line.ruGame} marks={(p) => marks(`proposal:${p.id}`)} onEdit={(p) => onEditor({ kind: "proposal", text: p.text, source: p.source === "sova" || p.source === "ai" ? p.source : "own", context: p.context })} />
             {showVariants ? (
                 <>
                     {line.sova ? (
@@ -294,6 +307,7 @@ export interface ILinesTableProps {
     label: string;
     showCn: boolean;
     showVariants: boolean;
+    showDiff: boolean;
     /** The script's commands when Service is on, else null. */
     commands: readonly StoryCommand[] | null;
     /** A sprite's name for "On stage". */
@@ -302,7 +316,7 @@ export interface ILinesTableProps {
     nickname: string;
 }
 
-export function LinesTable({ storyId, lines, edits, outdated, me, label, showCn, showVariants, commands, nameOf, nickname }: ILinesTableProps): React.ReactElement {
+export function LinesTable({ storyId, lines, edits, outdated, me, label, showCn, showVariants, showDiff, commands, nameOf, nickname }: ILinesTableProps): React.ReactElement {
     const t: T = useT("translators");
     const columns = showCn ? 5 : 4;
     const byKey = useMemo(() => new Map(edits.map((e) => [e.editKey, e])), [edits]);
@@ -395,6 +409,7 @@ export function LinesTable({ storyId, lines, edits, outdated, me, label, showCn,
                                             storyId={storyId}
                                             nickname={nickname}
                                             showVariants={showVariants}
+                                            showDiff={showDiff}
                                             edits={lineEdits}
                                             outdated={staleAt.get(id) ?? []}
                                             me={me}

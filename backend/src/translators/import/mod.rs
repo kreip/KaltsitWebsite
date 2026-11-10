@@ -359,7 +359,12 @@ pub fn build(
     })
 }
 
-/// Replace the server's rows and record the run, in one transaction.
+/// One Russian per entry of the server's lines (`$1`): the same wherever the entry stands.
+const ENTRY_RU: &str = "SELECT DISTINCT ON (edit_key) edit_key, ru_game FROM translators.story_lines \
+     WHERE server = $1 AND ru_game IS NOT NULL ORDER BY edit_key, story_id, line, part";
+
+/// Replace the server's rows and record the run, in one transaction. An
+/// entry whose Russian changed keeps the old one in `ru_history`.
 pub async fn store(
     pool: &PgPool,
     server: &str,
@@ -376,6 +381,13 @@ pub async fn store(
     // 20 binds per row, under Postgres's 65,535-parameter limit.
     const CHUNK: usize = 2_000;
     let mut tx = pool.begin().await?;
+    // The Russian each entry has now, to tell afterwards which the import changed.
+    sqlx::query(&format!(
+        "CREATE TEMP TABLE _ru_before ON COMMIT DROP AS {ENTRY_RU}"
+    ))
+    .bind(server)
+    .execute(&mut *tx)
+    .await?;
     sqlx::query("DELETE FROM translators.story_lines WHERE server = $1")
         .bind(server)
         .execute(&mut *tx)
@@ -420,6 +432,17 @@ pub async fn store(
         qb.push(" ON CONFLICT (server, story_id, line, part) DO NOTHING");
         qb.build().execute(&mut *tx).await?;
     }
+    // Comparing versions: keep the Russian an entry had when the new one differs.
+    sqlx::query(&format!(
+        "INSERT INTO translators.ru_history (server, edit_key, text, changed_at)
+         SELECT $1, b.edit_key, b.ru_game, $2
+         FROM _ru_before b JOIN ({ENTRY_RU}) n ON n.edit_key = b.edit_key
+         WHERE n.ru_game <> b.ru_game"
+    ))
+    .bind(server)
+    .bind(started_at)
+    .execute(&mut *tx)
+    .await?;
     sqlx::query("DELETE FROM translators.sova_notes")
         .execute(&mut *tx)
         .await?;

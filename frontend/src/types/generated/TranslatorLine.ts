@@ -26,6 +26,14 @@ export type TranslatorLine = {
      */
     ruGame: string | null;
     /**
+     * The Russian the game showed before the last import that changed it (a new pack), if one did.
+     */
+    ruGameBefore: string | null;
+    /**
+     * Unix seconds of that import.
+     */
+    ruGameChangedAt: number | null;
+    /**
      * `plugin:story` or the dictionary file it came from.
      */
     ruGameSource: string | null;

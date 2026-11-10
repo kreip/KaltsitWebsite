@@ -447,3 +447,144 @@ async fn approvals_progress_and_export_rows() {
     assert_eq!(got[0].proposals[0].released_in.as_deref(), Some("1.0.30"));
     drop_db(pool, name).await;
 }
+
+/// Comparing versions: an import that brings a new Russian keeps the one it
+/// replaced, a rewritten proposal knows its previous text, and the line's
+/// history lists every step newest first with the text one step back.
+#[tokio::test]
+#[ignore = "creates and drops a database on the local Postgres"]
+async fn history_of_a_line() {
+    use backend::translators::import::{self, lines::Line};
+    let (pool, name) = fresh_db().await;
+    let lead = user(&pool, "lead").await;
+    let a = user(&pool, "anna").await;
+    let built = |ru: &str| import::Built {
+        stories: vec![(
+            "s1".to_owned(),
+            vec![
+                Line {
+                    line: 1,
+                    part: 0,
+                    kind: "dialog",
+                    speaker_en: String::new(),
+                    speaker_ru: None,
+                    en: "Hello.".to_owned(),
+                    ru_game: Some(ru.to_owned()),
+                    ru_game_source: None,
+                    ru_game_match: None,
+                    plugin_role: None,
+                    ru_dict: None,
+                    speaker_cn: None,
+                    cn: None,
+                    sova: None,
+                    ai: None,
+                    arktr_match: None,
+                    edit_key: "Hello.".to_owned(),
+                },
+                Line {
+                    line: 2,
+                    part: 0,
+                    kind: "dialog",
+                    speaker_en: String::new(),
+                    speaker_ru: None,
+                    en: "Bye.".to_owned(),
+                    ru_game: Some("Пока.".to_owned()),
+                    ru_game_source: None,
+                    ru_game_match: None,
+                    plugin_role: None,
+                    ru_dict: None,
+                    speaker_cn: None,
+                    cn: None,
+                    sova: None,
+                    ai: None,
+                    arktr_match: None,
+                    edit_key: "Bye.".to_owned(),
+                },
+            ],
+        )],
+        chars: Vec::new(),
+        sova_notes: Vec::new(),
+        names_ru: Vec::new(),
+        summary: import::ImportSummary::default(),
+    };
+    let keys = ["Hello.".to_owned(), "Bye.".to_owned()];
+    let t0 = chrono::Utc::now() - chrono::Duration::days(2);
+
+    // The first import and a repeat of it change nothing.
+    import::store(&pool, "en", t0, &built("Привет."))
+        .await
+        .unwrap();
+    import::store(&pool, "en", t0, &built("Привет."))
+        .await
+        .unwrap();
+    assert!(db::ru_before(&pool, &keys).await.unwrap().is_empty());
+
+    // A new pack: only the changed entry keeps its old Russian.
+    let t1 = chrono::Utc::now() - chrono::Duration::days(1);
+    import::store(&pool, "en", t1, &built("Здравствуй."))
+        .await
+        .unwrap();
+    let before = db::ru_before(&pool, &keys).await.unwrap();
+    assert_eq!(before.len(), 1);
+    assert_eq!(before["Hello."].0, "Привет.");
+    assert_eq!(before["Hello."].1.timestamp(), t1.timestamp());
+
+    // Anna proposes, rewrites; the lead approves.
+    let here = place("s1", 1);
+    let p = db::upsert_proposal(&pool, "Hello.", &here, "Добрый день.", "own", false, a)
+        .await
+        .unwrap();
+    let got = db::key_edits(&pool, &keys[..1]).await.unwrap();
+    assert_eq!(got[0].proposals[0].previous_text, None, "never rewritten");
+    db::rewrite_proposal(&pool, p, "Добрый вечер.", "own", a)
+        .await
+        .unwrap();
+    let got = db::key_edits(&pool, &keys[..1]).await.unwrap();
+    assert_eq!(
+        got[0].proposals[0].previous_text.as_deref(),
+        Some("Добрый день.")
+    );
+    db::approve_key(
+        &pool,
+        "Hello.",
+        "proposal",
+        Some(p),
+        "Добрый вечер.",
+        &here,
+        lead,
+    )
+    .await
+    .unwrap();
+    // A proposal for another place only stays out of this place's history.
+    line(&pool, "s2", 9, 0, "Hello.", "Здравствуй.").await;
+    db::upsert_proposal(&pool, "Hello.", &place("s2", 9), "Салют.", "own", true, a)
+        .await
+        .unwrap();
+
+    let events = db::history(&pool, "Hello.", &here, Some("Здравствуй."))
+        .await
+        .unwrap();
+    let steps: Vec<(&str, Option<&str>, Option<&str>)> = events
+        .iter()
+        .map(|e| (e.kind.as_str(), e.before.as_deref(), e.text.as_deref()))
+        .collect();
+    assert_eq!(
+        steps,
+        vec![
+            ("approve", None, Some("Добрый вечер.")),
+            ("proposal", Some("Добрый день."), Some("Добрый вечер.")),
+            ("proposal", Some("Здравствуй."), Some("Добрый день.")),
+            ("game", Some("Привет."), Some("Здравствуй.")),
+        ]
+    );
+    let there = db::history(&pool, "Hello.", &place("s2", 9), Some("Здравствуй."))
+        .await
+        .unwrap();
+    assert!(
+        there
+            .iter()
+            .any(|e| e.context && e.text.as_deref() == Some("Салют.")),
+        "the one-place proposal shows at its own place"
+    );
+    drop_db(pool, name).await;
+}

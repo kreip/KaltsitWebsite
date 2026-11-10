@@ -55,6 +55,8 @@ export interface ITranslatorsSearch {
     service?: boolean;
     /** Only `false` is kept: the variants show by default. */
     variants?: false;
+    /** Compare: proposals as their changes against the text one step back. */
+    diff?: boolean;
 }
 
 interface IGroupItem {
@@ -78,6 +80,7 @@ interface ILinesProps {
     showCn: boolean;
     showService: boolean;
     showVariants: boolean;
+    showDiff: boolean;
     t: T;
 }
 
@@ -158,7 +161,7 @@ function SovaNotes({ notes, t }: { notes: readonly string[]; t: T }): React.Reac
     );
 }
 
-function Lines({ storyId, title, showCn, showService, showVariants, t }: ILinesProps): React.ReactElement {
+function Lines({ storyId, title, showCn, showService, showVariants, showDiff, t }: ILinesProps): React.ReactElement {
     const query = useQuery(translatorLinesQueryOptions(storyId));
     const me = useQuery(translatorsMeQueryOptions());
     // The stage commands come from the site's own parse of the EN script; the sprites' names from the import.
@@ -201,7 +204,7 @@ function Lines({ storyId, title, showCn, showService, showVariants, t }: ILinesP
             <p className="text-subtle-foreground text-xs">{t("table.summary", { count: lines.length, ru: withRu })}</p>
             <StoryStatus storyId={storyId} reads={reads} me={me.data} t={t} />
             <SovaNotes notes={sovaNotes} t={t} />
-            <LinesTable storyId={storyId} lines={lines} edits={edits} outdated={outdated} me={me.data} label={t("table.label", { story: title })} showCn={showCn} showVariants={showVariants} commands={showService ? (script.data?.commands ?? null) : null} nameOf={nameOf} nickname={nickname} />
+            <LinesTable storyId={storyId} lines={lines} edits={edits} outdated={outdated} me={me.data} label={t("table.label", { story: title })} showCn={showCn} showVariants={showVariants} showDiff={showDiff} commands={showService ? (script.data?.commands ?? null) : null} nameOf={nameOf} nickname={nickname} />
         </div>
     );
 }
@@ -225,7 +228,7 @@ function Toggle({ id, checked, onChange, label, hint }: { id: string; checked: b
 
 function StoryTab({ search, onSearch }: ISearchProps): React.ReactElement {
     const t: T = useT("translators");
-    const ids = { chapter: useId(), story: useId(), cn: useId(), service: useId(), variants: useId() };
+    const ids = { chapter: useId(), story: useId(), cn: useId(), service: useId(), variants: useId(), diff: useId() };
     const index = useQuery(storyIndexQueryOptions("en"));
 
     const groups = index.data?.groups ?? [];
@@ -239,6 +242,7 @@ function StoryTab({ search, onSearch }: ISearchProps): React.ReactElement {
     const showCn = search.cn === true;
     const showService = search.service === true;
     const showVariants = search.variants !== false;
+    const showDiff = search.diff === true;
 
     return (
         <>
@@ -301,6 +305,7 @@ function StoryTab({ search, onSearch }: ISearchProps): React.ReactElement {
                     </div>
 
                     <Toggle id={ids.variants} checked={showVariants} onChange={(checked) => onSearch({ ...search, variants: checked ? undefined : false })} label={t("toggle.variants")} hint={t("toggle.variantsHint")} />
+                    <Toggle id={ids.diff} checked={showDiff} onChange={(checked) => onSearch({ ...search, diff: checked || undefined })} label={t("toggle.diff")} hint={t("toggle.diffHint")} />
                     <Toggle id={ids.cn} checked={showCn} onChange={(checked) => onSearch({ ...search, cn: checked || undefined })} label={t("toggle.cn")} hint={t("toggle.cnHint")} />
                     <Toggle id={ids.service} checked={showService} onChange={(checked) => onSearch({ ...search, service: checked || undefined })} label={t("toggle.service")} hint={t("toggle.serviceHint")} />
 
@@ -314,7 +319,7 @@ function StoryTab({ search, onSearch }: ISearchProps): React.ReactElement {
             )}
 
             {story ? (
-                <Lines storyId={story.id} title={entryLabel(story, rename)} showCn={showCn} showService={showService} showVariants={showVariants} t={t} />
+                <Lines storyId={story.id} title={entryLabel(story, rename)} showCn={showCn} showService={showService} showVariants={showVariants} showDiff={showDiff} t={t} />
             ) : (
                 <Empty>
                     <EmptyHeader>

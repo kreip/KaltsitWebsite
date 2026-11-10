@@ -13461,6 +13461,74 @@
         ]
       }
     },
+    "/api/translators/history": {
+      "get": {
+        "tags": [
+          "translators"
+        ],
+        "summary": "The history of the translation of the line at a place, newest first: the\npack's changes of the game's Russian, every text of every proposal and\nthe lead's decisions, each with the text one step back. Members only.",
+        "operationId": "line_history",
+        "parameters": [
+          {
+            "name": "storyId",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "line",
+            "in": "query",
+            "description": "1-based line in the EN script.",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "part",
+            "in": "query",
+            "description": "The option number of a decision, else 0.",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The steps, newest first.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LineHistory"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        },
+        "security": [
+          {
+            "bearer_auth": []
+          }
+        ]
+      }
+    },
     "/api/translators/import": {
       "get": {
         "tags": [
@@ -25731,6 +25799,74 @@
           }
         }
       },
+      "HistoryEvent": {
+        "type": "object",
+        "description": "One step in the history of a line's translation, with the text it replaced.",
+        "required": [
+          "kind",
+          "at",
+          "context",
+          "deleted"
+        ],
+        "properties": {
+          "at": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Unix seconds."
+          },
+          "before": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The text one step back: the proposal's previous version (the game's\nRussian for its first), or the game's Russian before the import."
+          },
+          "by": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/EditPerson",
+                "description": "Who did it; null for `game`."
+              }
+            ]
+          },
+          "context": {
+            "type": "boolean",
+            "description": "A proposal for this place only."
+          },
+          "deleted": {
+            "type": "boolean",
+            "description": "The proposal was deleted since."
+          },
+          "kind": {
+            "type": "string",
+            "description": "`game` (an import brought a new Russian from the pack), `proposal` (a\nproposal written or rewritten), `approve` or `withdraw` (the lead)."
+          },
+          "proposalId": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64"
+          },
+          "source": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "A proposal's source (`own`, `sova`, `ai`), or the approved variant (`game`, `proposal`, `sova`, `ai`)."
+          },
+          "text": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The text after this step."
+          }
+        }
+      },
       "HistoryFiltersAppliedDto": {
         "type": "object",
         "properties": {
@@ -26659,6 +26795,32 @@
           "non_production",
           "unmodeled"
         ]
+      },
+      "LineHistory": {
+        "type": "object",
+        "description": "The history of the translation of the entry at a place, newest first.",
+        "required": [
+          "editKey",
+          "events"
+        ],
+        "properties": {
+          "editKey": {
+            "type": "string"
+          },
+          "events": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/HistoryEvent"
+            }
+          },
+          "ruGame": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The Russian the game shows now."
+          }
+        }
       },
       "LineTerm": {
         "type": "object",
@@ -30335,6 +30497,13 @@
           },
           "place": {
             "$ref": "#/components/schemas/EditPlace"
+          },
+          "previousText": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Its text before the last rewrite; null when never rewritten."
           },
           "releasedIn": {
             "type": [
@@ -37829,6 +37998,21 @@
               "null"
             ],
             "description": "The Russian the game shows now."
+          },
+          "ruGameBefore": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The Russian the game showed before the last import that changed it (a new pack), if one did."
+          },
+          "ruGameChangedAt": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64",
+            "description": "Unix seconds of that import."
           },
           "ruGameMatch": {
             "type": [

@@ -46,6 +46,8 @@ pub struct Proposal {
     pub edited_at: Option<i64>,
     /// Texts it has had, the current one included.
     pub versions: i32,
+    /// Its text before the last rewrite; null when never rewritten.
+    pub previous_text: Option<String>,
     /// Who agrees with it.
     pub agreements: Vec<EditPerson>,
     pub place: EditPlace,
@@ -73,6 +75,45 @@ pub struct ProposalVersion {
     pub author: EditPerson,
     #[ts(type = "number")]
     pub created_at: i64,
+}
+
+/// One step in the history of a line's translation, with the text it replaced.
+#[derive(Debug, Clone, Serialize, TS, ToSchema)]
+#[serde(rename_all = "camelCase")]
+#[ts(export)]
+pub struct HistoryEvent {
+    /// `game` (an import brought a new Russian from the pack), `proposal` (a
+    /// proposal written or rewritten), `approve` or `withdraw` (the lead).
+    pub kind: String,
+    /// Unix seconds.
+    #[ts(type = "number")]
+    pub at: i64,
+    /// Who did it; null for `game`.
+    pub by: Option<EditPerson>,
+    /// The text after this step.
+    pub text: Option<String>,
+    /// The text one step back: the proposal's previous version (the game's
+    /// Russian for its first), or the game's Russian before the import.
+    pub before: Option<String>,
+    #[ts(type = "number | null")]
+    pub proposal_id: Option<i64>,
+    /// A proposal's source (`own`, `sova`, `ai`), or the approved variant (`game`, `proposal`, `sova`, `ai`).
+    pub source: Option<String>,
+    /// A proposal for this place only.
+    pub context: bool,
+    /// The proposal was deleted since.
+    pub deleted: bool,
+}
+
+/// The history of the translation of the entry at a place, newest first.
+#[derive(Debug, Clone, Serialize, TS, ToSchema)]
+#[serde(rename_all = "camelCase")]
+#[ts(export)]
+pub struct LineHistory {
+    pub edit_key: String,
+    /// The Russian the game shows now.
+    pub ru_game: Option<String>,
+    pub events: Vec<HistoryEvent>,
 }
 
 /// The lead's decision for an entry.

@@ -1167,6 +1167,86 @@ export const messages = {
         text: "This text stands in {count} places — the translation changes everywhere.",
         description: "In the save dialog instead of the one-place choice, for a line that allows no one-place proposal (not a story line).",
     },
+    "toggle.diff": {
+        text: "Compare",
+        description: "Switch above the story table: show each proposal as its changes against the text one step back.",
+    },
+    "toggle.diffHint": {
+        text: "Added in green, removed in red.",
+        description: "Hint under the Compare switch. One short line.",
+    },
+    "diff.vsGame": {
+        text: "against the game's text",
+        description: "Small note in a proposal's label line while Compare is on: its changes are shown against the Russian the game shows now.",
+    },
+    "diff.vsPrevious": {
+        text: "against its previous version",
+        description: "Small note in a proposal's label line while Compare is on: the proposal was rewritten, and its changes are shown against its previous text.",
+    },
+    "diff.gameChanged": {
+        text: "The game's text changed on {date}",
+        description: "Label over the comparison of the game's Russian with what it was before the last pack update (import). date is a formatted date.",
+    },
+    "diff.added": {
+        text: "added",
+        description: "Screen-reader word before a fragment the new version added.",
+    },
+    "diff.removed": {
+        text: "removed",
+        description: "Screen-reader word before a fragment the new version dropped.",
+    },
+    "action.history": {
+        text: "History",
+        description: "Button on a story line: opens the history of the line's translation.",
+    },
+    "lineHistory.title": {
+        text: "History of the translation",
+        description: "Title of the dialog with the history of one line's translation.",
+    },
+    "lineHistory.legend": {
+        text: "Each text is compared with the one before it: added in green, removed in red.",
+        description: "Explanation under the title of the line history dialog.",
+    },
+    "lineHistory.label": {
+        text: "Changes, newest first",
+        description: "Accessible name of the list in the line history dialog.",
+    },
+    "lineHistory.now": {
+        text: "In the game now",
+        description: "Label of the first row of the line history: the Russian the game shows now.",
+    },
+    "lineHistory.empty": {
+        text: "Nothing has changed here yet.",
+        description: "Shown in the line history dialog when the line has no proposals, decisions or pack changes.",
+    },
+    "lineHistory.game": {
+        text: "The game's text changed (pack update)",
+        description: "Line history entry: an import brought a new Russian from the pack.",
+    },
+    "lineHistory.proposed": {
+        text: "{name} proposed",
+        description: "Line history entry: a translator wrote a proposal. name is their nickname.",
+    },
+    "lineHistory.rewrote": {
+        text: "{name} rewrote the proposal",
+        description: "Line history entry: a translator rewrote their proposal. name is their nickname.",
+    },
+    "lineHistory.approved": {
+        text: "{name} approved",
+        description: "Line history entry: the lead approved this text. name is their nickname.",
+    },
+    "lineHistory.approvedGame": {
+        text: "{name} checked the game's text and kept it",
+        description: "Line history entry: the lead approved the game's Russian as it is. name is their nickname.",
+    },
+    "lineHistory.withdrew": {
+        text: "{name} withdrew the approval",
+        description: "Line history entry: the lead took an approval back. name is their nickname.",
+    },
+    "lineHistory.deleted": {
+        text: "deleted",
+        description: "Small mark in the line history: this proposal was deleted since.",
+    },
 } satisfies MessageMap;
 
 export const { keys } = defineMessages({ namespace, messages });

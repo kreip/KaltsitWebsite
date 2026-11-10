@@ -8,7 +8,7 @@
  */
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
-import { Check, CheckCheck, MessageSquare, NotebookPen, PenLine, ThumbsUp, Trash2, Undo2 } from "lucide-react";
+import { Check, CheckCheck, History, MessageSquare, NotebookPen, PenLine, ThumbsUp, Trash2, Undo2 } from "lucide-react";
 import type React from "react";
 import { useId, useState } from "react";
 import { AlertDialog, AlertDialogClose, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogPopup, AlertDialogTitle } from "#/components/ui/alert-dialog";
@@ -37,6 +37,7 @@ import type { TranslatorLine } from "#/types/generated/TranslatorLine";
 import type { TranslatorsMe } from "#/types/generated/TranslatorsMe";
 import { StoryText } from "./StoryText";
 import { useStoryNames } from "./storyNames";
+import { TextDiff } from "./TextDiff";
 import { TokenEditor } from "./TokenEditor";
 import type { messages } from "./translators.messages";
 
@@ -339,7 +340,23 @@ export function approvedVariant(edits: KeyEdits | undefined): string | null {
     return a.variant === "proposal" ? `proposal:${a.proposalId}` : a.variant;
 }
 
-export function ApprovedVariant({ edits, place, me, nickname, marks, t }: { edits: KeyEdits | undefined; place: EditPlace; me: TranslatorsMe; nickname: string; marks?: React.ReactNode; t: T }): React.ReactElement | null {
+/** The screen-reader words of a comparison. */
+export function diffLabels(t: T): { added: string; removed: string } {
+    return { added: t("diff.added"), removed: t("diff.removed") };
+}
+
+interface IApprovedProps {
+    edits: KeyEdits | undefined;
+    place: EditPlace;
+    me: TranslatorsMe;
+    nickname: string;
+    marks?: React.ReactNode;
+    /** Compare is on: the approved text as its changes against this (the game's Russian). */
+    compareWith?: string | null;
+    t: T;
+}
+
+export function ApprovedVariant({ edits, place, me, nickname, marks, compareWith, t }: IApprovedProps): React.ReactElement | null {
     const f = useFormatters();
     const a = edits?.approval;
     if (!a) return null;
@@ -360,7 +377,7 @@ export function ApprovedVariant({ edits, place, me, nickname, marks, t }: { edit
                 </>
             }
         >
-            <StoryText text={a.text} nickname={nickname} />
+            {compareWith && a.variant !== "game" ? <TextDiff before={compareWith} after={a.text} labels={diffLabels(t)} /> : <StoryText text={a.text} nickname={nickname} />}
         </Toned>
     );
 }
@@ -368,11 +385,15 @@ export function ApprovedVariant({ edits, place, me, nickname, marks, t }: { edit
 interface IProposalsProps extends ICommentsProps {
     nickname: string;
     onEdit: (p: Proposal) => void;
+    /** Compare is on: each proposal as its changes against the text one step back. */
+    compare?: boolean;
+    /** The game's Russian: one step back for a proposal never rewritten. */
+    ruGame?: string | null;
     /** The proposal's automatic marks, shown in its label line. */
     marks?: (p: Proposal) => React.ReactNode;
 }
 
-export function Proposals({ edits, place, me, nickname, onEdit, marks, t }: IProposalsProps): React.ReactElement | null {
+export function Proposals({ edits, place, me, nickname, onEdit, marks, compare = false, ruGame = null, t }: IProposalsProps): React.ReactElement | null {
     const f = useFormatters();
     const remove = useEditMutation((id: number) => deleteProposalFn({ data: { id } }), t("edit.failedDelete"));
     const list = proposalsAt(edits, place);
@@ -381,6 +402,8 @@ export function Proposals({ edits, place, me, nickname, onEdit, marks, t }: IPro
         <>
             {list.map((p) => {
                 const mine = p.author.id === me.userId;
+                // One step back: its previous version, else the game's Russian.
+                const before = compare ? (p.previousText ?? ruGame) : null;
                 return (
                     <div key={p.id} className="flex flex-col gap-1">
                         <Toned
@@ -404,6 +427,7 @@ export function Proposals({ edits, place, me, nickname, onEdit, marks, t }: IPro
                                     ) : null}
                                     <ApproveButton place={place} variant="proposal" proposalId={p.id} me={me} approved={p.context ? p.approvedAt !== null : edits?.approval?.proposalId === p.id} t={t} />
                                     {marks?.(p)}
+                                    {before ? <span>· {p.previousText ? t("diff.vsPrevious") : t("diff.vsGame")}</span> : null}
                                 </>
                             }
                             actions={
@@ -421,7 +445,7 @@ export function Proposals({ edits, place, me, nickname, onEdit, marks, t }: IPro
                                 ) : undefined
                             }
                         >
-                            <StoryText text={p.text} nickname={nickname} />
+                            {before ? <TextDiff before={before} after={p.text} labels={diffLabels(t)} /> : <StoryText text={p.text} nickname={nickname} />}
                         </Toned>
                         <VariantNotes edits={edits} place={place} me={me} variant="proposal" proposalId={p.id} t={t} />
                     </div>
@@ -473,9 +497,10 @@ function selectedIn(within: Element | null): string | null {
  * (always on a touch screen): agree with and (the lead) approve the game's
  * text, propose, remark, note. The game's text's buttons live here, not at
  * the end of the text, which the panel would cover on a long line. A remark or note quotes
- * the text selected in the row (read before the click can clear it).
+ * the text selected in the row (read before the click can clear it). History
+ * opens the history of the line's translation (LineHistory.tsx).
  */
-export function CellActions({ line, onOpen, game, t }: { line: TranslatorLine; onOpen: (state: EditorState) => void; game?: React.ReactNode; t: T }): React.ReactElement {
+export function CellActions({ line, onOpen, onHistory, game, t }: { line: TranslatorLine; onOpen: (state: EditorState) => void; onHistory: () => void; game?: React.ReactNode; t: T }): React.ReactElement {
     const comment = (kind: "remark" | "note", from: HTMLElement) => onOpen({ kind, quote: selectedIn(from.closest("tr")) });
     const keys = (kind: "remark" | "note") => (e: React.KeyboardEvent<HTMLButtonElement>) => {
         if (e.key === "Enter" || e.key === " ") {
@@ -515,6 +540,10 @@ export function CellActions({ line, onOpen, game, t }: { line: TranslatorLine; o
             >
                 <NotebookPen aria-hidden="true" />
                 {t("action.note")}
+            </Button>
+            <Button variant="ghost" size="xs" onClick={onHistory}>
+                <History aria-hidden="true" />
+                {t("action.history")}
             </Button>
         </div>
     );

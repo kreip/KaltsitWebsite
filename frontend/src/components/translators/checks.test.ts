@@ -11,6 +11,8 @@ function line(over: Partial<TranslatorLine>): TranslatorLine {
         speakerRu: "Амия",
         en: "Doctor, look.",
         ruGame: "Доктор, смотрите.",
+        ruGameBefore: null,
+        ruGameChangedAt: null,
         ruGameSource: null,
         ruGameMatch: null,
         pluginRole: null,

@@ -27,6 +27,10 @@ export type Proposal = {
      */
     versions: number;
     /**
+     * Its text before the last rewrite; null when never rewritten.
+     */
+    previousText: string | null;
+    /**
      * Who agrees with it.
      */
     agreements: Array<EditPerson>;

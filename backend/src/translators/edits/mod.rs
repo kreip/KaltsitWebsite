@@ -23,6 +23,7 @@ pub fn router() -> OpenApiRouter<AppState> {
         .routes(routes!(routes::create_proposal))
         .routes(routes!(routes::rewrite_proposal, routes::delete_proposal))
         .routes(routes!(routes::proposal_versions))
+        .routes(routes!(routes::line_history))
         .routes(routes!(routes::set_agreement))
         .routes(routes!(routes::create_comment))
         .routes(routes!(routes::delete_comment))
@@ -53,10 +54,15 @@ pub async fn attach(
     let counts = db::place_counts(pool, &keys).await?;
     let edits = db::key_edits(pool, &keys).await?;
     let outdated = db::outdated_in_story(pool, story_id).await?;
+    let before = db::ru_before(pool, &keys).await?;
     let by_key: HashMap<&str, &KeyEdits> = edits.iter().map(|e| (e.edit_key.as_str(), e)).collect();
     let stale: HashSet<(i32, i16)> = outdated.iter().map(|o| (o.line, o.part)).collect();
     for l in lines.iter_mut() {
         l.places = counts.get(&l.edit_key).copied().unwrap_or(1);
+        if let Some((text, at)) = before.get(&l.edit_key) {
+            l.ru_game_before = Some(text.clone());
+            l.ru_game_changed_at = Some(at.timestamp());
+        }
         let e = by_key.get(l.edit_key.as_str());
         let here = (i32::try_from(l.line).unwrap_or(0), l.part);
         // Approved: the entry, or a one-place proposal here.

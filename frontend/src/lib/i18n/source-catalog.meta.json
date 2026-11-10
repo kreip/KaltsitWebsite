@@ -1,6 +1,6 @@
 {
     "generatedBy": "bun run i18n:extract",
-    "generatedAt": "2026-11-10T18:13:54.063Z",
+    "generatedAt": "2026-11-10T19:43:23.564Z",
     "entries": [
         {
             "key": "admin.home.access.everyList",
@@ -53973,6 +53973,13 @@
             "placeholders": []
         },
         {
+            "key": "translators.action.history",
+            "namespace": "translators",
+            "source_text": "History",
+            "description": "Button on a story line: opens the history of the line's translation.",
+            "placeholders": []
+        },
+        {
             "key": "translators.action.note",
             "namespace": "translators",
             "source_text": "Note",
@@ -54445,6 +54452,43 @@
             "namespace": "translators",
             "source_text": "Development sign-in",
             "description": "Link to the development sign-in page, shown only when it is switched on.",
+            "placeholders": []
+        },
+        {
+            "key": "translators.diff.added",
+            "namespace": "translators",
+            "source_text": "added",
+            "description": "Screen-reader word before a fragment the new version added.",
+            "placeholders": []
+        },
+        {
+            "key": "translators.diff.gameChanged",
+            "namespace": "translators",
+            "source_text": "The game's text changed on {date}",
+            "description": "Label over the comparison of the game's Russian with what it was before the last pack update (import). date is a formatted date.",
+            "placeholders": [
+                "date"
+            ]
+        },
+        {
+            "key": "translators.diff.removed",
+            "namespace": "translators",
+            "source_text": "removed",
+            "description": "Screen-reader word before a fragment the new version dropped.",
+            "placeholders": []
+        },
+        {
+            "key": "translators.diff.vsGame",
+            "namespace": "translators",
+            "source_text": "against the game's text",
+            "description": "Small note in a proposal's label line while Compare is on: its changes are shown against the Russian the game shows now.",
+            "placeholders": []
+        },
+        {
+            "key": "translators.diff.vsPrevious",
+            "namespace": "translators",
+            "source_text": "against its previous version",
+            "description": "Small note in a proposal's label line while Compare is on: the proposal was rewritten, and its changes are shown against its previous text.",
             "placeholders": []
         },
         {
@@ -55259,6 +55303,100 @@
             "source_text": "Caption",
             "description": "Label of a subtitle text (shown over the scene) in the lines table.",
             "placeholders": []
+        },
+        {
+            "key": "translators.lineHistory.approved",
+            "namespace": "translators",
+            "source_text": "{name} approved",
+            "description": "Line history entry: the lead approved this text. name is their nickname.",
+            "placeholders": [
+                "name"
+            ]
+        },
+        {
+            "key": "translators.lineHistory.approvedGame",
+            "namespace": "translators",
+            "source_text": "{name} checked the game's text and kept it",
+            "description": "Line history entry: the lead approved the game's Russian as it is. name is their nickname.",
+            "placeholders": [
+                "name"
+            ]
+        },
+        {
+            "key": "translators.lineHistory.deleted",
+            "namespace": "translators",
+            "source_text": "deleted",
+            "description": "Small mark in the line history: this proposal was deleted since.",
+            "placeholders": []
+        },
+        {
+            "key": "translators.lineHistory.empty",
+            "namespace": "translators",
+            "source_text": "Nothing has changed here yet.",
+            "description": "Shown in the line history dialog when the line has no proposals, decisions or pack changes.",
+            "placeholders": []
+        },
+        {
+            "key": "translators.lineHistory.game",
+            "namespace": "translators",
+            "source_text": "The game's text changed (pack update)",
+            "description": "Line history entry: an import brought a new Russian from the pack.",
+            "placeholders": []
+        },
+        {
+            "key": "translators.lineHistory.label",
+            "namespace": "translators",
+            "source_text": "Changes, newest first",
+            "description": "Accessible name of the list in the line history dialog.",
+            "placeholders": []
+        },
+        {
+            "key": "translators.lineHistory.legend",
+            "namespace": "translators",
+            "source_text": "Each text is compared with the one before it: added in green, removed in red.",
+            "description": "Explanation under the title of the line history dialog.",
+            "placeholders": []
+        },
+        {
+            "key": "translators.lineHistory.now",
+            "namespace": "translators",
+            "source_text": "In the game now",
+            "description": "Label of the first row of the line history: the Russian the game shows now.",
+            "placeholders": []
+        },
+        {
+            "key": "translators.lineHistory.proposed",
+            "namespace": "translators",
+            "source_text": "{name} proposed",
+            "description": "Line history entry: a translator wrote a proposal. name is their nickname.",
+            "placeholders": [
+                "name"
+            ]
+        },
+        {
+            "key": "translators.lineHistory.rewrote",
+            "namespace": "translators",
+            "source_text": "{name} rewrote the proposal",
+            "description": "Line history entry: a translator rewrote their proposal. name is their nickname.",
+            "placeholders": [
+                "name"
+            ]
+        },
+        {
+            "key": "translators.lineHistory.title",
+            "namespace": "translators",
+            "source_text": "History of the translation",
+            "description": "Title of the dialog with the history of one line's translation.",
+            "placeholders": []
+        },
+        {
+            "key": "translators.lineHistory.withdrew",
+            "namespace": "translators",
+            "source_text": "{name} withdrew the approval",
+            "description": "Line history entry: the lead took an approval back. name is their nickname.",
+            "placeholders": [
+                "name"
+            ]
         },
         {
             "key": "translators.load.access",
@@ -56247,6 +56385,20 @@
             "namespace": "translators",
             "source_text": "The Chinese original.",
             "description": "Second line under the Chinese switch.",
+            "placeholders": []
+        },
+        {
+            "key": "translators.toggle.diff",
+            "namespace": "translators",
+            "source_text": "Compare",
+            "description": "Switch above the story table: show each proposal as its changes against the text one step back.",
+            "placeholders": []
+        },
+        {
+            "key": "translators.toggle.diffHint",
+            "namespace": "translators",
+            "source_text": "Added in green, removed in red.",
+            "description": "Hint under the Compare switch. One short line.",
             "placeholders": []
         },
         {
