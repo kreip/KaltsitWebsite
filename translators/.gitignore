@@ -6,3 +6,7 @@ PROGRESS.md
 REPORT-*.md
 SPEC-*.md
 *:Zone.Identifier
+
+# рабочие файлы
+PROGRESS-*.md
+__pycache__/

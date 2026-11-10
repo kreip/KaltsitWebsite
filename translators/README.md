@@ -46,6 +46,17 @@ Off unless the backend has `TRANSLATORS_DEV_LOGIN=1`. When on, `/translators/dev
 signs in as a local account (`dev-translator`) that is a member of the section. The
 regular game-account sign-in is not touched.
 
+## Russian
+
+The section speaks the site's language. `python3 translators/i18n-ru.py --enable`
+loads the section's Russian (`frontend/src/components/translators/translators.ru.json`)
+into the site's translations and switches the `ru` locale on: the header's language
+switch then offers Русский, and the pages live under `/ru/…`. It also loads
+`translators/site-ru.json` (the header, menus, sign-in dialog and shared buttons: what
+stands around the section), only where a key has no Russian yet, so a translation made
+in the admin panel is never overwritten. The site's other texts stay English until they
+are translated there.
+
 ## Members and roles
 
 Only members (`translators.members`) see the section. To add someone or set their

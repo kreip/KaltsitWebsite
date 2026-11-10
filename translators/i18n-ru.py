@@ -15,6 +15,11 @@
    which a script does not have). The backend's catalog cache picks them up
    within a minute.
 
+4. Writes the texts of `translators/site-ru.json` (the site's header, menus,
+   sign-in dialog and shared buttons: what stands around the section) the
+   same way, but only where the key has no `ru` translation yet, so nothing
+   translated in the admin panel is ever overwritten.
+
 The section shows Russian without this (it ships the same file); this puts
 the texts where the admin panel edits them, and an edit there wins over the
 file when the site runs in `ru`. The internal service key is read from the
@@ -23,13 +28,67 @@ running backend container, so it is never written here.
 
 import json
 import pathlib
+import re
 import subprocess
 import sys
 import urllib.request
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 RU = ROOT / "frontend/src/components/translators/translators.ru.json"
+SITE_RU = ROOT / "translators/site-ru.json"
 META = ROOT / "frontend/src/lib/i18n/source-catalog.meta.json"
+SOURCE = ROOT / "frontend/src/lib/i18n/source-catalog.json"
+
+
+def arguments(text: str) -> list[str]:
+    """The arguments of an ICU message: `{name}` and `{name, plural, …}`, in the text and inside the branches,
+    not the branches' own words (`dark {Dark}`)."""
+    found: set[str] = set()
+
+    def closing(i: int) -> int:
+        """The index of the brace that closes the one at `i`."""
+        depth = 0
+        for j in range(i, len(text)):
+            depth += text[j] == "{"
+            depth -= text[j] == "}"
+            if depth == 0:
+                return j
+        return len(text) - 1
+
+    def message(start: int, end: int) -> None:
+        i = start
+        while i < end:
+            if text[i] != "{":
+                i += 1
+                continue
+            close = closing(i)
+            m = re.match(r"\s*(\w+)\s*(,\s*\w+\s*,)?", text[i + 1:close])
+            if m:
+                found.add(m.group(1))
+                if m.group(2):  # plural / select: every `{…}` after the type is a branch, itself a message
+                    j = i + 1 + m.end()
+                    while j < close:
+                        if text[j] == "{":
+                            k = closing(j)
+                            message(j + 1, k)
+                            j = k
+                        j += 1
+            i = close + 1
+
+    message(0, len(text))
+    return sorted(found)
+
+
+def site_texts() -> dict[str, str]:
+    """The site's own texts in Russian: known keys only, each keeping its arguments."""
+    source = json.loads(SOURCE.read_text(encoding="utf-8"))
+    texts = json.loads(SITE_RU.read_text(encoding="utf-8"))
+    for key, value in texts.items():
+        if key not in source:
+            raise SystemExit(f"site-ru.json: no such key: {key}")
+        if arguments(value) != arguments(source[key]):
+            raise SystemExit(f"site-ru.json: {key}: the arguments differ from the English")
+    return texts
 
 
 def main() -> int:
@@ -83,6 +142,24 @@ ON CONFLICT (key, locale) DO UPDATE SET value = EXCLUDED.value, source_hash = EX
         cwd=ROOT, input=sql, check=True, capture_output=True, text=True,
     )
     print(out.stdout.strip() or f"ru texts written: {len(texts)}")
+
+    site = site_texts()
+    rows = ",\n".join(f"({q(k)}, {q(v)})" for k, v in site.items())
+    sql = f"""
+WITH added AS (
+    INSERT INTO ui_messages (key, locale, value, source_hash, source_text, updated_by, updated_at)
+    SELECT k.key, 'ru', t.value, k.source_hash, k.source_text, NULL, now()
+    FROM (VALUES {rows}) AS t(key, value) JOIN ui_message_keys k ON k.key = t.key
+    ON CONFLICT (key, locale) DO NOTHING
+    RETURNING 1
+) SELECT count(*) FROM added;
+"""
+    out = subprocess.run(
+        ["docker", "compose", "exec", "-T", "postgres", "sh", "-c",
+         'psql -v ON_ERROR_STOP=1 -qAt -U "$POSTGRES_USER" -d "$POSTGRES_DB"'],
+        cwd=ROOT, input=sql, check=True, capture_output=True, text=True,
+    )
+    print(f"site texts (header, menus, shared buttons): {len(site)} in the file, {out.stdout.strip()} new")
     return 0
 
 
