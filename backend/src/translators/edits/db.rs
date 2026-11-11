@@ -140,6 +140,7 @@ pub async fn places(pool: &PgPool, key: &str, limit: i64) -> Result<Vec<KeyPlace
             ord,
             before,
             after,
+            object_id: None,
             object_en: None,
             field: None,
             idx: None,
@@ -148,8 +149,8 @@ pub async fn places(pool: &PgPool, key: &str, limit: i64) -> Result<Vec<KeyPlace
     // Then the fields of the game data holding it.
     let left = limit - i64::try_from(out.len()).unwrap_or(limit);
     if left > 0 {
-        let game: Vec<(String, String, String, i16)> = sqlx::query_as(
-            "SELECT section, object_en, field, idx FROM translators.text_places
+        let game: Vec<(String, String, String, String, i16)> = sqlx::query_as(
+            "SELECT section, object_id, object_en, field, idx FROM translators.text_places
              WHERE server = $1 AND edit_key = $2 ORDER BY section, object_id, ord LIMIT $3",
         )
         .bind(SERVER)
@@ -159,7 +160,7 @@ pub async fn places(pool: &PgPool, key: &str, limit: i64) -> Result<Vec<KeyPlace
         .await?;
         out.extend(
             game.into_iter()
-                .map(|(section, object_en, field, idx)| KeyPlace {
+                .map(|(section, object_id, object_en, field, idx)| KeyPlace {
                     section,
                     story_id: String::new(),
                     line: 0,
@@ -167,6 +168,7 @@ pub async fn places(pool: &PgPool, key: &str, limit: i64) -> Result<Vec<KeyPlace
                     ord: 0,
                     before: None,
                     after: None,
+                    object_id: Some(object_id),
                     object_en: Some(object_en),
                     field: Some(field),
                     idx: Some(idx),

@@ -17,12 +17,14 @@ import type { EditCreated } from "#/types/generated/EditCreated";
 import type { EditPlace } from "#/types/generated/EditPlace";
 import type { EditRows } from "#/types/generated/EditRows";
 import type { ExportResult } from "#/types/generated/ExportResult";
+import type { GameObject } from "#/types/generated/GameObject";
 import type { Glossary } from "#/types/generated/Glossary";
 import type { GlossaryLines } from "#/types/generated/GlossaryLines";
 import type { KeyPlaces } from "#/types/generated/KeyPlaces";
 import type { LineHistory } from "#/types/generated/LineHistory";
 import type { LoginResponse } from "#/types/generated/LoginResponse";
 import type { NameRu } from "#/types/generated/NameRu";
+import type { ObjectLines } from "#/types/generated/ObjectLines";
 import type { ProposalVersion } from "#/types/generated/ProposalVersion";
 import type { Release } from "#/types/generated/Release";
 import type { SearchLines } from "#/types/generated/SearchLines";
@@ -371,4 +373,30 @@ export function searchLinesQueryOptions(query: ISearchQuery) {
         },
         staleTime: 60_000,
     });
+}
+
+// ---- The game sections: a section's objects and one object's texts.
+
+export const getObjectsFn = createServerFn({ method: "GET" })
+    .inputValidator((d: { section: string }) => d)
+    .handler(async ({ data }): Promise<GameObject[]> => {
+        const res = await send(`/translators/objects?${new URLSearchParams({ section: data.section })}`, "GET");
+        return (await res.json()) as GameObject[];
+    });
+
+/** A section's objects with their progress (under the edits' key: refreshed with every edit). */
+export function objectsQueryOptions(section: string) {
+    return queryOptions({ queryKey: [...TRANSLATORS_QUERY_ROOT, "edits", "objects", section], queryFn: () => getObjectsFn({ data: { section } }), staleTime: 60_000 });
+}
+
+export const getObjectLinesFn = createServerFn({ method: "GET" })
+    .inputValidator((d: { section: string; object: string }) => d)
+    .handler(async ({ data }): Promise<ObjectLines> => {
+        const res = await send(`/translators/objects/lines?${new URLSearchParams({ section: data.section, object: data.object })}`, "GET");
+        return (await res.json()) as ObjectLines;
+    });
+
+/** One object's texts (under the lines' key: refreshed with every edit). */
+export function objectLinesQueryOptions(section: string, object: string) {
+    return queryOptions({ queryKey: [...TRANSLATORS_QUERY_ROOT, "lines", "object", section, object], queryFn: () => getObjectLinesFn({ data: { section, object } }), staleTime: 5 * 60_000 });
 }

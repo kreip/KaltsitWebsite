@@ -10,8 +10,9 @@ export type KeyPlace = {
      */
     section: string;
     /**
-     * The game object's English name (a table's name for `other`).
+     * The game object's id in the game data, and its English name (a table's name for `other`).
      */
+    objectId: string | null;
     objectEn: string | null;
     /**
      * `name`, `skill.description`... (as in `TextAt`).

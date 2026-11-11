@@ -3,7 +3,7 @@ import { formatMessage } from "#/lib/i18n";
 import type { TypedT } from "#/lib/i18n/messages";
 import type { messages } from "./translators.messages";
 import ru from "./translators.ru.json";
-import { fieldWords, fileWord, gameWhere, plainText, tableWord } from "./where";
+import { fieldLabel, fieldWords, fileWord, gameWhere, isCardSection, objectKey, plainText, tableWord } from "./where";
 
 const t = ((key: string, args?: Parameters<typeof formatMessage>[2]) => formatMessage((ru as Record<string, string>)[key], "ru", args)) as unknown as TypedT<typeof messages>;
 
@@ -15,8 +15,29 @@ describe("where a text stands, in words", () => {
         expect(fieldWords("odd.thing", 0, t)).toBe("odd › thing");
     });
 
+    it("names a card's row with a dot and a capital", () => {
+        expect(fieldLabel("operators", "skill.description", 2, t)).toBe("Навык 2 · описание");
+        expect(fieldLabel("operators", "skill.name", 2, t)).toBe("Навык 2 · название");
+        expect(fieldLabel("operators", "name", 0, t)).toBe("Имя");
+        expect(fieldLabel("enemies", "name", 0, t)).toBe("Имя");
+        expect(fieldLabel("items", "name", 0, t)).toBe("Название");
+        expect(fieldLabel("operators", "class", 0, t)).toBe("Класс");
+        expect(fieldLabel("operators", "trait", 0, t)).toBe("Черта");
+        expect(fieldLabel("items", "obtain", 0, t)).toBe("Где получить");
+    });
+
+    it("names an object by its id for an operator and by its name for the rest", () => {
+        expect(objectKey("operators", "char_002_amiya", "Amiya")).toBe("char_002_amiya");
+        expect(objectKey("stages", "main_00-01", "0-1 Collapse")).toBe("0-1 Collapse");
+        expect(isCardSection("operators")).toBe(true);
+        expect(isCardSection("other")).toBe(false);
+        expect(isCardSection("story")).toBe(false);
+    });
+
     it("puts the section and the object first; a table of the rest says no field", () => {
         expect(gameWhere("operators", "Amiya", "skill.name", 1, t)).toBe("Оператор › Amiya › Навык 1 › название");
+        expect(gameWhere("operators", "Amiya", "name", 0, t)).toBe("Оператор › Amiya › имя");
+        expect(gameWhere("items", "LMD", "name", 0, t)).toBe("Предмет › LMD › название");
         expect(gameWhere("other", "campaign_table", "text", 0, t)).toBe("Интерфейс и прочее › Аннигиляция");
     });
 

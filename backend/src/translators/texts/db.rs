@@ -281,6 +281,158 @@ pub async fn search(
     Ok((total, hits))
 }
 
+/// What names an object of a section: an operator is one record of the game
+/// data (its id); elsewhere the game data keeps several records under one
+/// name (a stage and its challenge mode, an enemy and its event twin), and
+/// they are one object, by the name.
+fn object_key(section: &str) -> &'static str {
+    if section == super::gamedata::OPERATORS {
+        "p.object_id"
+    } else {
+        "p.object_en"
+    }
+}
+
+/// A stage's code from its label and name (`0-1 Collapse`, `Collapse` ->
+/// `0-1`): the label itself when the stage has no name.
+pub fn stage_code(label: &str, name: Option<&str>) -> Option<String> {
+    let code = match name {
+        Some(name) => label.strip_suffix(name)?.trim(),
+        None => label.trim(),
+    };
+    (!code.is_empty()).then(|| code.to_owned())
+}
+
+#[derive(sqlx::FromRow)]
+struct ObjectRow {
+    id: String,
+    en: String,
+    name_en: Option<String>,
+    name_ru: Option<String>,
+    total: i32,
+    approved: i32,
+    waiting: i32,
+}
+
+/// Every object of a section with its progress over its texts that can be
+/// edited (a letter or a digit), each English once: approved (the entry's
+/// approval is current) and waiting (a live proposal for every place, not approved).
+pub async fn objects(
+    pool: &PgPool,
+    server: &str,
+    section: &str,
+) -> Result<Vec<super::dto::GameObject>, sqlx::Error> {
+    let key = object_key(section);
+    let rows: Vec<ObjectRow> = sqlx::query_as(&format!(
+        "WITH keyed AS (
+             SELECT DISTINCT edit_key FROM translators.proposals
+             WHERE deleted_at IS NULL AND NOT context AND outdated_at IS NULL)
+         SELECT {key} AS id,
+                MIN(p.object_en) AS en,
+                MIN(t.en) AS name_en,
+                MIN(t.ru) AS name_ru,
+                COUNT(DISTINCT p.edit_key) FILTER (WHERE p.edit_key ~ '[[:alnum:]]')::int AS total,
+                COUNT(DISTINCT p.edit_key) FILTER (WHERE p.edit_key ~ '[[:alnum:]]'
+                    AND a.edit_key IS NOT NULL)::int AS approved,
+                COUNT(DISTINCT p.edit_key) FILTER (WHERE p.edit_key ~ '[[:alnum:]]'
+                    AND a.edit_key IS NULL AND k.edit_key IS NOT NULL)::int AS waiting
+         FROM translators.text_places p
+         LEFT JOIN translators.texts t
+             ON p.field = 'name' AND t.server = p.server AND t.edit_key = p.edit_key
+         LEFT JOIN translators.approvals a ON a.edit_key = p.edit_key AND a.outdated_at IS NULL
+         LEFT JOIN keyed k ON k.edit_key = p.edit_key
+         WHERE p.server = $1 AND p.section = $2
+         GROUP BY 1 ORDER BY 1"
+    ))
+    .bind(server)
+    .bind(section)
+    .fetch_all(pool)
+    .await?;
+    let stages = section == super::gamedata::STAGES;
+    Ok(rows
+        .into_iter()
+        .map(|r| {
+            // A stage's Russian name stands after its code, as its English one does.
+            let ru = match (r.name_ru, stages) {
+                (Some(ru), true) => Some(match stage_code(&r.en, r.name_en.as_deref()) {
+                    Some(code) => format!("{code} {ru}"),
+                    None => ru,
+                }),
+                (ru, _) => ru,
+            };
+            super::dto::GameObject {
+                id: r.id,
+                en: r.en,
+                ru,
+                total: r.total,
+                approved: r.approved,
+                waiting: r.waiting,
+            }
+        })
+        .collect())
+}
+
+/// One text of an object: what of the object it is, and its entry.
+pub struct ObjectText {
+    pub field: String,
+    pub idx: i16,
+    pub hit: TextHit,
+}
+
+#[derive(sqlx::FromRow)]
+struct ObjectTextRow {
+    field: String,
+    idx: i16,
+    #[sqlx(flatten)]
+    hit: HitRow,
+}
+
+/// An object's texts in the game data's order; a text several records of
+/// the object hold at one field (a stage's name and its challenge mode's) once.
+pub async fn object_texts(
+    pool: &PgPool,
+    server: &str,
+    section: &str,
+    object: &str,
+) -> Result<Vec<ObjectText>, sqlx::Error> {
+    let key = object_key(section);
+    let rows: Vec<ObjectTextRow> = sqlx::query_as(&format!(
+        "SELECT x.field, x.idx, t.id, t.edit_key, t.en, t.ru, t.file, t.plugin_role, t.ru_plugin,
+                t.sections, t.places, '' AS status
+         FROM (SELECT p.field, p.idx, p.edit_key, MIN(p.ord) AS ord, MIN(p.object_id) AS object_id
+               FROM translators.text_places p
+               WHERE p.server = $1 AND p.section = $2 AND {key} = $3
+               GROUP BY p.field, p.idx, p.edit_key) x
+         JOIN translators.texts t ON t.server = $1 AND t.edit_key = x.edit_key
+         ORDER BY x.ord, x.object_id, t.id"
+    ))
+    .bind(server)
+    .bind(section)
+    .bind(object)
+    .fetch_all(pool)
+    .await?;
+    Ok(rows
+        .into_iter()
+        .map(|r| ObjectText {
+            field: r.field,
+            idx: r.idx,
+            hit: TextHit {
+                at: Vec::new(),
+                id: r.hit.id,
+                edit_key: r.hit.edit_key,
+                en: r.hit.en,
+                ru: r.hit.ru,
+                file: r.hit.file,
+                plugin_role: r.hit.plugin_role,
+                ru_plugin: r.hit.ru_plugin,
+                sections: r.hit.sections,
+                places: r.hit.places,
+                status: r.hit.status,
+            },
+        })
+        .collect())
+}
+
 /// How many texts the list holds, exactly.
 pub async fn indexed(pool: &PgPool, server: &str) -> Result<i64, sqlx::Error> {
     sqlx::query_scalar("SELECT COUNT(*) FROM translators.texts WHERE server = $1")
@@ -310,5 +462,23 @@ mod tests {
         assert_eq!(like("50%_a\\b"), "%50\\%\\_a\\\\b%");
         assert_eq!(whole_words("rhodes island"), "\\mrhodes island\\M");
         assert_eq!(whole_words("a.b (c)"), "\\ma\\.b \\(c\\)\\M");
+    }
+
+    #[test]
+    fn a_stage_code_is_its_label_without_the_name() {
+        assert_eq!(
+            stage_code("0-1 Collapse", Some("Collapse")).as_deref(),
+            Some("0-1")
+        );
+        assert_eq!(stage_code("TR-1", None).as_deref(), Some("TR-1"));
+        // A stage named without a code, and a name the label does not end with.
+        assert_eq!(stage_code("Collapse", Some("Collapse")), None);
+        assert_eq!(stage_code("0-1 Collapse", Some("Ruin")), None);
+    }
+
+    #[test]
+    fn an_operator_is_a_record_and_the_rest_go_by_name() {
+        assert_eq!(object_key("operators"), "p.object_id");
+        assert_eq!(object_key("stages"), "p.object_en");
     }
 }

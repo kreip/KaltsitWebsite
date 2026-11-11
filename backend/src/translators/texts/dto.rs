@@ -121,3 +121,71 @@ pub struct SearchLines {
     #[ts(type = "number")]
     pub indexed: i64,
 }
+
+/// Which section's objects to list.
+#[derive(Debug, Clone, Deserialize, IntoParams)]
+#[serde(rename_all = "camelCase")]
+#[into_params(parameter_in = Query)]
+pub struct ObjectsQuery {
+    /// A section that has objects: `operators`, `enemies`, `stages` or `items`.
+    pub section: String,
+}
+
+/// Which object's texts to show.
+#[derive(Debug, Clone, Deserialize, IntoParams)]
+#[serde(rename_all = "camelCase")]
+#[into_params(parameter_in = Query)]
+pub struct ObjectLinesQuery {
+    pub section: String,
+    /// The object, as `GameObject.id` names it.
+    pub object: String,
+}
+
+/// An object of a game section: an operator, an enemy, a stage or a zone, an item.
+#[derive(Debug, Clone, Serialize, TS, ToSchema)]
+#[serde(rename_all = "camelCase")]
+#[ts(export)]
+pub struct GameObject {
+    /// What names it in the address: an operator's id in the game data; the
+    /// English name for the rest, where the game data keeps several objects
+    /// under one name (a stage and its challenge mode) and they are one card.
+    pub id: String,
+    /// The English name (a stage's with its code: `0-1 Collapse`).
+    pub en: String,
+    /// The name in the game's Russian, when the pack has one.
+    pub ru: Option<String>,
+    /// Its texts that can be edited, each English once.
+    pub total: i32,
+    /// Of them: approved (the game's Russian checked included).
+    pub approved: i32,
+    /// Of them: with a live proposal and not approved.
+    pub waiting: i32,
+}
+
+/// One text of an object: what of the object it is, and the text as a line
+/// of the table, edited as the text itself (one translation everywhere).
+#[derive(Debug, Serialize, TS, ToSchema)]
+#[serde(rename_all = "camelCase")]
+#[ts(export)]
+pub struct ObjectLine {
+    /// `name`, `trait`, `talent.description`, `skill.name`, `module.effect`, ...
+    pub field: String,
+    /// Which one of several (skill 2), from 1; 0 when there is one.
+    pub idx: i16,
+    pub place: crate::translators::edits::dto::EditPlace,
+    pub line: crate::translators::dto::TranslatorLine,
+}
+
+/// An object's texts in the order the game shows them.
+#[derive(Debug, Serialize, TS, ToSchema)]
+#[serde(rename_all = "camelCase")]
+#[ts(export)]
+pub struct ObjectLines {
+    pub section: String,
+    pub object: String,
+    /// A stage's code (`0-1`): shown, never translated.
+    pub code: Option<String>,
+    pub rows: Vec<ObjectLine>,
+    /// What was proposed, approved and said for the rows' entries (by `editKey`).
+    pub edits: Vec<crate::translators::edits::dto::KeyEdits>,
+}

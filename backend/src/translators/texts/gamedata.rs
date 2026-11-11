@@ -111,6 +111,22 @@ fn deep<'a>(v: &'a Value, names: &[&str], out: &mut Vec<&'a str>) {
     }
 }
 
+/// The class as the game names it: the table keeps a code (`WARRIOR`), the
+/// name stands in the interface. Summons and devices have none.
+fn class_name(profession: &str) -> Option<&'static str> {
+    Some(match profession {
+        "PIONEER" => "Vanguard",
+        "WARRIOR" => "Guard",
+        "TANK" => "Defender",
+        "SNIPER" => "Sniper",
+        "CASTER" => "Caster",
+        "MEDIC" => "Medic",
+        "SUPPORT" => "Supporter",
+        "SPECIAL" => "Specialist",
+        _ => return None,
+    })
+}
+
 fn operators(dir: &Path, out: &mut Vec<GamePlace>) {
     let Some(characters) = read(dir, "character_table") else {
         return;
@@ -155,6 +171,12 @@ fn operators(dir: &Path, out: &mut Vec<GamePlace>) {
         let mut o = Object { out, id, name };
         o.add(OPERATORS, "name", 0, Some(name));
         o.add(OPERATORS, "appellation", 0, text(c, "Appellation"));
+        o.add(
+            OPERATORS,
+            "class",
+            0,
+            text(c, "Profession").and_then(class_name),
+        );
         if let Some(sub) = text(c, "SubProfessionId").and_then(|s| subclasses.get(s)) {
             o.add(OPERATORS, "subclass", 0, text(sub, "SubProfessionName"));
         }
@@ -243,14 +265,12 @@ fn operators(dir: &Path, out: &mut Vec<GamePlace>) {
                 }
             }
         }
-        for (i, skin) in skins.get(id).into_iter().flatten().enumerate() {
-            let Some(d) = skin.get("DisplaySkin") else {
-                continue;
-            };
-            // The default outfits have no name of their own.
-            let Some(skin_name) = text(d, "SkinName") else {
-                continue;
-            };
+        // The default outfits have no name of their own: the named ones are numbered from 1.
+        let named = skins.get(id).into_iter().flatten().filter_map(|skin| {
+            let d = skin.get("DisplaySkin")?;
+            Some((d, text(d, "SkinName")?))
+        });
+        for (i, (d, skin_name)) in named.enumerate() {
             let n = number(i);
             o.add(OPERATORS, "skin.name", n, Some(skin_name));
             o.add(OPERATORS, "skin.group", n, text(d, "SkinGroupName"));
@@ -429,10 +449,11 @@ mod tests {
             d,
             "character_table",
             r#"{"Characters":[{"key":"char_1","value":{"Name":"Amiya","Appellation":" ","Description":"Deals Arts damage",
-            "SubProfessionId":"corecaster","TagList":["DPS"],
+            "Profession":"CASTER","SubProfessionId":"corecaster","TagList":["DPS"],
             "Talents":[{"Candidates":[{"Name":"Emotion Absorption","Description":"Recovers SP"},{"Name":"Emotion Absorption","Description":"Recovers more SP"}]}],
             "Skills":[{"SkillId":"sk1"}]}},
-            {"key":"char_2","value":{"Name":"","Description":"no name"}}]}"#,
+            {"key":"char_2","value":{"Name":"","Description":"no name"}},
+            {"key":"trap_1","value":{"Name":"Crate","Profession":"TRAP"}}]}"#,
         );
         write(
             d,
@@ -459,6 +480,12 @@ mod tests {
         );
         write(
             d,
+            "skin_table",
+            r#"{"CharSkins":[{"key":"s0","value":{"CharId":"char_1","DisplaySkin":{"SkinName":null,"Content":"Default."}}},
+            {"key":"s1","value":{"CharId":"char_1","DisplaySkin":{"SkinName":"Newsgirl","SkinGroupName":"Test Collection","Usage":"A favorite outfit.","Content":"Gray sky."}}}]}"#,
+        );
+        write(
+            d,
             "handbook_info_table",
             r#"{"HandbookDict":[{"key":"char_1","value":{"StoryTextAudio":[{"StoryTitle":"Profile","Stories":[{"StoryText":"She leads Rhodes Island."}]}]}}]}"#,
         );
@@ -476,6 +503,7 @@ mod tests {
             got,
             vec![
                 (OPERATORS, "name", 0, "Amiya"),
+                (OPERATORS, "class", 0, "Caster"),
                 (OPERATORS, "subclass", 0, "Core Caster"),
                 (OPERATORS, "tag", 0, "DPS"),
                 (OPERATORS, "trait", 0, "Deals Arts damage"),
@@ -490,10 +518,17 @@ mod tests {
                 (OPERATORS, "module.effect", 1, "Talent improved"),
                 (OPERATORS, "base.name", 1, "Coordinator"),
                 (OPERATORS, "base.description", 1, "Order speed +5%"),
+                // The outfit after the default one is the first with a name.
+                (OPERATORS, "skin.name", 1, "Newsgirl"),
+                (OPERATORS, "skin.group", 1, "Test Collection"),
+                (OPERATORS, "skin.usage", 1, "A favorite outfit."),
+                (ARCHIVES, "skin.story", 1, "Gray sky."),
                 (ARCHIVES, "file.title", 1, "Profile"),
                 (ARCHIVES, "file.text", 1, "She leads Rhodes Island."),
                 (ARCHIVES, "voice.title", 1, "Greeting"),
                 (ARCHIVES, "voice.text", 1, "Hello, Doctor."),
+                // A device has a name and no class.
+                (OPERATORS, "name", 0, "Crate"),
             ]
         );
     }

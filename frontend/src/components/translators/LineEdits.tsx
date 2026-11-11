@@ -564,9 +564,9 @@ export function PlacesList({ place, nickname, compact = false, t }: { place: Edi
                     // A field of the game data: where it stands, in words.
                     if (p.section !== "story")
                         return (
-                            <li key={`${p.section}-${p.objectEn}-${p.field}-${p.idx}`} className="flex flex-col gap-0.5 border-s-2 ps-2">
+                            <li key={`${p.section}-${p.objectId}-${p.field}-${p.idx}`} className="flex flex-col gap-0.5 border-s-2 ps-2">
                                 <span className={compact ? undefined : "font-medium"}>
-                                    <GamePlace section={p.section} objectId={null} objectEn={p.objectEn} field={p.field} idx={p.idx} t={t} />
+                                    <GamePlace section={p.section} objectId={p.objectId} objectEn={p.objectEn} field={p.field} idx={p.idx} t={t} />
                                 </span>
                             </li>
                         );

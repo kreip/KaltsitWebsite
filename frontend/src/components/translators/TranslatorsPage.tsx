@@ -5,15 +5,17 @@
  * Story tab: pick a chapter and a story, read its lines as Russian as the game
  * shows it now | English | Chinese, with the glossary's terms and Sova's and
  * the AI's variants. Search tab: every text of the game (SearchTab.tsx).
+ * Game sections tab: the texts outside the story, an object at a time
+ * (SectionsTab.tsx).
  * Glossary tab: the team's whole glossary. The chapter list
  * is the story library's own index; the lines come from the section's import
  * (`/api/translators`).
  */
 import { useQuery } from "@tanstack/react-query";
-import { Link, useRouterState } from "@tanstack/react-router";
+import { Link } from "@tanstack/react-router";
 import { BookCheck, BookOpen, NotebookPen } from "lucide-react";
 import type React from "react";
-import { useEffect, useId, useMemo } from "react";
+import { useId, useMemo } from "react";
 import { Button } from "#/components/ui/button";
 import { Collapsible, CollapsiblePanel, CollapsibleTrigger } from "#/components/ui/collapsible";
 import { Combobox, ComboboxEmpty, ComboboxInput, ComboboxItem, ComboboxList, ComboboxPopup } from "#/components/ui/combobox";
@@ -39,14 +41,16 @@ import { LinesTable } from "./LinesTable";
 import { MyEditsTab } from "./MyEditsTab";
 import { type SearchSection, type SearchStatus, SearchTab } from "./SearchTab";
 import { SectionLocale } from "./SectionLocale";
+import { type GameSection, SectionsTab } from "./SectionsTab";
 import { Toggle } from "./SwitchToggle";
 import { charBase } from "./service";
 import { entryLabel, groupLabel, useRename } from "./storyNames";
 import type { messages } from "./translators.messages";
+import { useScrollToRow } from "./useScrollToRow";
 
 type T = TypedT<typeof messages>;
 
-export type TranslatorsTab = "story" | "search" | "glossary" | "edits";
+export type TranslatorsTab = "story" | "search" | "sections" | "glossary" | "edits";
 
 export interface ITranslatorsSearch {
     tab?: TranslatorsTab;
@@ -64,6 +68,9 @@ export interface ITranslatorsSearch {
     whole?: boolean;
     section?: SearchSection;
     status?: SearchStatus;
+    /** Game sections: the section and the object. */
+    sec?: GameSection;
+    obj?: string;
 }
 
 interface IGroupItem {
@@ -89,15 +96,6 @@ interface ILinesProps {
     showVariants: boolean;
     showDiff: boolean;
     t: T;
-}
-
-/** After the lines load, bring the row named by the address's `#n-…` into view (a link from My edits or a place list). */
-function useScrollToRow(ready: boolean): void {
-    const hash = useRouterState({ select: (s) => s.location.hash });
-    useEffect(() => {
-        if (!ready || !hash.startsWith("n-")) return;
-        document.getElementById(hash)?.scrollIntoView({ block: "center" });
-    }, [ready, hash]);
 }
 
 interface IProgress {
@@ -375,6 +373,7 @@ function Page({ search, onSearch }: ISearchProps): React.ReactElement {
                     <TabsList aria-label={t("tabs.label")}>
                         <TabsTab value="story">{t("tabs.story")}</TabsTab>
                         <TabsTab value="search">{t("tabs.search")}</TabsTab>
+                        <TabsTab value="sections">{t("tabs.sections")}</TabsTab>
                         <TabsTab value="glossary">{t("tabs.glossary")}</TabsTab>
                         <TabsTab value="edits">{t("tabs.edits")}</TabsTab>
                     </TabsList>
@@ -383,6 +382,9 @@ function Page({ search, onSearch }: ISearchProps): React.ReactElement {
                     </TabsPanel>
                     <TabsPanel value="search" className="flex flex-col gap-6 pt-4">
                         <SearchTab search={search} onSearch={onSearch} />
+                    </TabsPanel>
+                    <TabsPanel value="sections" className="flex flex-col gap-6 pt-4">
+                        <SectionsTab search={search} onSearch={onSearch} />
                     </TabsPanel>
                     <TabsPanel value="glossary" className="flex flex-col gap-6 pt-4">
                         <GlossaryTab />

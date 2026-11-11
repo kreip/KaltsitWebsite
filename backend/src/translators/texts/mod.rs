@@ -28,6 +28,8 @@ pub fn router() -> OpenApiRouter<AppState> {
     OpenApiRouter::new()
         .routes(routes!(routes::search_texts))
         .routes(routes!(routes::search_lines))
+        .routes(routes!(routes::objects))
+        .routes(routes!(routes::object_lines))
 }
 
 /// One entry of the list.

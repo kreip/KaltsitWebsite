@@ -1,6 +1,6 @@
 {
     "generatedBy": "bun run i18n:extract",
-    "generatedAt": "2026-11-11T18:22:19.129Z",
+    "generatedAt": "2026-11-11T19:15:46.324Z",
     "entries": [
         {
             "key": "admin.home.access.everyList",
@@ -54129,6 +54129,13 @@
             "placeholders": []
         },
         {
+            "key": "translators.at.field.class",
+            "namespace": "translators",
+            "source_text": "class",
+            "description": "What of an operator a text is, in the list of a text's places: the operator's class (Guard, Caster…).",
+            "placeholders": []
+        },
+        {
             "key": "translators.at.field.description",
             "namespace": "translators",
             "source_text": "description",
@@ -54259,6 +54266,13 @@
             "namespace": "translators",
             "source_text": "usage",
             "description": "One part of where a text stands in the game data, as in «Operator › Amiya › Skill 2 › description»: the field, lower case.",
+            "placeholders": []
+        },
+        {
+            "key": "translators.at.field.who",
+            "namespace": "translators",
+            "source_text": "name",
+            "description": "What of an operator or an enemy a text is, in the list of a text's places and in the object's card: its name (an item or a stage has a «title» instead).",
             "placeholders": []
         },
         {
@@ -56756,6 +56770,131 @@
             "placeholders": []
         },
         {
+            "key": "translators.sections.choose",
+            "namespace": "translators",
+            "source_text": "Choose an object.",
+            "description": "Shown on the Game sections tab until an object is chosen.",
+            "placeholders": []
+        },
+        {
+            "key": "translators.sections.code",
+            "namespace": "translators",
+            "source_text": "Code",
+            "description": "Row of a stage's card on the Game sections tab: the stage's code (0-1), which is shown and never translated.",
+            "placeholders": []
+        },
+        {
+            "key": "translators.sections.field",
+            "namespace": "translators",
+            "source_text": "Field",
+            "description": "Column header of the table of a game object's texts: what of the object the text is (name, skill 2 description…).",
+            "placeholders": []
+        },
+        {
+            "key": "translators.sections.kind.token",
+            "namespace": "translators",
+            "source_text": "summon",
+            "description": "Under an object's name in the operator picker of the Game sections tab: the object is a summoned unit, not an operator.",
+            "placeholders": []
+        },
+        {
+            "key": "translators.sections.kind.trap",
+            "namespace": "translators",
+            "source_text": "device",
+            "description": "Under an object's name in the operator picker of the Game sections tab: the object is a deployable device or a stage element, not an operator.",
+            "placeholders": []
+        },
+        {
+            "key": "translators.sections.load.lines",
+            "namespace": "translators",
+            "source_text": "Couldn't load the object's texts.",
+            "description": "Load failure of one object's texts on the Game sections tab.",
+            "placeholders": []
+        },
+        {
+            "key": "translators.sections.load.objects",
+            "namespace": "translators",
+            "source_text": "Couldn't load the section's objects.",
+            "description": "Load failure of the object list on the Game sections tab.",
+            "placeholders": []
+        },
+        {
+            "key": "translators.sections.object",
+            "namespace": "translators",
+            "source_text": "Object",
+            "description": "Label of the picker of one object of the chosen game section (an operator, an enemy, a stage, an item).",
+            "placeholders": []
+        },
+        {
+            "key": "translators.sections.objectEmpty",
+            "namespace": "translators",
+            "source_text": "No such objects.",
+            "description": "Shown in the object picker of the Game sections tab when nothing matches the typed name.",
+            "placeholders": []
+        },
+        {
+            "key": "translators.sections.objectPlaceholder",
+            "namespace": "translators",
+            "source_text": "Search: {count, plural, one {# object} other {# objects}}",
+            "description": "Placeholder of the object picker on the Game sections tab; it searches the Russian and English names.",
+            "placeholders": [
+                "count"
+            ]
+        },
+        {
+            "key": "translators.sections.progress",
+            "namespace": "translators",
+            "source_text": "{checked} checked · {waiting} waiting",
+            "description": "Short progress of one game object in its picker: the share of its texts approved and how many wait for a decision.",
+            "placeholders": [
+                "checked",
+                "waiting"
+            ]
+        },
+        {
+            "key": "translators.sections.progressLabel",
+            "namespace": "translators",
+            "source_text": "Progress of the object",
+            "description": "Accessible name of the progress bar above a game object's texts.",
+            "placeholders": []
+        },
+        {
+            "key": "translators.sections.progressLong",
+            "namespace": "translators",
+            "source_text": "Checked {checked} · waiting for a decision {waiting}",
+            "description": "Next to the progress bar above a game object's texts.",
+            "placeholders": [
+                "checked",
+                "waiting"
+            ]
+        },
+        {
+            "key": "translators.sections.section",
+            "namespace": "translators",
+            "source_text": "Section",
+            "description": "Label of the picker of a game section (operators, enemies, stages, items, interface and other) on the Game sections tab.",
+            "placeholders": []
+        },
+        {
+            "key": "translators.sections.summary",
+            "namespace": "translators",
+            "source_text": "{count, plural, one {# text} other {# texts}}, {ru} with Russian",
+            "description": "Above the table of a game object's texts: how many texts it has and how many of them have Russian in the game.",
+            "placeholders": [
+                "count",
+                "ru"
+            ]
+        },
+        {
+            "key": "translators.sections.table",
+            "namespace": "translators",
+            "source_text": "Texts: {object}",
+            "description": "Accessible name of the table of one game object's texts.",
+            "placeholders": [
+                "object"
+            ]
+        },
+        {
             "key": "translators.service.background",
             "namespace": "translators",
             "source_text": "Background: {name}",
@@ -57079,6 +57218,13 @@
             "namespace": "translators",
             "source_text": "Search",
             "description": "Tab of the translators' section: search every text of the game and edit it in the results.",
+            "placeholders": []
+        },
+        {
+            "key": "translators.tabs.sections",
+            "namespace": "translators",
+            "source_text": "Game sections",
+            "description": "Tab of the translators' section: the game's texts by section (operators, enemies, stages, items, interface), an object at a time.",
             "placeholders": []
         },
         {

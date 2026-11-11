@@ -10,18 +10,43 @@ import type { messages } from "./translators.messages";
 type T = TypedT<typeof messages>;
 
 const PARTS = new Set(["talent", "skill", "module", "base", "skin", "file", "voice", "zone"]);
-const FIELDS = new Set(["name", "appellation", "subclass", "tag", "trait", "description", "potential", "mission", "effect", "story", "group", "usage", "dialog", "title", "text", "ability", "obtain", "first", "second", "third", "locked"]);
+const FIELDS = new Set(["name", "appellation", "class", "subclass", "tag", "trait", "description", "potential", "mission", "effect", "story", "group", "usage", "dialog", "title", "text", "ability", "obtain", "first", "second", "third", "locked"]);
 const SECTIONS = new Set(["story", "operators", "enemies", "stages", "items", "archives", "other"]);
 
-/** `skill.description` with 2 -> «Skill 2 › description»; `potential` with 3 -> «potential 3». */
-export function fieldWords(field: string, idx: number, t: T): string {
+/** `skill.description` with 2 -> «Skill 2 › description»; `potential` with 3 -> «potential 3»; the `name` of an operator or an enemy -> «name», of anything else -> «title». */
+export function fieldWords(field: string, idx: number, t: T, separator = " › ", section = ""): string {
     const n = idx > 0 ? ` ${idx}` : "";
     const leaf = (f: string) => (FIELDS.has(f) ? t(`at.field.${f}` as "at.field.name") : f);
     const dot = field.indexOf(".");
+    // An operator and an enemy have a name; a stage, an item, a skill have a title.
+    if (field === "name" && (section === "operators" || section === "enemies")) return t("at.field.who");
     if (dot < 0) return `${leaf(field)}${n}`;
     const part = field.slice(0, dot);
     const head = PARTS.has(part) ? t(`at.part.${part}` as "at.part.skill") : part;
-    return `${head}${n} › ${leaf(field.slice(dot + 1))}`;
+    return `${head}${n}${separator}${leaf(field.slice(dot + 1))}`;
+}
+
+/** A field as a card's row names it: «Skill 2 · description», «Name». */
+export function fieldLabel(section: string, field: string, idx: number, t: T): string {
+    const words = fieldWords(field, idx, t, " · ", section);
+    return words.charAt(0).toLocaleUpperCase() + words.slice(1);
+}
+
+/** The game sections whose texts stand at objects: a card per object on the Game sections tab. */
+export const CARD_SECTIONS = ["operators"] as const;
+export type CardSection = (typeof CARD_SECTIONS)[number];
+
+export function isCardSection(section: string): section is CardSection {
+    return (CARD_SECTIONS as readonly string[]).includes(section);
+}
+
+/**
+ * What names an object in the address (the backend's `GameObject.id`): an
+ * operator's id in the game data; the English name for the rest, where
+ * several records under one name are one card.
+ */
+export function objectKey(section: string, objectId: string | null, objectEn: string | null): string | null {
+    return section === "operators" ? objectId : objectEn;
 }
 
 export function sectionWord(section: string, t: T): string {
@@ -100,7 +125,7 @@ export function fileWord(file: string, t: T): string {
 export function gameWhere(section: string, object: string | null, field: string | null, idx: number | null, t: T): string {
     const parts = [sectionWord(section, t)];
     if (object) parts.push(section === "other" ? tableWord(object, t) : object);
-    if (field && !(section === "other" && field === "text")) parts.push(fieldWords(field, idx ?? 0, t));
+    if (field && !(section === "other" && field === "text")) parts.push(fieldWords(field, idx ?? 0, t, " › ", section));
     return parts.join(" › ");
 }
 

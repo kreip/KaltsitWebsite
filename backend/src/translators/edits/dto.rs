@@ -297,7 +297,8 @@ pub struct KeyPlace {
     /// `story`, else the game data's section (`operators`, `items`...): then
     /// the story fields are empty and the object's fields are set.
     pub section: String,
-    /// The game object's English name (a table's name for `other`).
+    /// The game object's id in the game data, and its English name (a table's name for `other`).
+    pub object_id: Option<String>,
     pub object_en: Option<String>,
     /// `name`, `skill.description`... (as in `TextAt`).
     pub field: Option<String>,

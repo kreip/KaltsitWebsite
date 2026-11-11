@@ -1671,6 +1671,82 @@ export const messages = {
         text: "Collapse",
         description: "Button that folds the list of a found text's places back to the first one (translators' search).",
     },
+    "tabs.sections": {
+        text: "Game sections",
+        description: "Tab of the translators' section: the game's texts by section (operators, enemies, stages, items, interface), an object at a time.",
+    },
+    "sections.section": {
+        text: "Section",
+        description: "Label of the picker of a game section (operators, enemies, stages, items, interface and other) on the Game sections tab.",
+    },
+    "sections.object": {
+        text: "Object",
+        description: "Label of the picker of one object of the chosen game section (an operator, an enemy, a stage, an item).",
+    },
+    "sections.objectPlaceholder": {
+        text: "Search: {count, plural, one {# object} other {# objects}}",
+        description: "Placeholder of the object picker on the Game sections tab; it searches the Russian and English names.",
+    },
+    "sections.objectEmpty": {
+        text: "No such objects.",
+        description: "Shown in the object picker of the Game sections tab when nothing matches the typed name.",
+    },
+    "sections.choose": {
+        text: "Choose an object.",
+        description: "Shown on the Game sections tab until an object is chosen.",
+    },
+    "sections.load.objects": {
+        text: "Couldn't load the section's objects.",
+        description: "Load failure of the object list on the Game sections tab.",
+    },
+    "sections.load.lines": {
+        text: "Couldn't load the object's texts.",
+        description: "Load failure of one object's texts on the Game sections tab.",
+    },
+    "sections.table": {
+        text: "Texts: {object}",
+        description: "Accessible name of the table of one game object's texts.",
+    },
+    "sections.field": {
+        text: "Field",
+        description: "Column header of the table of a game object's texts: what of the object the text is (name, skill 2 description…).",
+    },
+    "sections.code": {
+        text: "Code",
+        description: "Row of a stage's card on the Game sections tab: the stage's code (0-1), which is shown and never translated.",
+    },
+    "sections.kind.token": {
+        text: "summon",
+        description: "Under an object's name in the operator picker of the Game sections tab: the object is a summoned unit, not an operator.",
+    },
+    "sections.kind.trap": {
+        text: "device",
+        description: "Under an object's name in the operator picker of the Game sections tab: the object is a deployable device or a stage element, not an operator.",
+    },
+    "sections.progress": {
+        text: "{checked} checked · {waiting} waiting",
+        description: "Short progress of one game object in its picker: the share of its texts approved and how many wait for a decision.",
+    },
+    "sections.summary": {
+        text: "{count, plural, one {# text} other {# texts}}, {ru} with Russian",
+        description: "Above the table of a game object's texts: how many texts it has and how many of them have Russian in the game.",
+    },
+    "sections.progressLong": {
+        text: "Checked {checked} · waiting for a decision {waiting}",
+        description: "Next to the progress bar above a game object's texts.",
+    },
+    "sections.progressLabel": {
+        text: "Progress of the object",
+        description: "Accessible name of the progress bar above a game object's texts.",
+    },
+    "at.field.class": {
+        text: "class",
+        description: "What of an operator a text is, in the list of a text's places: the operator's class (Guard, Caster…).",
+    },
+    "at.field.who": {
+        text: "name",
+        description: "What of an operator or an enemy a text is, in the list of a text's places and in the object's card: its name (an item or a stage has a «title» instead).",
+    },
 } satisfies MessageMap;
 
 export const { keys } = defineMessages({ namespace, messages });

@@ -13677,6 +13677,118 @@
         ]
       }
     },
+    "/api/translators/objects": {
+      "get": {
+        "tags": [
+          "translators"
+        ],
+        "summary": "The objects of a game section — operators, enemies, stages, items — with\ntheir names in the game's Russian and how much of each is checked.\nMembers only.",
+        "operationId": "objects",
+        "parameters": [
+          {
+            "name": "section",
+            "in": "query",
+            "description": "A section that has objects: `operators`, `enemies`, `stages` or `items`.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Every object of the section.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/GameObject"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        },
+        "security": [
+          {
+            "bearer_auth": []
+          }
+        ]
+      }
+    },
+    "/api/translators/objects/lines": {
+      "get": {
+        "tags": [
+          "translators"
+        ],
+        "summary": "One object's texts as lines of the story's table, in the order the game\nshows them (an operator: name, class, trait, talents, skills, modules,\nbase skills, outfits). Each is edited as the text itself: one\ntranslation wherever the English stands. Members only.",
+        "operationId": "object_lines",
+        "parameters": [
+          {
+            "name": "section",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "object",
+            "in": "query",
+            "description": "The object, as `GameObject.id` names it.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The object's texts with the edits of their entries.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ObjectLines"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        },
+        "security": [
+          {
+            "bearer_auth": []
+          }
+        ]
+      }
+    },
     "/api/translators/places": {
       "get": {
         "tags": [
@@ -25103,6 +25215,49 @@
           }
         }
       },
+      "GameObject": {
+        "type": "object",
+        "description": "An object of a game section: an operator, an enemy, a stage or a zone, an item.",
+        "required": [
+          "id",
+          "en",
+          "total",
+          "approved",
+          "waiting"
+        ],
+        "properties": {
+          "approved": {
+            "type": "integer",
+            "format": "int32",
+            "description": "Of them: approved (the game's Russian checked included)."
+          },
+          "en": {
+            "type": "string",
+            "description": "The English name (a stage's with its code: `0-1 Collapse`)."
+          },
+          "id": {
+            "type": "string",
+            "description": "What names it in the address: an operator's id in the game data; the\nEnglish name for the rest, where the game data keeps several objects\nunder one name (a stage and its challenge mode) and they are one card."
+          },
+          "ru": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The name in the game's Russian, when the pack has one."
+          },
+          "total": {
+            "type": "integer",
+            "format": "int32",
+            "description": "Its texts that can be edited, each English once."
+          },
+          "waiting": {
+            "type": "integer",
+            "format": "int32",
+            "description": "Of them: with a live proposal and not approved."
+          }
+        }
+      },
       "GameSquad": {
         "type": "object",
         "description": "An in-game squad from the last roster sync, read only.",
@@ -26630,8 +26785,14 @@
             "type": [
               "string",
               "null"
+            ]
+          },
+          "objectId": {
+            "type": [
+              "string",
+              "null"
             ],
-            "description": "The game object's English name (a table's name for `other`)."
+            "description": "The game object's id in the game data, and its English name (a table's name for `other`)."
           },
           "ord": {
             "type": "integer",
@@ -28768,6 +28929,71 @@
           "cost",
           "respawn"
         ]
+      },
+      "ObjectLine": {
+        "type": "object",
+        "description": "One text of an object: what of the object it is, and the text as a line\nof the table, edited as the text itself (one translation everywhere).",
+        "required": [
+          "field",
+          "idx",
+          "place",
+          "line"
+        ],
+        "properties": {
+          "field": {
+            "type": "string",
+            "description": "`name`, `trait`, `talent.description`, `skill.name`, `module.effect`, ..."
+          },
+          "idx": {
+            "type": "integer",
+            "format": "int32",
+            "description": "Which one of several (skill 2), from 1; 0 when there is one."
+          },
+          "line": {
+            "$ref": "#/components/schemas/TranslatorLine"
+          },
+          "place": {
+            "$ref": "#/components/schemas/EditPlace"
+          }
+        }
+      },
+      "ObjectLines": {
+        "type": "object",
+        "description": "An object's texts in the order the game shows them.",
+        "required": [
+          "section",
+          "object",
+          "rows",
+          "edits"
+        ],
+        "properties": {
+          "code": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "A stage's code (`0-1`): shown, never translated."
+          },
+          "edits": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/KeyEdits"
+            },
+            "description": "What was proposed, approved and said for the rows' entries (by `editKey`)."
+          },
+          "object": {
+            "type": "string"
+          },
+          "rows": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ObjectLine"
+            }
+          },
+          "section": {
+            "type": "string"
+          }
+        }
       },
       "ObtainChannel": {
         "type": "string",

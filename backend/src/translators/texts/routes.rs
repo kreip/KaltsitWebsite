@@ -4,7 +4,10 @@ use axum::Json;
 use axum::extract::{Query, State};
 
 use super::db;
-use super::dto::{SearchLine, SearchLines, TextHit, TextQuery, TextSearch};
+use super::dto::{
+    GameObject, ObjectLine, ObjectLines, ObjectLinesQuery, ObjectsQuery, SearchLine, SearchLines,
+    TextHit, TextQuery, TextSearch,
+};
 use crate::app::error::ApiError;
 use crate::app::extractors::auth::MaybeAuthUser;
 use crate::app::state::AppState;
@@ -68,6 +71,110 @@ pub async fn search_texts(
         rows,
         millis,
         indexed,
+    }))
+}
+
+/// The sections whose texts stand at objects (a card per object).
+const CARD_SECTIONS: &[&str] = &["operators"];
+
+fn check_card(section: &str) -> Result<(), ApiError> {
+    if CARD_SECTIONS.contains(&section) {
+        Ok(())
+    } else {
+        Err(ApiError::BadRequest(format!(
+            "no objects in section: {section}"
+        )))
+    }
+}
+
+/// The objects of a game section — operators, enemies, stages, items — with
+/// their names in the game's Russian and how much of each is checked.
+/// Members only.
+#[utoipa::path(
+    get,
+    path = "/translators/objects",
+    tag = "translators",
+    security(("bearer_auth" = [])),
+    params(ObjectsQuery),
+    responses(
+        (status = 200, description = "Every object of the section.", body = Vec<GameObject>),
+        (status = 400, response = crate::app::openapi::responses::BadRequest),
+        (status = 401, response = crate::app::openapi::responses::Unauthorized),
+        (status = 403, response = crate::app::openapi::responses::Forbidden),
+        (status = 500, response = crate::app::openapi::responses::InternalError)
+    )
+)]
+pub async fn objects(
+    State(state): State<AppState>,
+    auth: MaybeAuthUser,
+    Query(query): Query<ObjectsQuery>,
+) -> Result<Json<Vec<GameObject>>, ApiError> {
+    require_member(&state, &auth).await?;
+    check_card(&query.section)?;
+    Ok(Json(db::objects(&state.db, SERVER, &query.section).await?))
+}
+
+/// One object's texts as lines of the story's table, in the order the game
+/// shows them (an operator: name, class, trait, talents, skills, modules,
+/// base skills, outfits). Each is edited as the text itself: one
+/// translation wherever the English stands. Members only.
+#[utoipa::path(
+    get,
+    path = "/translators/objects/lines",
+    tag = "translators",
+    security(("bearer_auth" = [])),
+    params(ObjectLinesQuery),
+    responses(
+        (status = 200, description = "The object's texts with the edits of their entries.", body = ObjectLines),
+        (status = 400, response = crate::app::openapi::responses::BadRequest),
+        (status = 401, response = crate::app::openapi::responses::Unauthorized),
+        (status = 403, response = crate::app::openapi::responses::Forbidden),
+        (status = 404, response = crate::app::openapi::responses::NotFound),
+        (status = 500, response = crate::app::openapi::responses::InternalError)
+    )
+)]
+pub async fn object_lines(
+    State(state): State<AppState>,
+    auth: MaybeAuthUser,
+    Query(query): Query<ObjectLinesQuery>,
+) -> Result<Json<ObjectLines>, ApiError> {
+    require_member(&state, &auth).await?;
+    check_card(&query.section)?;
+    let texts = db::object_texts(&state.db, SERVER, &query.section, &query.object).await?;
+    if texts.is_empty() {
+        return Err(ApiError::NotFound);
+    }
+    // A stage's code: its label without its name (a zone has neither).
+    let code = (query.section == "stages" && !texts.iter().any(|t| t.field.starts_with("zone.")))
+        .then(|| {
+            let name = texts.iter().find(|t| t.field == "name").map(|t| &t.hit.en);
+            db::stage_code(&query.object, name.map(String::as_str))
+        })
+        .flatten();
+    let places: Vec<EditPlace> = texts
+        .iter()
+        .map(|t| EditPlace::text(&t.hit.edit_key))
+        .collect();
+    let mut lines: Vec<TranslatorLine> = texts.iter().map(|t| text_line(&t.hit)).collect();
+    let edits = edits::attach_at(&state.db, &places, &mut lines, |_| false).await?;
+    crate::translators::routes::mark_glossary(&state, &mut lines, &places, &edits).await?;
+    let rows = texts
+        .into_iter()
+        .zip(places)
+        .zip(lines)
+        .map(|((text, place), line)| ObjectLine {
+            field: text.field,
+            idx: text.idx,
+            place,
+            line,
+        })
+        .collect();
+    Ok(Json(ObjectLines {
+        section: query.section,
+        object: query.object,
+        code,
+        rows,
+        edits,
     }))
 }
 
