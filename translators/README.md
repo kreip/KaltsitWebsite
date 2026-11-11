@@ -97,6 +97,19 @@ everywhere. The query and the filters are in the address, so a search is a link.
 In the results a place of the game data is named in words (`Interface and other › Medals`,
 never the table's name: that shows on hover); "N more" unfolds every place of the text.
 
+## Game sections
+
+The **Game sections** tab (`/translators?tab=sections&sec=…&obj=…`) is the Story tab for the
+texts outside the story: a section (operators, enemies, stages, items) and one of its
+objects for a chapter and a story; the object's texts as the same table, `Field | Russian as
+in the game | English`, in the order the game shows them, with the same actions. A text is
+edited as the text itself (`storyId = "@text"`): one translation wherever its English
+stands. `GET /api/translators/objects?section=` lists a section's objects with their
+progress, `GET /api/translators/objects/lines?section=&object=` gives one object's texts.
+An operator is one record of the game data (its id); elsewhere several records under one
+name (a stage and its challenge mode) are one object, named by the English name.
+«Interface and other» has no objects: it is the search over that section.
+
 ## Export
 
 "My edits" → "Export…" prepares one archive (`.zip`) for the pack's maintainer:

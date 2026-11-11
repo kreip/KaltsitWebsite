@@ -221,7 +221,16 @@ function Found({ query, me, showVariants, showDiff, t }: { query: { q: string; w
     );
 }
 
-export function SearchTab({ search, onSearch }: { search: ISearchState; onSearch: (next: ISearchState) => void }): React.ReactElement {
+export interface ISearchTabProps {
+    search: ISearchState;
+    onSearch: (next: ISearchState) => void;
+    /** The list of one section (the Game sections tab): its own section filter is gone and the section's texts show at once. */
+    only?: SearchSection;
+    /** Stands first in the row of filters. */
+    lead?: React.ReactNode;
+}
+
+export function SearchTab({ search, onSearch, only, lead }: ISearchTabProps): React.ReactElement {
     const t: T = useT("translators");
     const me = useQuery(translatorsMeQueryOptions());
     const ids = { whole: useId(), section: useId(), status: useId(), variants: useId(), diff: useId() };
@@ -238,31 +247,35 @@ export function SearchTab({ search, onSearch }: { search: ISearchState; onSearch
     const showVariants = search.variants !== false;
     const showDiff = search.diff === true;
     const q = search.q ?? "";
-    const asked = q !== "" || search.section !== undefined || search.status !== undefined;
+    const section = only ?? search.section;
+    const asked = q !== "" || section !== undefined || search.status !== undefined;
     return (
         <>
             <div className="flex flex-wrap items-end gap-4">
+                {lead}
                 <SearchField className="w-full sm:w-80" value={text} onChange={setText} placeholder={t("search.placeholder")} label={t("search.label")} clearLabel={t("search.clear")} />
                 {/* biome-ignore lint/a11y/noLabelWithoutControl: the kit Checkbox inside is the control */}
                 <label className="flex items-center gap-2 pb-2 text-sm">
                     <Checkbox id={ids.whole} checked={search.whole === true} onCheckedChange={(v) => onSearch({ ...search, whole: v === true || undefined })} />
                     {t("search.whole")}
                 </label>
-                <div className="flex w-full flex-col gap-1.5 sm:w-56">
-                    <Label htmlFor={ids.section}>{t("search.section")}</Label>
-                    <Select value={search.section ?? "all"} onValueChange={(v: string | null) => onSearch({ ...search, section: v && v !== "all" ? (v as SearchSection) : undefined })}>
-                        <SelectTrigger id={ids.section} size="sm">
-                            <SelectValue>{() => t(`search.section.${search.section ?? "all"}` as "search.section.all")}</SelectValue>
-                        </SelectTrigger>
-                        <SelectContent>
-                            {(["all", ...SEARCH_SECTIONS] as const).map((s) => (
-                                <SelectItem key={s} value={s}>
-                                    {t(`search.section.${s}` as "search.section.all")}
-                                </SelectItem>
-                            ))}
-                        </SelectContent>
-                    </Select>
-                </div>
+                {only ? null : (
+                    <div className="flex w-full flex-col gap-1.5 sm:w-56">
+                        <Label htmlFor={ids.section}>{t("search.section")}</Label>
+                        <Select value={search.section ?? "all"} onValueChange={(v: string | null) => onSearch({ ...search, section: v && v !== "all" ? (v as SearchSection) : undefined })}>
+                            <SelectTrigger id={ids.section} size="sm">
+                                <SelectValue>{() => t(`search.section.${search.section ?? "all"}` as "search.section.all")}</SelectValue>
+                            </SelectTrigger>
+                            <SelectContent>
+                                {(["all", ...SEARCH_SECTIONS] as const).map((s) => (
+                                    <SelectItem key={s} value={s}>
+                                        {t(`search.section.${s}` as "search.section.all")}
+                                    </SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                    </div>
+                )}
                 <div className="flex w-full flex-col gap-1.5 sm:w-56">
                     <Label htmlFor={ids.status}>{t("search.status")}</Label>
                     <Select value={search.status ?? "all"} onValueChange={(v: string | null) => onSearch({ ...search, status: v && v !== "all" ? (v as SearchStatus) : undefined })}>
@@ -288,7 +301,7 @@ export function SearchTab({ search, onSearch }: { search: ISearchState; onSearch
                     </EmptyHeader>
                 </Empty>
             ) : me.data ? (
-                <Found query={{ q, whole: search.whole === true, section: search.section ?? null, status: search.status ?? null }} me={me.data} showVariants={showVariants} showDiff={showDiff} t={t} />
+                <Found query={{ q, whole: search.whole === true, section: section ?? null, status: search.status ?? null }} me={me.data} showVariants={showVariants} showDiff={showDiff} t={t} />
             ) : (
                 <Skeleton className="h-96 w-full rounded-2xl" />
             )}

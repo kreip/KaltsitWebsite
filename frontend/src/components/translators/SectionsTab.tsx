@@ -5,7 +5,8 @@
  * object's texts as the same dense table, Field | Russian as in the game |
  * English, in the order the game shows them, with the same actions. A text
  * is edited as the text itself: one translation wherever its English stands
- * ("N places" and the confirmation as everywhere).
+ * ("N places" and the confirmation as everywhere). «Interface and other» has
+ * no objects: it is the search over that section.
  */
 import { useQuery } from "@tanstack/react-query";
 import type React from "react";
@@ -26,7 +27,7 @@ import type { TranslatorsMe } from "#/types/generated/TranslatorsMe";
 import type { RecommendRule } from "./checks";
 import { type EditorState, StatusDot } from "./LineEdits";
 import { analyse, PROSE, RuCell } from "./LinesTable";
-import type { ISearchState } from "./SearchTab";
+import { type ISearchState, SearchTab } from "./SearchTab";
 import { StoryText } from "./StoryText";
 import { Toggle } from "./SwitchToggle";
 import type { messages } from "./translators.messages";
@@ -35,11 +36,11 @@ import { CARD_SECTIONS, type CardSection, fieldLabel } from "./where";
 
 type T = TypedT<typeof messages>;
 
-/** The sections of the tab, in its order. */
-export const GAME_SECTIONS = [...CARD_SECTIONS] as const;
+/** The sections of the tab, in its order: those with objects, then the list of the rest. */
+export const GAME_SECTIONS = [...CARD_SECTIONS, "other"] as const;
 export type GameSection = (typeof GAME_SECTIONS)[number];
 
-/** The tab's part of the address (the switches are the search's). */
+/** The tab's part of the address (the list of «Interface and other» also reads the search's). */
 export interface ISectionsState extends ISearchState {
     /** The section; the first one when left out. */
     sec?: GameSection;
@@ -274,5 +275,6 @@ export function SectionsTab({ search, onSearch }: { search: ISectionsState; onSe
             </Select>
         </div>
     );
+    if (section === "other") return <SearchTab search={search} onSearch={onSearch} only="other" lead={lead} />;
     return <Cards section={section} search={search} onSearch={onSearch} lead={lead} t={t} />;
 }
