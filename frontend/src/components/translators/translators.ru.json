@@ -454,5 +454,17 @@
     "at.field.class": "класс",
     "at.field.who": "имя",
     "editor.insertToken": "Вставить {token}",
-    "editor.removeToken": "Убрать"
+    "editor.removeToken": "Убрать",
+    "at.note.elite": "Элитный {n}",
+    "at.note.level": "ур. {n}",
+    "at.note.potential": "потенциал {n}",
+    "at.note.skillLevel": "ур. навыка {n}",
+    "at.note.mastery": "мастерство {n}",
+    "at.note.moduleStage": "этап модуля {n}",
+    "at.note.number": "№ {n}",
+    "at.note.challenge": "режим испытания",
+    "at.note.easy": "сюжетная обстановка",
+    "at.note.normal": "стандартная обстановка",
+    "at.note.tough": "неблагоприятная обстановка",
+    "sections.same": "{count, plural, one {# запись} few {# одинаковые записи} many {# одинаковых записей} other {# одинаковые записи}} игры"
 }

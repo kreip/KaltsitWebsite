@@ -1,6 +1,6 @@
 {
     "generatedBy": "bun run i18n:extract",
-    "generatedAt": "2026-11-11T20:14:30.239Z",
+    "generatedAt": "2026-11-11T20:32:34.845Z",
     "entries": [
         {
             "key": "admin.home.access.everyList",
@@ -54325,6 +54325,97 @@
             "placeholders": []
         },
         {
+            "key": "translators.at.note.challenge",
+            "namespace": "translators",
+            "source_text": "Challenge Mode",
+            "description": "Part of the small line under a card's field name telling one text from the others at the same field: the stage's challenge mode.",
+            "placeholders": []
+        },
+        {
+            "key": "translators.at.note.easy",
+            "namespace": "translators",
+            "source_text": "Story Environment",
+            "description": "Part of the small line under a card's field name telling one text from the others at the same field: the stage in the story environment of a later main chapter.",
+            "placeholders": []
+        },
+        {
+            "key": "translators.at.note.elite",
+            "namespace": "translators",
+            "source_text": "Elite {n}",
+            "description": "Part of the small line under a card's field name telling one text from the others at the same field: the operator's elite phase it comes at ({n} is 0, 1 or 2).",
+            "placeholders": [
+                "n"
+            ]
+        },
+        {
+            "key": "translators.at.note.level",
+            "namespace": "translators",
+            "source_text": "Lv. {n}",
+            "description": "Part of the small line under a card's field name telling one text from the others at the same field: the operator's level it comes at.",
+            "placeholders": [
+                "n"
+            ]
+        },
+        {
+            "key": "translators.at.note.mastery",
+            "namespace": "translators",
+            "source_text": "mastery {n}",
+            "description": "Part of the small line under a card's field name telling one text from the others at the same field: the skill's mastery level, or a range (1–3).",
+            "placeholders": [
+                "n"
+            ]
+        },
+        {
+            "key": "translators.at.note.moduleStage",
+            "namespace": "translators",
+            "source_text": "module stage {n}",
+            "description": "Part of the small line under a card's field name telling one text from the others at the same field: the module's stage, or a range (1–3).",
+            "placeholders": [
+                "n"
+            ]
+        },
+        {
+            "key": "translators.at.note.normal",
+            "namespace": "translators",
+            "source_text": "Standard Environment",
+            "description": "Part of the small line under a card's field name telling one text from the others at the same field: the stage in the standard environment of a later main chapter.",
+            "placeholders": []
+        },
+        {
+            "key": "translators.at.note.number",
+            "namespace": "translators",
+            "source_text": "No. {n}",
+            "description": "Part of the small line under a card's field name telling one text from the others at the same field: its number in a list (the second mission of a module, the third tag).",
+            "placeholders": [
+                "n"
+            ]
+        },
+        {
+            "key": "translators.at.note.potential",
+            "namespace": "translators",
+            "source_text": "potential {n}",
+            "description": "Part of the small line under a card's field name telling one text from the others at the same field: the potential it needs ({n} is 2 to 6).",
+            "placeholders": [
+                "n"
+            ]
+        },
+        {
+            "key": "translators.at.note.skillLevel",
+            "namespace": "translators",
+            "source_text": "skill level {n}",
+            "description": "Part of the small line under a card's field name telling one text from the others at the same field: the skill's level, or a range of levels (1–7).",
+            "placeholders": [
+                "n"
+            ]
+        },
+        {
+            "key": "translators.at.note.tough",
+            "namespace": "translators",
+            "source_text": "Adverse Environment",
+            "description": "Part of the small line under a card's field name telling one text from the others at the same field: the stage in the adverse environment of a later main chapter.",
+            "placeholders": []
+        },
+        {
             "key": "translators.at.operators",
             "namespace": "translators",
             "source_text": "Operator",
@@ -56882,6 +56973,15 @@
             "placeholders": [
                 "checked",
                 "waiting"
+            ]
+        },
+        {
+            "key": "translators.sections.same",
+            "namespace": "translators",
+            "source_text": "{count, plural, one {# record} other {# identical records}} of the game",
+            "description": "Under an object's name in the picker of the Game sections tab: the game data keeps several records with this name and the very same texts; they are one card.",
+            "placeholders": [
+                "count"
             ]
         },
         {

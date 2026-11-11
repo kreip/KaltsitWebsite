@@ -25223,9 +25223,17 @@
           "en",
           "total",
           "approved",
-          "waiting"
+          "waiting",
+          "also"
         ],
         "properties": {
+          "also": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Other records of the game data with the same name and the same texts\n(their ids): they are this object too."
+          },
           "approved": {
             "type": "integer",
             "format": "int32",
@@ -25234,6 +25242,13 @@
           "en": {
             "type": "string",
             "description": "The English name (a stage's with its code: `0-1 Collapse`)."
+          },
+          "hint": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "For a record that shares its name with a different one: what tells it\napart — its first text the others lack, else its id."
           },
           "id": {
             "type": "string",
@@ -28936,6 +28951,7 @@
         "required": [
           "field",
           "idx",
+          "note",
           "place",
           "line"
         ],
@@ -28951,6 +28967,10 @@
           },
           "line": {
             "$ref": "#/components/schemas/TranslatorLine"
+          },
+          "note": {
+            "type": "string",
+            "description": "What tells it from the object's other texts at the same field, as\ncodes: variants joined by `,`, the parts of one by `+`. `E2` elite,\n`L30` operator level, `P6` potential, `S7` skill level, `M3` mastery,\n`T2` module stage, `N1` the number in a list, `C` challenge mode,\n`DE` / `DN` / `DT` the story / standard / adverse environment, `#…` a\ncode of the game as it is. May be empty."
           },
           "place": {
             "$ref": "#/components/schemas/EditPlace"

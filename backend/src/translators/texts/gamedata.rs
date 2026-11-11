@@ -35,6 +35,15 @@ pub struct GamePlace {
     pub field: &'static str,
     /// Which one of several (skill 2, talent 1, file 3), from 1; 0 when there is one.
     pub idx: i16,
+    /// What tells this text from the others at the same field (a talent at
+    /// elite 2 and with potential 6, a skill's description at mastery 3, a
+    /// stage's challenge mode), as codes: variants joined by `,`, the parts
+    /// of one by `+`. `E2` elite, `L30` operator level, `P6` potential, `S7`
+    /// skill level, `M3` mastery, `T2` module stage, `N1` the number in a
+    /// list, `C` challenge mode, `DE` / `DN` / `DT` the story / standard /
+    /// adverse environment, `#…` a code of the game as it is. Empty when
+    /// nothing is known.
+    pub note: String,
     pub text: String,
 }
 
@@ -81,6 +90,18 @@ struct Object<'o> {
 
 impl Object<'_> {
     fn add(&mut self, section: &'static str, field: &'static str, idx: i16, text: Option<&str>) {
+        self.noted(section, field, idx, "", text);
+    }
+
+    /// A text with what tells it from the others at its field (`GamePlace::note`).
+    fn noted(
+        &mut self,
+        section: &'static str,
+        field: &'static str,
+        idx: i16,
+        note: &str,
+        text: Option<&str>,
+    ) {
         let Some(text) = text.filter(|t| !t.trim().is_empty()) else {
             return;
         };
@@ -90,8 +111,88 @@ impl Object<'_> {
             object_en: self.name.to_owned(),
             field,
             idx,
+            note: note.to_owned(),
             text: text.to_owned(),
         });
+    }
+}
+
+/// When a talent, a base skill or a module's effect is there: `E2`, `E1+L30`,
+/// `E2+P6` (the elite phase, the operator's level above 1, the potential).
+fn unlock_note(v: &Value) -> String {
+    let mut parts: Vec<String> = Vec::new();
+    let cond = v.get("UnlockCondition").or_else(|| v.get("Cond"));
+    if let Some(cond) = cond {
+        if let Some(phase) = text(cond, "Phase").and_then(|p| p.strip_prefix("PHASE_")) {
+            parts.push(format!("E{phase}"));
+        }
+        if let Some(level) = cond.get("Level").and_then(Value::as_i64).filter(|l| *l > 1) {
+            parts.push(format!("L{level}"));
+        }
+    }
+    if let Some(rank) = v
+        .get("RequiredPotentialRank")
+        .and_then(Value::as_i64)
+        .filter(|r| *r > 0)
+    {
+        parts.push(format!("P{}", rank + 1));
+    }
+    parts.join("+")
+}
+
+/// A skill's level in the list of its levels: 1 to 7, then mastery 1 to 3.
+fn skill_level_note(i: usize) -> String {
+    if i < 7 {
+        format!("S{}", i + 1)
+    } else {
+        format!("M{}", i - 6)
+    }
+}
+
+/// Every text of a module's effects with the stage it comes at and its
+/// unlock condition (`T2+E2+P6`).
+fn module_effects<'a>(equip: &'a Value, out: &mut Vec<(String, &'a str)>) {
+    const NAMES: [&str; 3] = [
+        "UpgradeDescription",
+        "AdditionalDescription",
+        "OverrideDescripton",
+    ];
+    for phase in list(equip, "Phases") {
+        let stage = phase
+            .get("EquipLevel")
+            .and_then(Value::as_i64)
+            .map(|l| format!("T{l}"));
+        let mut found: Vec<(String, &str)> = Vec::new();
+        candidates(phase, &NAMES, &mut found);
+        for (unlock, t) in found {
+            // The stage says when; the potential is what differs inside a stage.
+            let potential = unlock.split('+').find(|p| p.starts_with('P'));
+            let note = [stage.as_deref(), potential]
+                .into_iter()
+                .flatten()
+                .collect::<Vec<_>>()
+                .join("+");
+            out.push((note, t));
+        }
+    }
+}
+
+/// Every string under `v` kept in a field named one of `names`, with the
+/// unlock note of the object holding it.
+fn candidates<'a>(v: &'a Value, names: &[&str], out: &mut Vec<(String, &'a str)>) {
+    match v {
+        Value::Object(map) => {
+            for (k, x) in map {
+                match x {
+                    Value::String(s) if names.contains(&k.as_str()) => {
+                        out.push((unlock_note(v), s));
+                    }
+                    _ => candidates(x, names, out),
+                }
+            }
+        }
+        Value::Array(items) => items.iter().for_each(|x| candidates(x, names, out)),
+        _ => {}
     }
 }
 
@@ -180,8 +281,8 @@ fn operators(dir: &Path, out: &mut Vec<GamePlace>) {
         if let Some(sub) = text(c, "SubProfessionId").and_then(|s| subclasses.get(s)) {
             o.add(OPERATORS, "subclass", 0, text(sub, "SubProfessionName"));
         }
-        for tag in list(c, "TagList") {
-            o.add(OPERATORS, "tag", 0, tag.as_str());
+        for (i, tag) in list(c, "TagList").enumerate() {
+            o.noted(OPERATORS, "tag", 0, &format!("N{}", i + 1), tag.as_str());
         }
         o.add(OPERATORS, "trait", 0, text(c, "Description"));
         if let Some(tr) = c.get("Trait") {
@@ -197,11 +298,19 @@ fn operators(dir: &Path, out: &mut Vec<GamePlace>) {
         }
         for (i, talent) in list(c, "Talents").enumerate() {
             for cand in list(talent, "Candidates") {
-                o.add(OPERATORS, "talent.name", number(i), text(cand, "Name"));
-                o.add(
+                let note = unlock_note(cand);
+                o.noted(
+                    OPERATORS,
+                    "talent.name",
+                    number(i),
+                    &note,
+                    text(cand, "Name"),
+                );
+                o.noted(
                     OPERATORS,
                     "talent.description",
                     number(i),
+                    &note,
                     text(cand, "Description"),
                 );
             }
@@ -213,12 +322,20 @@ fn operators(dir: &Path, out: &mut Vec<GamePlace>) {
             let Some(skill) = text(slot, "SkillId").and_then(|s| skills.get(s)) else {
                 continue;
             };
-            for level in list(skill, "Levels") {
-                o.add(OPERATORS, "skill.name", number(i), text(level, "Name"));
-                o.add(
+            for (level_no, level) in list(skill, "Levels").enumerate() {
+                let note = skill_level_note(level_no);
+                o.noted(
+                    OPERATORS,
+                    "skill.name",
+                    number(i),
+                    &note,
+                    text(level, "Name"),
+                );
+                o.noted(
                     OPERATORS,
                     "skill.description",
                     number(i),
+                    &note,
                     text(level, "Description"),
                 );
             }
@@ -229,24 +346,22 @@ fn operators(dir: &Path, out: &mut Vec<GamePlace>) {
             let n = number(i);
             o.add(OPERATORS, "module.name", n, text(m, "UniEquipName"));
             o.add(ARCHIVES, "module.story", n, text(m, "UniEquipDesc"));
-            for mission in list(m, "MissionList") {
+            for (k, mission) in list(m, "MissionList").enumerate() {
                 if let Some(mission) = mission.as_str().and_then(|k| missions.get(k)) {
-                    o.add(OPERATORS, "module.mission", n, text(mission, "Desc"));
+                    o.noted(
+                        OPERATORS,
+                        "module.mission",
+                        n,
+                        &format!("N{}", k + 1),
+                        text(mission, "Desc"),
+                    );
                 }
             }
             if let Some(b) = text(m, "UniEquipId").and_then(|k| battle.get(k)) {
                 let mut found = Vec::new();
-                deep(
-                    b,
-                    &[
-                        "UpgradeDescription",
-                        "AdditionalDescription",
-                        "OverrideDescripton",
-                    ],
-                    &mut found,
-                );
-                for t in found {
-                    o.add(OPERATORS, "module.effect", n, Some(t));
+                module_effects(b, &mut found);
+                for (note, t) in found {
+                    o.noted(OPERATORS, "module.effect", n, &note, Some(t));
                 }
             }
         }
@@ -254,11 +369,19 @@ fn operators(dir: &Path, out: &mut Vec<GamePlace>) {
             for (i, slot) in list(base, "BuffChar").enumerate() {
                 for data in list(slot, "BuffData") {
                     if let Some(buff) = text(data, "BuffId").and_then(|k| buffs.get(k)) {
-                        o.add(OPERATORS, "base.name", number(i), text(buff, "BuffName"));
-                        o.add(
+                        let note = unlock_note(data);
+                        o.noted(
+                            OPERATORS,
+                            "base.name",
+                            number(i),
+                            &note,
+                            text(buff, "BuffName"),
+                        );
+                        o.noted(
                             OPERATORS,
                             "base.description",
                             number(i),
+                            &note,
                             text(buff, "Description"),
                         );
                     }
@@ -304,13 +427,35 @@ fn enemies(dir: &Path, out: &mut Vec<GamePlace>) {
         let Some(name) = text(e, "Name") else {
             continue;
         };
+        // Enemies under one name are one card: the handbook's code tells their texts apart.
+        let note = text(e, "EnemyIndex")
+            .map(|code| format!("#{code}"))
+            .unwrap_or_default();
         let mut o = Object { out, id, name };
-        o.add(ENEMIES, "name", 0, Some(name));
-        o.add(ENEMIES, "description", 0, text(e, "Description"));
+        o.noted(ENEMIES, "name", 0, &note, Some(name));
+        o.noted(ENEMIES, "description", 0, &note, text(e, "Description"));
         for (i, a) in list(e, "AbilityList").enumerate() {
-            o.add(ENEMIES, "ability", number(i), text(a, "Text"));
+            o.noted(ENEMIES, "ability", number(i), &note, text(a, "Text"));
         }
     }
+}
+
+/// Which of the stages under one code and name this is: the challenge mode
+/// (`C`), the environment of a later main chapter (`DE` story, `DN`
+/// standard, `DT` adverse); a plain stage has no note.
+fn stage_note(s: &Value) -> String {
+    let mut parts: Vec<&str> = Vec::new();
+    match text(s, "DiffGroup") {
+        Some("EASY") => parts.push("DE"),
+        Some("NORMAL") => parts.push("DN"),
+        Some("TOUGH") => parts.push("DT"),
+        _ => {}
+    }
+    match text(s, "Difficulty") {
+        Some("FOUR_STAR" | "SIX_STAR") => parts.push("C"),
+        _ => {}
+    }
+    parts.join("+")
 }
 
 fn stages(dir: &Path, out: &mut Vec<GamePlace>) {
@@ -328,8 +473,9 @@ fn stages(dir: &Path, out: &mut Vec<GamePlace>) {
                 id,
                 name: label,
             };
-            o.add(STAGES, "name", 0, Some(name));
-            o.add(STAGES, "description", 0, text(s, "Description"));
+            let note = stage_note(s);
+            o.noted(STAGES, "name", 0, &note, Some(name));
+            o.noted(STAGES, "description", 0, &note, text(s, "Description"));
         }
     }
     if let Some(table) = read(dir, "zone_table") {
@@ -347,16 +493,16 @@ fn stages(dir: &Path, out: &mut Vec<GamePlace>) {
                 id,
                 name: &label,
             };
-            for (field, key) in [
-                ("zone.first", "ZoneNameFirst"),
-                ("zone.second", "ZoneNameSecond"),
-                ("zone.third", "ZoneNameThird"),
-                ("zone.title", "ZoneNameTitleCurrent"),
-                ("zone.title", "ZoneNameTitleUnCurrent"),
-                ("zone.title", "ZoneNameTitleEx"),
-                ("zone.locked", "LockedText"),
+            for (field, key, note) in [
+                ("zone.first", "ZoneNameFirst", ""),
+                ("zone.second", "ZoneNameSecond", ""),
+                ("zone.third", "ZoneNameThird", ""),
+                ("zone.title", "ZoneNameTitleCurrent", "N1"),
+                ("zone.title", "ZoneNameTitleUnCurrent", "N2"),
+                ("zone.title", "ZoneNameTitleEx", "N3"),
+                ("zone.locked", "LockedText", ""),
             ] {
-                o.add(STAGES, field, 0, text(z, key));
+                o.noted(STAGES, field, 0, note, text(z, key));
             }
         }
     }
@@ -370,11 +516,13 @@ fn items(dir: &Path, out: &mut Vec<GamePlace>) {
         let Some(name) = text(it, "Name") else {
             continue;
         };
+        // Items under one name are one card: the item's id tells their texts apart.
+        let note = format!("#{id}");
         let mut o = Object { out, id, name };
-        o.add(ITEMS, "name", 0, Some(name));
-        o.add(ITEMS, "usage", 0, text(it, "Usage"));
-        o.add(ITEMS, "description", 0, text(it, "Description"));
-        o.add(ITEMS, "obtain", 0, text(it, "ObtainApproach"));
+        o.noted(ITEMS, "name", 0, &note, Some(name));
+        o.noted(ITEMS, "usage", 0, &note, text(it, "Usage"));
+        o.noted(ITEMS, "description", 0, &note, text(it, "Description"));
+        o.noted(ITEMS, "obtain", 0, &note, text(it, "ObtainApproach"));
     }
 }
 
@@ -386,17 +534,35 @@ pub fn places(excel_dir: &Path) -> Vec<GamePlace> {
     enemies(excel_dir, &mut out);
     stages(excel_dir, &mut out);
     items(excel_dir, &mut out);
-    let mut seen = std::collections::HashSet::new();
-    out.retain(|p| {
-        seen.insert((
+    // The first of the same text at the same place stays, with the notes of them all.
+    let mut first: HashMap<(&'static str, String, &'static str, i16, String), usize> =
+        HashMap::new();
+    let mut kept: Vec<GamePlace> = Vec::with_capacity(out.len());
+    for p in out {
+        let key = (
             p.section,
             p.object_id.clone(),
             p.field,
             p.idx,
             p.text.clone(),
-        ))
-    });
-    out
+        );
+        match first.get(&key) {
+            Some(&i) => {
+                let note = &mut kept[i].note;
+                if !p.note.is_empty() && !note.split(',').any(|n| n == p.note) {
+                    if !note.is_empty() {
+                        note.push(',');
+                    }
+                    note.push_str(&p.note);
+                }
+            }
+            None => {
+                first.insert(key, kept.len());
+                kept.push(p);
+            }
+        }
+    }
+    kept
 }
 
 /// Every string of every table (`table name`, `text`), for the texts no
@@ -531,6 +697,90 @@ mod tests {
                 (OPERATORS, "name", 0, "Crate"),
             ]
         );
+    }
+
+    #[test]
+    fn a_repeated_field_says_what_tells_its_texts_apart() {
+        let dir = tempfile::tempdir().unwrap();
+        let d = dir.path();
+        write(
+            d,
+            "character_table",
+            r#"{"Characters":[{"key":"char_1","value":{"Name":"Amiya","TagList":["DPS","Support"],
+            "Talents":[{"Candidates":[
+              {"Name":"Absorption","Description":"Recovers 2 SP","RequiredPotentialRank":0,"UnlockCondition":{"Level":1,"Phase":"PHASE_2"}},
+              {"Name":"Absorption","Description":"Recovers 3 SP","RequiredPotentialRank":5,"UnlockCondition":{"Level":1,"Phase":"PHASE_2"}}]}],
+            "Skills":[{"SkillId":"sk1"}]}}]}"#,
+        );
+        let level = |text: &str| format!(r#"{{"Name":"Chant","Description":"{text}"}}"#);
+        let levels: Vec<String> = (0..10)
+            .map(|i| {
+                level(if i < 7 {
+                    "ASPD +{x}"
+                } else {
+                    "ASPD +{x}, ATK +{y}"
+                })
+            })
+            .collect();
+        write(
+            d,
+            "skill_table",
+            &format!(
+                r#"{{"Skills":[{{"key":"sk1","value":{{"Levels":[{}]}}}}]}}"#,
+                levels.join(",")
+            ),
+        );
+        write(
+            d,
+            "uniequip_table",
+            r#"{"MissionList":[{"key":"m1","value":{"Desc":"Clear 1-1"}},{"key":"m2","value":{"Desc":"Clear 1-2"}}],
+            "EquipDict":[{"key":"e1","value":{"CharId":"char_1","CharEquipOrder":1,"UniEquipId":"e1","UniEquipName":"Ring","MissionList":["m1","m2"]}}]}"#,
+        );
+        write(
+            d,
+            "battle_equip_table",
+            r#"{"Equips":[{"key":"e1","value":{"Phases":[
+              {"EquipLevel":1,"Parts":[{"X":{"Candidates":[{"AdditionalDescription":"Gains SP","RequiredPotentialRank":0,"UnlockCondition":{"Level":50,"Phase":"PHASE_2"}}]}}]},
+              {"EquipLevel":2,"Parts":[{"X":{"Candidates":[{"AdditionalDescription":"Gains SP","RequiredPotentialRank":0,"UnlockCondition":{"Level":50,"Phase":"PHASE_2"}},
+                {"UpgradeDescription":"Recovers 4 SP","RequiredPotentialRank":5,"UnlockCondition":{"Level":50,"Phase":"PHASE_2"}}]}}]}]}}]}"#,
+        );
+        write(
+            d,
+            "stage_table",
+            r#"{"Stages":[{"key":"main_00-01","value":{"Code":"0-1","Name":"Collapse","Description":"Hold.","Difficulty":"NORMAL","DiffGroup":"NONE"}},
+            {"key":"main_00-01#f#","value":{"Code":"0-1","Name":"Collapse","Description":"No DP.","Difficulty":"FOUR_STAR","DiffGroup":"NONE"}},
+            {"key":"tough_10-01","value":{"Code":"10-2","Name":"Raid","Description":"Hard.","Difficulty":"NORMAL","DiffGroup":"TOUGH"}}]}"#,
+        );
+        write(
+            d,
+            "enemy_handbook_table",
+            r#"{"EnemyData":[{"key":"enemy_1","value":{"Name":"Slug","EnemyIndex":"B1","Description":"Slow."}}]}"#,
+        );
+        let all = places(d);
+        let note = |field: &str, text: &str| -> &str {
+            &all.iter()
+                .find(|p| p.field == field && p.text == text)
+                .unwrap_or_else(|| panic!("{field}: {text}"))
+                .note
+        };
+        assert_eq!(note("tag", "DPS"), "N1");
+        assert_eq!(note("tag", "Support"), "N2");
+        // The name is the same at both: one place, the notes of both.
+        assert_eq!(note("talent.name", "Absorption"), "E2,E2+P6");
+        assert_eq!(note("talent.description", "Recovers 2 SP"), "E2");
+        assert_eq!(note("talent.description", "Recovers 3 SP"), "E2+P6");
+        assert_eq!(
+            note("skill.description", "ASPD +{x}"),
+            "S1,S2,S3,S4,S5,S6,S7"
+        );
+        assert_eq!(note("skill.description", "ASPD +{x}, ATK +{y}"), "M1,M2,M3");
+        assert_eq!(note("module.mission", "Clear 1-2"), "N2");
+        assert_eq!(note("module.effect", "Gains SP"), "T1,T2");
+        assert_eq!(note("module.effect", "Recovers 4 SP"), "T2+P6");
+        assert_eq!(note("description", "Hold."), "");
+        assert_eq!(note("description", "No DP."), "C");
+        assert_eq!(note("description", "Hard."), "DT");
+        assert_eq!(note("description", "Slow."), "#B1");
     }
 
     #[test]

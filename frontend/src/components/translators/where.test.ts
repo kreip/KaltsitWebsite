@@ -3,7 +3,7 @@ import { formatMessage } from "#/lib/i18n";
 import type { TypedT } from "#/lib/i18n/messages";
 import type { messages } from "./translators.messages";
 import ru from "./translators.ru.json";
-import { fieldLabel, fieldWords, fileWord, gameWhere, isCardSection, objectKey, plainText, tableWord } from "./where";
+import { fieldLabel, fieldWords, fileWord, gameWhere, isCardSection, noteWords, objectKey, plainText, tableWord } from "./where";
 
 const t = ((key: string, args?: Parameters<typeof formatMessage>[2]) => formatMessage((ru as Record<string, string>)[key], "ru", args)) as unknown as TypedT<typeof messages>;
 
@@ -52,5 +52,17 @@ describe("where a text stands, in words", () => {
 
     it("reads the English without tags", () => {
         expect(plainText("<i>Ursus</i> Slug ")).toBe("Ursus Slug");
+    });
+
+    it("says what tells a text from the others at its field", () => {
+        expect(noteWords("E2", t)).toBe("Элитный 2");
+        expect(noteWords("E2,E2+P6", t)).toBe("Элитный 2, Элитный 2 · потенциал 6");
+        expect(noteWords("S1,S2,S3,S4,S5,S6,S7,M1,M2,M3", t)).toBe("ур. навыка 1–7, мастерство 1–3");
+        expect(noteWords("S7,M1", t)).toBe("ур. навыка 7, мастерство 1");
+        expect(noteWords("T2+P6,T3", t)).toBe("этап модуля 2 · потенциал 6, этап модуля 3");
+        expect(noteWords("DT+C", t)).toBe("неблагоприятная обстановка · режим испытания");
+        expect(noteWords("#PB1,#ES7", t)).toBe("PB1, ES7");
+        expect(noteWords("N2", t)).toBe("№ 2");
+        expect(noteWords("", t)).toBe("");
     });
 });

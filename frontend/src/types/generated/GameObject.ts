@@ -30,4 +30,14 @@ export type GameObject = {
      * Of them: with a live proposal and not approved.
      */
     waiting: number;
+    /**
+     * Other records of the game data with the same name and the same texts
+     * (their ids): they are this object too.
+     */
+    also: Array<string>;
+    /**
+     * For a record that shares its name with a different one: what tells it
+     * apart — its first text the others lack, else its id.
+     */
+    hint: string | null;
 };

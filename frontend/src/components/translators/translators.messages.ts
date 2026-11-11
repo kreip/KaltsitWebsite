@@ -1755,6 +1755,54 @@ export const messages = {
         text: "Remove",
         description: "Accessible name of the small cross on a substitution chip in the editor: removes the chip.",
     },
+    "at.note.elite": {
+        text: "Elite {n}",
+        description: "Part of the small line under a card's field name telling one text from the others at the same field: the operator's elite phase it comes at ({n} is 0, 1 or 2).",
+    },
+    "at.note.level": {
+        text: "Lv. {n}",
+        description: "Part of the small line under a card's field name telling one text from the others at the same field: the operator's level it comes at.",
+    },
+    "at.note.potential": {
+        text: "potential {n}",
+        description: "Part of the small line under a card's field name telling one text from the others at the same field: the potential it needs ({n} is 2 to 6).",
+    },
+    "at.note.skillLevel": {
+        text: "skill level {n}",
+        description: "Part of the small line under a card's field name telling one text from the others at the same field: the skill's level, or a range of levels (1–7).",
+    },
+    "at.note.mastery": {
+        text: "mastery {n}",
+        description: "Part of the small line under a card's field name telling one text from the others at the same field: the skill's mastery level, or a range (1–3).",
+    },
+    "at.note.moduleStage": {
+        text: "module stage {n}",
+        description: "Part of the small line under a card's field name telling one text from the others at the same field: the module's stage, or a range (1–3).",
+    },
+    "at.note.number": {
+        text: "No. {n}",
+        description: "Part of the small line under a card's field name telling one text from the others at the same field: its number in a list (the second mission of a module, the third tag).",
+    },
+    "at.note.challenge": {
+        text: "Challenge Mode",
+        description: "Part of the small line under a card's field name telling one text from the others at the same field: the stage's challenge mode.",
+    },
+    "at.note.easy": {
+        text: "Story Environment",
+        description: "Part of the small line under a card's field name telling one text from the others at the same field: the stage in the story environment of a later main chapter.",
+    },
+    "at.note.normal": {
+        text: "Standard Environment",
+        description: "Part of the small line under a card's field name telling one text from the others at the same field: the stage in the standard environment of a later main chapter.",
+    },
+    "at.note.tough": {
+        text: "Adverse Environment",
+        description: "Part of the small line under a card's field name telling one text from the others at the same field: the stage in the adverse environment of a later main chapter.",
+    },
+    "sections.same": {
+        text: "{count, plural, one {# record} other {# identical records}} of the game",
+        description: "Under an object's name in the picker of the Game sections tab: the game data keeps several records with this name and the very same texts; they are one card.",
+    },
 } satisfies MessageMap;
 
 export const { keys } = defineMessages({ namespace, messages });

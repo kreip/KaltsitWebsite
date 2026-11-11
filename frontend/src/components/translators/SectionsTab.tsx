@@ -32,7 +32,7 @@ import { StoryText } from "./StoryText";
 import { Toggle } from "./SwitchToggle";
 import type { messages } from "./translators.messages";
 import { useScrollToRow } from "./useScrollToRow";
-import { CARD_SECTIONS, type CardSection, fieldLabel } from "./where";
+import { CARD_SECTIONS, type CardSection, fieldLabel, noteWords } from "./where";
 
 type T = TypedT<typeof messages>;
 
@@ -59,6 +59,10 @@ interface IObjectItem {
     total: number;
     approved: number;
     waiting: number;
+    /** Other records of the game with the same name and texts: this card is theirs too. */
+    also: readonly string[];
+    /** What tells it from a different record of the same name. */
+    hint: string | null;
 }
 
 /** Search folding: any case, ё = е. */
@@ -83,6 +87,18 @@ function ProgressShort({ item, t }: { item: IObjectItem; t: T }): React.ReactEle
     return <span className="truncate text-subtle-foreground text-xs">{t("sections.progress", { checked: f.percent(item.total ? item.approved / item.total : 0), waiting: f.number(item.waiting) })}</span>;
 }
 
+/** Under an object's name in the picker: its English, what kind of record it is, and what tells it from its namesakes. */
+function ObjectAbout({ item, t }: { item: IObjectItem; t: T }): React.ReactElement | null {
+    const words = [item.en !== item.label ? item.en : null, item.kind ? t(`sections.kind.${item.kind}` as "sections.kind.token") : null, item.also.length > 0 ? t("sections.same", { count: item.also.length + 1 }) : null].filter(Boolean);
+    if (words.length === 0 && !item.hint) return null;
+    return (
+        <>
+            {words.length > 0 ? <span className="truncate text-subtle-foreground text-xs">{words.join(" · ")}</span> : null}
+            {item.hint ? <span className="truncate text-subtle-foreground text-xs">{item.hint}</span> : null}
+        </>
+    );
+}
+
 interface ICardProps {
     section: CardSection;
     item: IObjectItem;
@@ -102,6 +118,12 @@ function Card({ section, item, me, showVariants, showDiff, t }: ICardProps): Rea
     const byKey = useMemo(() => new Map(edits.map((e) => [e.editKey, e])), [edits]);
     const rule: RecommendRule = me.recommendRule === "A" ? "A" : "B";
     const analyses = useMemo(() => rows.map((r) => analyse(r.line, byKey.get(r.line.editKey), r.place, null, rule)), [rows, byKey, rule]);
+    // Fields that several texts share («Talent 1 · description» at each elite phase): those rows say what tells them apart.
+    const repeated = useMemo(() => {
+        const count = new Map<string, number>();
+        for (const r of rows) count.set(`${r.field}.${r.idx}`, (count.get(`${r.field}.${r.idx}`) ?? 0) + 1);
+        return count;
+    }, [rows]);
     // One editor open at a time: the row and what it is open for.
     const [editing, setEditing] = useState<{ id: string; state: EditorState } | null>(null);
     if (query.isError) return <LoadFailed message={t("sections.load.lines")} onRetry={() => query.refetch()} />;
@@ -146,7 +168,10 @@ function Card({ section, item, me, showVariants, showDiff, t }: ICardProps): Rea
                                         <StatusDot status={r.line.status} t={t} />
                                     </span>
                                 </TableCell>
-                                <TableCell className={cn(PROSE, "text-muted-foreground")}>{fieldLabel(section, r.field, r.idx, t)}</TableCell>
+                                <TableCell className={cn(PROSE, "text-muted-foreground")}>
+                                    {fieldLabel(section, r.field, r.idx, t)}
+                                    {r.note && (repeated.get(`${r.field}.${r.idx}`) ?? 0) > 1 ? <span className="block text-subtle-foreground text-xs">{noteWords(r.note, t)}</span> : null}
+                                </TableCell>
                                 <TableCell className={PROSE}>
                                     <RuCell
                                         line={r.line}
@@ -191,12 +216,13 @@ function Cards({ section, search, onSearch, lead, t }: ICardsProps): React.React
     const me = useQuery(translatorsMeQueryOptions());
     const objects = useQuery(objectsQueryOptions(section));
     const items: IObjectItem[] = useMemo(() => {
-        const out = (objects.data ?? []).map((o) => ({ id: o.id, label: locale === "ru" ? (o.ru ?? o.en) : o.en, en: o.en, kind: kindOf(section, o.id), total: o.total, approved: o.approved, waiting: o.waiting }));
+        const out = (objects.data ?? []).map((o) => ({ id: o.id, label: locale === "ru" ? (o.ru ?? o.en) : o.en, en: o.en, kind: kindOf(section, o.id), total: o.total, approved: o.approved, waiting: o.waiting, also: o.also, hint: o.hint }));
         // Operators before their summons and devices; by name, a number as a number (1-2 before 1-10).
         const order = (i: IObjectItem) => (i.kind ? KIND_ORDER[i.kind] : 0);
         return out.sort((a, b) => order(a) - order(b) || a.label.localeCompare(b.label, locale, { numeric: true }));
     }, [objects.data, locale, section]);
-    const item = items.find((i) => i.id === search.obj) ?? null;
+    // A record merged into another's card (the same name and texts) opens that card.
+    const item = items.find((i) => i.id === search.obj) ?? items.find((i) => search.obj !== undefined && i.also.includes(search.obj)) ?? null;
     const showVariants = search.variants !== false;
     const showDiff = search.diff === true;
     return (
@@ -226,7 +252,7 @@ function Cards({ section, search, onSearch, lead, t }: ICardsProps): React.React
                                         <ComboboxItem key={i.id} value={i}>
                                             <span className="flex min-w-0 flex-col">
                                                 <span className="truncate">{i.label}</span>
-                                                {i.en !== i.label || i.kind ? <span className="truncate text-subtle-foreground text-xs">{[i.en !== i.label ? i.en : null, i.kind ? t(`sections.kind.${i.kind}` as "sections.kind.token") : null].filter(Boolean).join(" · ")}</span> : null}
+                                                <ObjectAbout item={i} t={t} />
                                                 <ProgressShort item={i} t={t} />
                                             </span>
                                         </ComboboxItem>

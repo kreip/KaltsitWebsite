@@ -160,6 +160,12 @@ pub struct GameObject {
     pub approved: i32,
     /// Of them: with a live proposal and not approved.
     pub waiting: i32,
+    /// Other records of the game data with the same name and the same texts
+    /// (their ids): they are this object too.
+    pub also: Vec<String>,
+    /// For a record that shares its name with a different one: what tells it
+    /// apart — its first text the others lack, else its id.
+    pub hint: Option<String>,
 }
 
 /// One text of an object: what of the object it is, and the text as a line
@@ -172,6 +178,13 @@ pub struct ObjectLine {
     pub field: String,
     /// Which one of several (skill 2), from 1; 0 when there is one.
     pub idx: i16,
+    /// What tells it from the object's other texts at the same field, as
+    /// codes: variants joined by `,`, the parts of one by `+`. `E2` elite,
+    /// `L30` operator level, `P6` potential, `S7` skill level, `M3` mastery,
+    /// `T2` module stage, `N1` the number in a list, `C` challenge mode,
+    /// `DE` / `DN` / `DT` the story / standard / adverse environment, `#…` a
+    /// code of the game as it is. May be empty.
+    pub note: String,
     pub place: crate::translators::edits::dto::EditPlace,
     pub line: crate::translators::dto::TranslatorLine,
 }

@@ -32,6 +32,54 @@ export function fieldLabel(section: string, field: string, idx: number, t: T): s
     return words.charAt(0).toLocaleUpperCase() + words.slice(1);
 }
 
+/** The words of a note's codes that carry a number, and of those that stand alone. */
+const NUMBERED: Record<string, string> = { E: "elite", L: "level", P: "potential", S: "skillLevel", M: "mastery", T: "moduleStage", N: "number" };
+const NAMED: Record<string, string> = { C: "challenge", DE: "easy", DN: "normal", DT: "tough" };
+
+/** One code in words; several numbers of one kind as a range («skill level 1–7»). */
+function codeWords(code: string, upTo: number | null, t: T): string {
+    if (code.startsWith("#")) return code.slice(1);
+    const named = NAMED[code];
+    if (named) return t(`at.note.${named}` as "at.note.challenge");
+    const kind = NUMBERED[code.charAt(0)];
+    const n = code.slice(1);
+    if (!kind || !/^\d+$/.test(n)) return code;
+    return t(`at.note.${kind}` as "at.note.elite", { n: upTo === null ? n : `${n}–${upTo}` });
+}
+
+/**
+ * What tells a text from the others at its field, in words (the backend's
+ * `ObjectLine.note`): «Elite 2 · potential 6», «skill level 1–7, mastery
+ * 1–3», «Challenge Mode». Variants are joined by `,`, the parts of one by `+`.
+ */
+export function noteWords(note: string, t: T): string {
+    const variants = note.split(",").filter(Boolean);
+    const out: string[] = [];
+    for (let i = 0; i < variants.length; i++) {
+        const v = variants[i];
+        // A run of one kind's consecutive numbers reads as a range.
+        const m = /^([A-Z])(\d+)$/.exec(v);
+        if (m) {
+            let last = Number(m[2]);
+            let j = i;
+            while (variants[j + 1] === `${m[1]}${last + 1}`) {
+                j++;
+                last++;
+            }
+            out.push(codeWords(v, j > i ? last : null, t));
+            i = j;
+            continue;
+        }
+        out.push(
+            v
+                .split("+")
+                .map((code) => codeWords(code, null, t))
+                .join(" · "),
+        );
+    }
+    return out.join(", ");
+}
+
 /** The game sections whose texts stand at objects: a card per object on the Game sections tab. */
 export const CARD_SECTIONS = ["operators", "enemies", "stages", "items"] as const;
 export type CardSection = (typeof CARD_SECTIONS)[number];

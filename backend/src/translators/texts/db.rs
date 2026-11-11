@@ -53,9 +53,10 @@ pub async fn store(
         qb.push(" ON CONFLICT DO NOTHING");
         qb.build().execute(&mut **tx).await?;
     }
-    for chunk in places.chunks(8_000) {
+    // 9 binds per row.
+    for chunk in places.chunks(7_000) {
         let mut qb: QueryBuilder<Postgres> = QueryBuilder::new(
-            "INSERT INTO translators.text_places (server, edit_key, section, object_id, object_en, field, idx, ord) ",
+            "INSERT INTO translators.text_places (server, edit_key, section, object_id, object_en, field, idx, note, ord) ",
         );
         qb.push_values(chunk, |mut b, p| {
             b.push_bind(server)
@@ -65,6 +66,7 @@ pub async fn store(
                 .push_bind(&p.object_en)
                 .push_bind(&p.field)
                 .push_bind(p.idx)
+                .push_bind(&p.note)
                 .push_bind(p.ord);
         });
         qb.build().execute(&mut **tx).await?;
@@ -349,7 +351,7 @@ pub async fn objects(
     .fetch_all(pool)
     .await?;
     let stages = section == super::gamedata::STAGES;
-    Ok(rows
+    let mut out: Vec<super::dto::GameObject> = rows
         .into_iter()
         .map(|r| {
             // A stage's Russian name stands after its code, as its English one does.
@@ -367,15 +369,147 @@ pub async fn objects(
                 total: r.total,
                 approved: r.approved,
                 waiting: r.waiting,
+                also: Vec::new(),
+                hint: None,
             }
         })
-        .collect())
+        .collect();
+    if key == "p.object_id" {
+        tell_twins(pool, server, section, &mut out).await?;
+    }
+    Ok(out)
+}
+
+/// One text of a record: its field, number, entry and the words shown for it.
+type TwinText = (String, i16, String, String);
+
+/// Records of a section under one name (`Bench` three times among the
+/// devices): those whose texts are the same become one object (`also` keeps
+/// the others' ids), and each of the rest gets a `hint` — its first text the
+/// others lack, else its id.
+async fn tell_twins(
+    pool: &PgPool,
+    server: &str,
+    section: &str,
+    objects: &mut Vec<super::dto::GameObject>,
+) -> Result<(), sqlx::Error> {
+    let mut by_name: HashMap<&str, Vec<usize>> = HashMap::new();
+    for (i, o) in objects.iter().enumerate() {
+        by_name.entry(o.en.as_str()).or_default().push(i);
+    }
+    let groups: Vec<Vec<usize>> = by_name.into_values().filter(|g| g.len() > 1).collect();
+    if groups.is_empty() {
+        return Ok(());
+    }
+    let ids: Vec<String> = groups
+        .iter()
+        .flatten()
+        .map(|&i| objects[i].id.clone())
+        .collect();
+    let rows: Vec<(String, String, i16, String, String)> = sqlx::query_as(
+        "SELECT p.object_id, p.field, p.idx, p.edit_key, COALESCE(t.ru, t.en)
+         FROM translators.text_places p
+         JOIN translators.texts t ON t.server = p.server AND t.edit_key = p.edit_key
+         WHERE p.server = $1 AND p.section = $2 AND p.object_id = ANY($3)
+         ORDER BY p.object_id, p.ord",
+    )
+    .bind(server)
+    .bind(section)
+    .bind(&ids)
+    .fetch_all(pool)
+    .await?;
+    let mut texts: HashMap<String, Vec<TwinText>> = HashMap::new();
+    for (id, field, idx, key, words) in rows {
+        texts.entry(id).or_default().push((field, idx, key, words));
+    }
+    let mut gone: Vec<usize> = Vec::new();
+    for group in groups {
+        let (kept, merged) = twins(&group, objects, &texts);
+        for (i, also, hint) in kept {
+            objects[i].also = also;
+            objects[i].hint = hint;
+        }
+        gone.extend(merged);
+    }
+    gone.sort_unstable();
+    for i in gone.into_iter().rev() {
+        objects.remove(i);
+    }
+    Ok(())
+}
+
+/// How many characters of a text a hint shows.
+const HINT_CHARS: usize = 80;
+
+/// Of the records under one name: which stay (with the ids of the records
+/// the same as each, and its hint when several stay) and which are merged away.
+#[allow(clippy::type_complexity)]
+fn twins(
+    group: &[usize],
+    objects: &[super::dto::GameObject],
+    texts: &HashMap<String, Vec<TwinText>>,
+) -> (Vec<(usize, Vec<String>, Option<String>)>, Vec<usize>) {
+    let empty = Vec::new();
+    let of = |i: usize| texts.get(&objects[i].id).unwrap_or(&empty);
+    let mut order: Vec<usize> = group.to_vec();
+    order.sort_by(|a, b| objects[*a].id.cmp(&objects[*b].id));
+    // Records with the same texts at the same fields are one.
+    let mut kept: Vec<(usize, Vec<String>)> = Vec::new();
+    let mut merged: Vec<usize> = Vec::new();
+    for i in order {
+        let same = kept.iter_mut().find(|(k, _)| {
+            let (a, b) = (of(*k), of(i));
+            a.len() == b.len()
+                && a.iter()
+                    .zip(b)
+                    .all(|(x, y)| (&x.0, x.1, &x.2) == (&y.0, y.1, &y.2))
+        });
+        match same {
+            Some((_, also)) => {
+                also.push(objects[i].id.clone());
+                merged.push(i);
+            }
+            None => kept.push((i, Vec::new())),
+        }
+    }
+    let alone = kept.len() == 1;
+    let out = kept
+        .iter()
+        .map(|(i, also)| {
+            let hint = (!alone).then(|| {
+                // Its first text none of the others has; the name is what they share.
+                of(*i)
+                    .iter()
+                    .filter(|t| t.0 != "name")
+                    .find(|t| {
+                        kept.iter()
+                            .filter(|(k, _)| k != i)
+                            .all(|(k, _)| !of(*k).iter().any(|x| x.2 == t.2))
+                    })
+                    .map_or_else(
+                        || objects[*i].id.clone(),
+                        |t| {
+                            let plain = crate::translators::import::normalize::plain(&t.3);
+                            let mut hint: String = plain.chars().take(HINT_CHARS).collect();
+                            if plain.chars().count() > HINT_CHARS {
+                                hint.push('…');
+                            }
+                            hint
+                        },
+                    )
+            });
+            (*i, also.clone(), hint)
+        })
+        .collect();
+    (out, merged)
 }
 
 /// One text of an object: what of the object it is, and its entry.
 pub struct ObjectText {
     pub field: String,
     pub idx: i16,
+    /// What tells it from the object's other texts at this field (`GamePlace::note`).
+    pub note: String,
     pub hit: TextHit,
 }
 
@@ -383,12 +517,15 @@ pub struct ObjectText {
 struct ObjectTextRow {
     field: String,
     idx: i16,
+    note: String,
     #[sqlx(flatten)]
     hit: HitRow,
 }
 
 /// An object's texts in the game data's order; a text several records of
-/// the object hold at one field (a stage's name and its challenge mode's) once.
+/// the object hold at one field (a stage's name and its challenge mode's)
+/// once, with the notes of them all. A record merged into the object
+/// (`GameObject::also`) is found by its own id too.
 pub async fn object_texts(
     pool: &PgPool,
     server: &str,
@@ -397,9 +534,10 @@ pub async fn object_texts(
 ) -> Result<Vec<ObjectText>, sqlx::Error> {
     let key = object_key(section);
     let rows: Vec<ObjectTextRow> = sqlx::query_as(&format!(
-        "SELECT x.field, x.idx, t.id, t.edit_key, t.en, t.ru, t.file, t.plugin_role, t.ru_plugin,
+        "SELECT x.field, x.idx, x.note, t.id, t.edit_key, t.en, t.ru, t.file, t.plugin_role, t.ru_plugin,
                 t.sections, t.places, '' AS status
-         FROM (SELECT p.field, p.idx, p.edit_key, MIN(p.ord) AS ord, MIN(p.object_id) AS object_id
+         FROM (SELECT p.field, p.idx, p.edit_key, MIN(p.ord) AS ord, MIN(p.object_id) AS object_id,
+                      COALESCE(string_agg(DISTINCT NULLIF(p.note, ''), ','), '') AS note
                FROM translators.text_places p
                WHERE p.server = $1 AND p.section = $2 AND {key} = $3
                GROUP BY p.field, p.idx, p.edit_key) x
@@ -416,6 +554,7 @@ pub async fn object_texts(
         .map(|r| ObjectText {
             field: r.field,
             idx: r.idx,
+            note: r.note,
             hit: TextHit {
                 at: Vec::new(),
                 id: r.hit.id,
@@ -474,6 +613,62 @@ mod tests {
         // A stage named without a code, and a name the label does not end with.
         assert_eq!(stage_code("Collapse", Some("Collapse")), None);
         assert_eq!(stage_code("0-1 Collapse", Some("Ruin")), None);
+    }
+
+    fn object(id: &str) -> crate::translators::texts::dto::GameObject {
+        crate::translators::texts::dto::GameObject {
+            id: id.to_owned(),
+            en: "Bench".to_owned(),
+            ru: None,
+            total: 0,
+            approved: 0,
+            waiting: 0,
+            also: Vec::new(),
+            hint: None,
+        }
+    }
+
+    #[test]
+    fn records_under_one_name_merge_when_the_same_and_get_a_hint_when_not() {
+        let objects = vec![object("trap_3"), object("trap_1"), object("trap_2")];
+        let text = |field: &str, key: &str| (field.to_owned(), 0, key.to_owned(), key.to_owned());
+        let texts: HashMap<String, Vec<TwinText>> = HashMap::from([
+            (
+                "trap_1".to_owned(),
+                vec![
+                    text("name", "Bench"),
+                    text("skill.description", "Rest here."),
+                ],
+            ),
+            (
+                "trap_2".to_owned(),
+                vec![
+                    text("name", "Bench"),
+                    text("skill.description", "Makes gold."),
+                ],
+            ),
+            (
+                "trap_3".to_owned(),
+                vec![
+                    text("name", "Bench"),
+                    text("skill.description", "Rest here."),
+                ],
+            ),
+        ]);
+        let (kept, merged) = twins(&[0, 1, 2], &objects, &texts);
+        // trap_3 has trap_1's texts: it is trap_1's card.
+        assert_eq!(merged, vec![0]);
+        assert_eq!(
+            kept,
+            vec![
+                (1, vec!["trap_3".to_owned()], Some("Rest here.".to_owned())),
+                (2, Vec::new(), Some("Makes gold.".to_owned())),
+            ]
+        );
+        // All the same: one card, nothing to tell apart.
+        let (kept, merged) = twins(&[0, 1], &objects, &texts);
+        assert_eq!(kept, vec![(1, vec!["trap_3".to_owned()], None)]);
+        assert_eq!(merged, vec![0]);
     }
 
     #[test]

@@ -165,6 +165,7 @@ pub async fn object_lines(
         .map(|((text, place), line)| ObjectLine {
             field: text.field,
             idx: text.idx,
+            note: text.note,
             place,
             line,
         })

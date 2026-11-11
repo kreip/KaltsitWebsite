@@ -54,6 +54,8 @@ pub struct TextPlace {
     pub object_en: String,
     pub field: String,
     pub idx: i16,
+    /// What tells it from the other texts at the same field (`GamePlace::note`).
+    pub note: String,
     pub ord: i32,
 }
 
@@ -177,6 +179,7 @@ impl<'a> Builder<'a> {
             object_en: p.object_en.clone(),
             field: p.field.to_owned(),
             idx: p.idx,
+            note: p.note.clone(),
             ord: *ord,
         });
         *ord += 1;
@@ -251,6 +254,7 @@ pub fn collect(
                 object_en: table,
                 field: "text",
                 idx: 0,
+                note: String::new(),
                 text: s,
             },
         );
