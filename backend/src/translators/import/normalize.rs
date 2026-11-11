@@ -1,11 +1,11 @@
 //! Text normalisation for matching an English story line to a dictionary key.
 //!
-//! Two shapes, both from the review kit's notes (`arkrutrinstr/CLAUDE.md`):
+//! Two shapes (translators/README.md, "XUnity dictionary and plugin format"):
 //!
-//! * [`plain`] is RichTextFix's `PlainText` (§3.4): tags and Arknights macros
+//! * [`plain`] is RichTextFix's `PlainText`: tags and Arknights macros
 //!   removed, literal `\n` / `\r\n` turned into LF, spaces around LF removed,
 //!   trimmed. The plugin's catalog is keyed by it.
-//! * [`for_search`] is the kit's search normalisation (§5, step 3) without its
+//! * [`for_search`] is the review kit's search normalisation without its
 //!   Cyrillic look-alike step, which only matters for Russian text: tags
 //!   removed, every newline a space, `…` → `...`, every quote `"`, every dash
 //!   `-`, NBSP a space, spaces collapsed, `ё` → `е`, lower case.

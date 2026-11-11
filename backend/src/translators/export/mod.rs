@@ -523,7 +523,7 @@ pub fn build(
         report.written = i32::try_from(entries.len()).unwrap_or(i32::MAX);
         files.push(ExportFile::new(ours.to_owned(), body));
 
-        // What the game loads after our file (kit §3.3: by full path, descending,
+        // What the game loads after our file (README, load order: by full path, descending,
         // case-insensitive; a later file wins on the same key).
         let ours_path = text_dir.join(ours).to_string_lossy().to_lowercase();
         let mut keys_after: HashMap<String, i32> = HashMap::new();

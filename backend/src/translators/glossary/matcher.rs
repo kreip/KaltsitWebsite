@@ -1,7 +1,7 @@
 //! Finding glossary terms in an English line, and whether the Russian line
 //! carries the glossary's form.
 //!
-//! Rules from the review kit's notes (`arkrutrinstr/CLAUDE.md` §3.9):
+//! Rules (translators/README.md, "XUnity dictionary and plugin format"):
 //! names, classes and races match only as capitalised in the glossary, the
 //! "various terms" sheet in any case; longer terms win over shorter ones; the
 //! Russian is compared by word stem (one ending cut, stem at least 3 letters,

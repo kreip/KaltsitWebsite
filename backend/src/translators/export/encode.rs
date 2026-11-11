@@ -1,13 +1,13 @@
-//! Writing one XUnity dictionary line, exactly as the review kit's encoder
-//! (`arkrutrinstr/CLAUDE.md` §3.2), so that the game's decoder (§3.1,
-//! [`crate::translators::import::xunity::decode_line`]) reads back the very
-//! key and value:
+//! Writing one XUnity dictionary line so that the game's decoder
+//! ([`crate::translators::import::xunity::decode_line`]) reads back the very
+//! key and value (the rules: translators/README.md, "XUnity dictionary and
+//! plugin format"):
 //!
 //! * `\` -> `\\`, `=` -> `\=`, LF -> `\n`, CR -> `\r`;
-//! * the second `/` of a `//` -> `/` (else a comment would start);
-//! * `%` before `3D` -> `%` (else `%3D` would read as `=`);
+//! * the second `/` of a `//` -> `\u002F` (else a comment would start);
+//! * `%` before `3D` -> `\u0025` (else `%3D` would read as `=`);
 //! * the first `#` of a line that would read as a `#set` / `#unset` /
-//!   `#enable` directive -> `#`;
+//!   `#enable` directive -> `\u0023`;
 //! * a key starting with `r:` / `sr:` (a regex for XUnity) or an empty key or
 //!   value cannot be written: it goes to the export report.
 
@@ -88,7 +88,7 @@ pub fn encode_line(key: &str, value: &str) -> Result<String, Unwritable> {
     Ok(out)
 }
 
-/// The decoder's directive test on a raw line (§3.1).
+/// The decoder's directive test on a raw line.
 fn looks_like_directive(raw: &str) -> bool {
     let head = raw.split("//").next().unwrap_or("").trim();
     if !head.starts_with('#') {

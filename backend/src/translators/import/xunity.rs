@@ -1,8 +1,8 @@
 //! The ArknightsRU dictionaries as XUnity.AutoTranslator loads them.
 //!
 //! Line decoding follows `TextHelper.ReadTranslationLineAndDecode` and the file
-//! order follows `TextTranslationCache.GetTranslationFiles`, both as recorded
-//! in the review kit's notes (`arkrutrinstr/CLAUDE.md` §3.1 and §3.3):
+//! order follows `TextTranslationCache.GetTranslationFiles` (translators/README.md,
+//! "XUnity dictionary and plugin format"):
 //!
 //! * every `*.txt` under the folder, recursively, except `*resizer.txt` and the
 //!   `_Substitutions` / `_Preprocessors` / `_Postprocessors` files;

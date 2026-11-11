@@ -113,6 +113,56 @@ for review (`REVIEW_` in the names; any member). A second format writes one
 `00_translators.txt` to check at home: put it into `BepInEx\Translation\ru\Text`
 and press Alt+R in the game.
 
+## XUnity dictionary and plugin format
+
+The rules the import and the export follow (checked against the pack's files and the
+game's loader).
+
+**Load order.** XUnity.AutoTranslator reads every `*.txt` under
+`BepInEx\Translation\ru\Text`, recursively, except `*resizer.txt` and the
+`_Substitutions` / `_Preprocessors` / `_Postprocessors` files. The files are sorted by
+full path, **descending**, case-insensitive; a file read later overwrites an earlier one
+on the same key. So `11_ui.txt` beats `12_story.txt` and `13_names.txt`, and `00_*.txt`
+files (`00_translators.txt`, `00_review_*.txt`, `00_arktr_*.txt`) are read last and win.
+`14_new.txt` is read first: its keys are in no other file.
+
+**Reading a line.** `key=value` with one unescaped `=`. Escapes: `\=` → `=`, `\\` → `\`,
+`\n` → LF, `\r` → CR, `\uXXXX` → that character, `%3D` → `=`; any other `\x` stays as
+written. `//` starts a comment — the line is ignored if it comes before the `=`. A line
+whose start reads as a directive (`#set`, `#unset`, `#enable`…) is not a translation;
+a key starting with `r:` / `sr:` is a regular expression. Empty keys and values are
+ignored.
+
+**Writing a line** (the export), so that the reader above gives back the very key and
+value: `\` → `\\`, `=` → `\=`, LF → `\n`, CR → `\r`; the second `/` of `//` →
+`\u002F` (else a comment would start); `%` before `3D` → `\u0025`; a `#` that would
+make the line a directive → `\u0023`. A key starting with `r:` / `sr:`, an empty key or an
+empty value cannot be written and is listed in the report. Files: UTF-8 without BOM, LF.
+
+**The plugin's catalog.** `ArknightsLocalization.RichTextFix.dll` embeds a gzip-compressed
+JSON object `{ role: { english: russian } }` (`story`, `skill`, `operator`, …,
+`ambiguous:<role>` for texts it leaves in English, `id:*`). The import finds it by
+scanning the DLL for gzip streams and keeping the one that decodes to that object; the
+DLL is only read, never loaded. For a text with a role the plugin looks in its catalog
+**before** the dictionaries, so an edit of such a text goes to `plugin_strings.tsv`. The
+catalog is keyed by the plain English: tags and Arknights macros removed, literal
+`\n` / `\r\n` turned into LF, spaces around LF removed, trimmed.
+
+**Matching a story line to a dictionary entry.** Exactly first; then both sides
+normalised: tags removed, every newline a space, `…` → `...`, every quote `"`, every dash
+`-`, NBSP a space, spaces collapsed, `ё` → `е`, lower case.
+
+**The glossary** (the team's Google Sheet, read as its xlsx export). Sheets are found by
+name, case-insensitive (Sova's by its prefix: Excel cuts names at 31 characters); the
+first row is a header; rows without Russian are skipped; cells are trimmed; an empty
+sheet is not an error. `A / B` in a cell is several English keys for one Russian; on
+Sova's sheet only, `A, B` → `X, Y` pair up when the counts match (else every key gets
+the whole Russian); `Amiya (Guard)` is the key `Amiya` with the bracket shown beside it.
+In a line, names, classes and races match only with the case as in the glossary, the
+"various terms" sheet in any case; a longer term wins over a shorter one. The Russian is
+checked by word stem: one ending cut, the stem at least 3 letters, `ё` = `е`, quotes and
+`ООО` ignored; a multi-word term word by word in a row; an indeclinable name by prefix.
+
 ## Editing
 
 Proposals, "keep as in the game" and comments are keyed by the English of the

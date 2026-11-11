@@ -1,7 +1,7 @@
 //! The team glossary (a Google Sheet, read as its xlsx export) into terms.
 //!
-//! Sheet and cell rules from the review kit's notes (`arkrutrinstr/CLAUDE.md`
-//! §3.9): sheets found by name, case-insensitive (Sova's by its prefix, Excel
+//! Sheet and cell rules (translators/README.md, "XUnity dictionary and plugin
+//! format"): sheets found by name, case-insensitive (Sova's by its prefix, Excel
 //! cuts names at 31 characters); the first row is a header; rows without
 //! Russian are skipped; every cell is trimmed; empty sheets are not an error.
 //!

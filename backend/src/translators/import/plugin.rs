@@ -4,7 +4,7 @@
 //! (`story`, `skill`, `operator`, ..., `ambiguous:<role>`, `id:*`). For a text
 //! component with a role, the plugin looks there BEFORE the txt dictionaries,
 //! so an edit through the dictionaries may not show for such a text
-//! (`arkrutrinstr/CLAUDE.md` §3.4). The resource is found by scanning for gzip
+//! (translators/README.md, "XUnity dictionary and plugin format"). The resource is found by scanning for gzip
 //! streams and keeping the one that decodes to that object; the DLL is only
 //! read, never loaded.
 
