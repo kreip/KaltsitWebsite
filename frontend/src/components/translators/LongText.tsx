@@ -7,8 +7,8 @@ import type React from "react";
 import { useCallback, useState } from "react";
 
 /** From this many characters or line breaks a text is long: more than the few lines a folded row shows. */
-const LONG_CHARS = 400;
-const LONG_BREAKS = 4;
+const LONG_CHARS = 600;
+const LONG_BREAKS = 8;
 
 export function isLong(...texts: readonly (string | null | undefined)[]): boolean {
     return texts.some((text) => text != null && (text.length > LONG_CHARS || text.split("\n").length > LONG_BREAKS));
