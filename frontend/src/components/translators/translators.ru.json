@@ -305,7 +305,7 @@
     "export.format.patchHint": "Файлы пака с утверждёнными правками — только изменённые.",
     "export.format.fileHint": "Положите в игру и нажмите Alt+R.",
     "export.story": "Строки сюжета для бандлов (story_lines.tsv): {count}, из них «только для этого места»: {context}",
-    "export.howToPatch": "Замените файлы в BepInEx\\Translation\\ru\\Text и нажмите в игре Alt+R.",
+    "export.howToPatch": "Положите файлы в BepInEx\\Translation\\ru\\Text с заменой (14_new.txt — новые строки) и нажмите в игре Alt+R.",
     "export.archive": "Скачать архив {name}",
     "save.hereShort": "Этот текст встречается в {count} местах — перевод изменится везде.",
     "toggle.diff": "Сравнение",

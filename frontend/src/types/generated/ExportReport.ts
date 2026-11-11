@@ -48,7 +48,7 @@ export type ExportReport = {
      */
     replaced: Array<ExportFileKeys>;
     /**
-     * `patch` format: entries none of the files had, added at the end of the 12_story copy.
+     * `patch` format: entries none of the files had, written to `14_new.txt`.
      */
     appended: number;
     /**

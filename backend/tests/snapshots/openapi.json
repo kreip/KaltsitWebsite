@@ -23982,7 +23982,7 @@
           "appended": {
             "type": "integer",
             "format": "int32",
-            "description": "`patch` format: entries none of the files had, added at the end of the 12_story copy."
+            "description": "`patch` format: entries none of the files had, written to `14_new.txt`."
           },
           "archive": {
             "type": "string",

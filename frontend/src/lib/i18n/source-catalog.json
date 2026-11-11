@@ -7361,7 +7361,7 @@
     "translators.export.format.patch": "Corrected copies of 11_ui, 12_story, 13_names (main)",
     "translators.export.format.patchHint": "The pack's files with the approved edits, changed ones only.",
     "translators.export.howTo": "Put the file in BepInEx\\Translation\\ru\\Text and press Alt+R in the game.",
-    "translators.export.howToPatch": "Replace the files in BepInEx\\Translation\\ru\\Text and press Alt+R in the game.",
+    "translators.export.howToPatch": "Put the files into BepInEx\\Translation\\ru\\Text, replacing the old ones (14_new.txt holds the new lines), and press Alt+R in the game.",
     "translators.export.load": "Couldn't prepare the export.",
     "translators.export.mode": "What",
     "translators.export.mode.approved": "Approved — for the game",

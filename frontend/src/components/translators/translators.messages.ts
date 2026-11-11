@@ -1156,7 +1156,7 @@ export const messages = {
         description: "Export report: rows of story_lines.tsv and how many are one-place proposals.",
     },
     "export.howToPatch": {
-        text: "Replace the files in BepInEx\\Translation\\ru\\Text and press Alt+R in the game.",
+        text: "Put the files into BepInEx\\Translation\\ru\\Text, replacing the old ones (14_new.txt holds the new lines), and press Alt+R in the game.",
         description: "Hint in the export dialog for the main format.",
     },
     "export.archive": {

@@ -73,6 +73,24 @@ roles (they must have signed in to the site once; the command replaces the roles
 
 One person can hold several roles (`./translators/role.sh <uid> editor maintainer`).
 
+## Export
+
+"My edits" → "Export…" prepares one archive (`.zip`) for the pack's maintainer:
+
+- corrected copies of `11_ui.txt` / `12_story.txt` / `13_names.txt`, only the changed
+  ones: in a touched line only the value changes (a `//` comment after it is dropped),
+  everything else stays byte for byte;
+- `14_new.txt`: entries none of the pack's files has (the pack's own `14_new.txt`, once
+  it has one, with the new entries at its end);
+- `plugin_strings.tsv`: lines the RichTextFix plugin shows from its built-in catalog;
+- `story_lines.tsv`: every approved story line with its place (for the bundles);
+- `report.txt`: each changed line (file, line number, before → after, who approved).
+
+Two modes: approved (for the game; the lead and the maintainer) and every proposal
+for review (`REVIEW_` in the names; any member). A second format writes one
+`00_translators.txt` to check at home: put it into `BepInEx\Translation\ru\Text`
+and press Alt+R in the game.
+
 ## Editing
 
 Proposals, "keep as in the game" and comments are keyed by the English of the

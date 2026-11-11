@@ -5,8 +5,9 @@
 //! changed files go out; in them only the value of a touched line changes —
 //! its key as written, every other line, the order, the comments, the BOM and
 //! the line breaks stay byte for byte (an export with no edits is the
-//! original file). Entries no file has are added at the end of the
-//! `12_story.txt` copy. Lines the RichTextFix plugin shows never go to a
+//! original file). Entries no file has go to a file of their own,
+//! `14_new.txt` (the pack's own `14_new.txt`, once it has one, with the new
+//! entries added at its end). Lines the RichTextFix plugin shows never go to a
 //! dictionary: they go to `plugin_strings.tsv`. Every approved story line,
 //! one row per place, goes to `story_lines.tsv` (the bundles); proposals for
 //! one place go there only. `report.txt` lists each changed line: file, line
@@ -35,6 +36,14 @@ use encode::{encode_line, encode_value};
 
 /// The pack's dictionaries the main export corrects, in the pack's names.
 pub const PATCHED: &[&str] = &["11_ui.txt", "12_story.txt", "13_names.txt"];
+
+/// The file for entries none of the pack's dictionaries has. The game loads
+/// it before the others (files load in descending name order, a later one
+/// wins), which is fine: its keys are in no other file.
+pub const NEW_FILE: &str = "14_new.txt";
+
+/// The first line of a `14_new.txt` made here.
+const NEW_HEADER: &str = "// ArknightsRU: новые записи из раздела «Для переводчиков» — строки, которых нет в 11_ui / 12_story / 13_names\n";
 
 /// What to export.
 #[derive(Debug, Clone, Deserialize, IntoParams)]
@@ -139,7 +148,7 @@ pub struct ExportReport {
     pub overridden_by: Vec<ExportFileKeys>,
     /// `patch` format: values replaced in each changed copy.
     pub replaced: Vec<ExportFileKeys>,
-    /// `patch` format: entries none of the files had, added at the end of the 12_story copy.
+    /// `patch` format: entries none of the files had, written to `14_new.txt`.
     pub appended: i32,
     /// `review` mode: entries with more than one proposal (the most agreed is exported).
     pub with_alternatives: i32,
@@ -430,50 +439,55 @@ pub fn build(
     };
     if patch {
         let mut left: BTreeMap<String, (String, String)> = entries.clone();
-        for name in PATCHED {
+        // The pack's own 14_new.txt, once it has one: corrected like the others.
+        let mut new_file: Option<(String, usize)> = None;
+        for name in PATCHED.iter().copied().chain([NEW_FILE]) {
             let Ok(content) = std::fs::read_to_string(text_dir.join(name)) else {
                 continue;
             };
-            let (mut body, changes) = patch_file(name, &content, &entries);
+            let (body, changes) = patch_file(name, &content, &entries);
             for c in &changes {
                 left.remove(&c.key);
             }
-            let mut replaced = changes.len();
+            let replaced = changes.len();
             report.changes.extend(changes);
-            if *name == "12_story.txt" && !left.is_empty() {
-                // Entries no file has: added at the end, in the file's own line breaks.
-                let nl = if content.contains("\r\n") {
-                    "\r\n"
-                } else {
-                    "\n"
-                };
-                if !body.is_empty() && !body.ends_with('\n') {
-                    body.push_str(nl);
-                }
-                let mut line = body.split_inclusive('\n').count();
-                for (k, (v, who)) in &left {
-                    body.push_str(&encode_line(k, v).unwrap_or_default());
-                    body.push_str(nl);
-                    line += 1;
-                    report.changes.push(ExportChange {
-                        file: (*name).to_owned(),
-                        line: i32::try_from(line).unwrap_or(i32::MAX),
-                        key: k.clone(),
-                        before: String::new(),
-                        after: v.clone(),
-                        by: who.clone(),
-                    });
-                }
-                report.appended = i32::try_from(left.len()).unwrap_or(i32::MAX);
-                replaced += left.len();
-            }
-            if replaced > 0 {
+            if name == NEW_FILE {
+                new_file = Some((body, replaced));
+            } else if replaced > 0 {
                 report.replaced.push(ExportFileKeys {
-                    file: (*name).to_owned(),
+                    file: name.to_owned(),
                     keys: i32::try_from(replaced).unwrap_or(i32::MAX),
                 });
                 files.push(ExportFile::new(format!("{tag}{name}"), body));
             }
+        }
+        // Entries no file has: their own file, 14_new.txt (the pack's, with these at its end).
+        let (mut body, replaced) = new_file.unwrap_or_else(|| (NEW_HEADER.to_owned(), 0));
+        if replaced > 0 || !left.is_empty() {
+            let nl = if body.contains("\r\n") { "\r\n" } else { "\n" };
+            if !body.is_empty() && !body.ends_with('\n') {
+                body.push_str(nl);
+            }
+            let mut line = body.split_inclusive('\n').count();
+            for (k, (v, who)) in &left {
+                body.push_str(&encode_line(k, v).unwrap_or_default());
+                body.push_str(nl);
+                line += 1;
+                report.changes.push(ExportChange {
+                    file: NEW_FILE.to_owned(),
+                    line: i32::try_from(line).unwrap_or(i32::MAX),
+                    key: k.clone(),
+                    before: String::new(),
+                    after: v.clone(),
+                    by: who.clone(),
+                });
+            }
+            report.appended = i32::try_from(left.len()).unwrap_or(i32::MAX);
+            report.replaced.push(ExportFileKeys {
+                file: NEW_FILE.to_owned(),
+                keys: i32::try_from(replaced + left.len()).unwrap_or(i32::MAX),
+            });
+            files.push(ExportFile::new(format!("{tag}{NEW_FILE}"), body));
         }
         report.written = report.replaced.iter().map(|r| r.keys).sum();
     } else {
@@ -615,7 +629,7 @@ fn report_text(r: &ExportReport, ours: &str) -> String {
     out.push_str(&format!(
         "Выгрузка раздела «Для переводчиков»\nРежим: {}\nФормат: {}\nКогда: {when}\nКто выгрузил: {}\n\n",
         if r.mode == "review" { "все предложения — на проверку (REVIEW, не для игры)" } else { "утверждённое — для игры" },
-        if r.format == "patch" { "исправленные копии 11_ui / 12_story / 13_names (в архиве — только изменённые)" } else { "отдельный файл для проверки у себя" },
+        if r.format == "patch" { "исправленные копии 11_ui / 12_story / 13_names (в архиве — только изменённые); новые записи — в 14_new.txt" } else { "отдельный файл для проверки у себя" },
         r.by
     ));
     if r.format == "patch" {
@@ -625,7 +639,7 @@ fn report_text(r: &ExportReport, ours: &str) -> String {
         }
         if r.appended > 0 {
             out.push_str(&format!(
-                "  из них новых записей в конце 12_story.txt: {}\n",
+                "  из них новых записей (их нет ни в одном файле пака) — в 14_new.txt: {}\n",
                 r.appended
             ));
         }
@@ -776,7 +790,7 @@ mod tests {
     }
 
     #[test]
-    fn patch_export_keeps_untouched_files_out_and_appends_new_keys() {
+    fn patch_export_keeps_untouched_files_out_and_puts_new_keys_in_their_own_file() {
         let dir = tempfile::tempdir().unwrap();
         std::fs::write(dir.path().join("11_ui.txt"), "// h\r\nOK=Ок\r\n").unwrap();
         std::fs::write(
@@ -831,25 +845,35 @@ mod tests {
             names,
             vec![
                 "12_story.txt",
+                "14_new.txt",
                 "story_lines.tsv",
                 "plugin_strings.tsv",
                 "report.txt"
             ]
         );
         let story = &out.files[0].content;
-        assert_eq!(story, "// h\r\nHi=Здравствуй\r\nBye=Пока\r\nNew=Новое\r\n");
+        assert_eq!(story, "// h\r\nHi=Здравствуй\r\nBye=Пока\r\n");
+        // The entry no file has: a file of its own, a comment line first.
+        let new = &out.files[1].content;
+        assert!(new.starts_with("// ") && new.ends_with("\nNew=Новое\n"));
+        assert_eq!(new.lines().count(), 2);
         assert_eq!(out.report.appended, 1);
-        let tsv_story = &out.files[1].content;
+        assert!(
+            out.files[4]
+                .content
+                .contains("14_new.txt:2 — (новая запись) → Новое")
+        );
+        let tsv_story = &out.files[2].content;
         assert_eq!(
             tsv_story,
             "файл сюжета\tстрока\tанглийский\tбыло\tстало\nobt/main/level_main_00-01_end\t12\tHi\tПривет\tЗдравствуй\nobt/main/level_main_00-01_end\t20.2\tBye\tПока\tДо встречи\n"
         );
-        let tsv_plugin = &out.files[2].content;
+        let tsv_plugin = &out.files[3].content;
         assert_eq!(
             tsv_plugin,
             "английский\tбыло\tстало\tроль\nPlugin\\tline\tСтарое\tНовое\\nдва\tstory\n"
         );
-        let report = &out.files[3].content;
+        let report = &out.files[4].content;
         assert!(report.contains("12_story.txt:2 — Привет → Здравствуй — lead"));
         assert!(
             !out.files.iter().any(|f| f.name == "11_ui.txt"),
