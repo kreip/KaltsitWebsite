@@ -19,9 +19,10 @@ export type ObjectLine = {
      * What tells it from the object's other texts at the same field, as
      * codes: variants joined by `,`, the parts of one by `+`. `E2` elite,
      * `L30` operator level, `P6` potential, `S7` skill level, `M3` mastery,
-     * `T2` module stage, `N1` the number in a list, `C` challenge mode,
-     * `DE` / `DN` / `DT` the story / standard / adverse environment, `#…` a
-     * code of the game as it is. May be empty.
+     * `T2` module stage, `N1` the number in a list, `V2` the voice set, `C`
+     * challenge mode, `DE` / `DN` / `DT` the story / standard / adverse
+     * environment, `#…` a code of the game as it is, `@…` the id of the
+     * story an operator record's introduction leads to. May be empty.
      */
     note: string;
     place: EditPlace;

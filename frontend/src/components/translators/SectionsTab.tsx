@@ -1,16 +1,20 @@
 /**
  * The Game sections tab: the game's texts outside the story, by section. A
- * section with objects (operators, enemies, stages, items) is the Story
+ * section with objects (operators, enemies, stages, items, and the
+ * operators' archives: file, records, stories, voice lines) is the Story
  * tab over again with "Section / Object" for "Chapter / Story": the chosen
  * object's texts as the same dense table, Field | Russian as in the game |
  * English, in the order the game shows them, with the same actions. A text
  * is edited as the text itself: one translation wherever its English stands
- * ("N places" and the confirmation as everywhere). «Interface and other» has
- * no objects: it is the search over that section.
+ * ("N places" and the confirmation as everywhere). A long text is folded to
+ * a few lines until clicked. «Interface and other» has no objects: it is the
+ * search over that section.
  */
 import { useQuery } from "@tanstack/react-query";
+import { Link } from "@tanstack/react-router";
 import type React from "react";
 import { useId, useMemo, useState } from "react";
+import { Button } from "#/components/ui/button";
 import { Combobox, ComboboxEmpty, ComboboxInput, ComboboxItem, ComboboxList, ComboboxPopup } from "#/components/ui/combobox";
 import { Empty, EmptyHeader, EmptyTitle } from "#/components/ui/empty";
 import { Label } from "#/components/ui/label";
@@ -27,17 +31,19 @@ import type { TranslatorsMe } from "#/types/generated/TranslatorsMe";
 import type { RecommendRule } from "./checks";
 import { type EditorState, StatusDot } from "./LineEdits";
 import { analyse, PROSE, RuCell } from "./LinesTable";
+import { Folded, isLong, useUnfolded } from "./LongText";
 import { type ISearchState, SearchTab } from "./SearchTab";
 import { StoryText } from "./StoryText";
 import { Toggle } from "./SwitchToggle";
+import { useStoryNames } from "./storyNames";
 import type { messages } from "./translators.messages";
 import { useScrollToRow } from "./useScrollToRow";
-import { CARD_SECTIONS, type CardSection, fieldLabel, noteWords } from "./where";
+import { type CardSection, fieldLabel, noteStories, noteWords } from "./where";
 
 type T = TypedT<typeof messages>;
 
-/** The sections of the tab, in its order: those with objects, then the list of the rest. */
-export const GAME_SECTIONS = [...CARD_SECTIONS, "other"] as const;
+/** The sections of the tab, in its order: the game's objects, the list of the rest, and the operators' archives last. */
+export const GAME_SECTIONS = ["operators", "enemies", "stages", "items", "other", "archives"] as const satisfies readonly (CardSection | "other")[];
 export type GameSection = (typeof GAME_SECTIONS)[number];
 
 /** The tab's part of the address (the list of «Interface and other» also reads the search's). */
@@ -126,6 +132,8 @@ function Card({ section, item, me, showVariants, showDiff, t }: ICardProps): Rea
     }, [rows]);
     // One editor open at a time: the row and what it is open for.
     const [editing, setEditing] = useState<{ id: string; state: EditorState } | null>(null);
+    const unfolded = useUnfolded();
+    const storyOf = useStoryNames();
     if (query.isError) return <LoadFailed message={t("sections.load.lines")} onRetry={() => query.refetch()} />;
     if (!query.data) return <Skeleton className="h-96 w-full rounded-2xl" />;
     const nickname = me.nickname ?? t("nickname.fallback");
@@ -160,6 +168,9 @@ function Card({ section, item, me, showVariants, showDiff, t }: ICardProps): Rea
                     ) : null}
                     {rows.map((r, i) => {
                         const id = `${r.field}.${r.idx}.${r.line.editKey}`;
+                        const long = isLong(r.line.en, r.line.ruGame);
+                        // An open editor needs the whole row.
+                        const folded = long && !unfolded.has(id) && editing?.id !== id;
                         return (
                             <TableRow key={id} id={`n-${i + 1}`} className="scroll-mt-(--site-header-height) target:bg-primary/10" data-field={r.field} data-status={r.line.status}>
                                 <TableCell className="py-1.5 align-top text-subtle-foreground text-xs tabular-nums leading-snug">
@@ -170,26 +181,43 @@ function Card({ section, item, me, showVariants, showDiff, t }: ICardProps): Rea
                                 </TableCell>
                                 <TableCell className={cn(PROSE, "text-muted-foreground")}>
                                     {fieldLabel(section, r.field, r.idx, t)}
-                                    {r.note && (repeated.get(`${r.field}.${r.idx}`) ?? 0) > 1 ? <span className="block text-subtle-foreground text-xs">{noteWords(r.note, t)}</span> : null}
+                                    {r.note && (repeated.get(`${r.field}.${r.idx}`) ?? 0) > 1 && noteWords(r.note, t) ? <span className="block text-subtle-foreground text-xs">{noteWords(r.note, t)}</span> : null}
+                                    {noteStories(r.note).map((storyId) => {
+                                        const story = storyOf(storyId);
+                                        return story ? (
+                                            <Link key={storyId} to="/translators" search={{ group: story.groupId, story: storyId }} className="block text-xs underline-offset-4 hover:underline">
+                                                {t("sections.readStory")}
+                                            </Link>
+                                        ) : null;
+                                    })}
+                                    {long ? (
+                                        <Button variant="link" size="xs" className="block h-auto px-0 text-xs" onClick={() => unfolded.toggle(id)} disabled={editing?.id === id}>
+                                            {folded ? t("long.show") : t("long.hide")}
+                                        </Button>
+                                    ) : null}
                                 </TableCell>
                                 <TableCell className={PROSE}>
-                                    <RuCell
-                                        line={r.line}
-                                        analysis={analyses[i]}
-                                        place={r.place}
-                                        nickname={nickname}
-                                        showVariants={showVariants}
-                                        showDiff={showDiff}
-                                        edits={byKey.get(r.line.editKey)}
-                                        outdated={[]}
-                                        me={me}
-                                        editor={editing?.id === id ? editing.state : null}
-                                        onEditor={(state) => setEditing(state ? { id, state } : null)}
-                                        t={t}
-                                    />
+                                    <Folded folded={folded} onOpen={() => unfolded.toggle(id)}>
+                                        <RuCell
+                                            line={r.line}
+                                            analysis={analyses[i]}
+                                            place={r.place}
+                                            nickname={nickname}
+                                            showVariants={showVariants}
+                                            showDiff={showDiff}
+                                            edits={byKey.get(r.line.editKey)}
+                                            outdated={[]}
+                                            me={me}
+                                            editor={editing?.id === id ? editing.state : null}
+                                            onEditor={(state) => setEditing(state ? { id, state } : null)}
+                                            t={t}
+                                        />
+                                    </Folded>
                                 </TableCell>
                                 <TableCell className={PROSE}>
-                                    <StoryText text={r.line.en} nickname={nickname} />
+                                    <Folded folded={folded} onOpen={() => unfolded.toggle(id)}>
+                                        <StoryText text={r.line.en} nickname={nickname} />
+                                    </Folded>
                                 </TableCell>
                             </TableRow>
                         );

@@ -10,8 +10,11 @@ pub const CONFIRM_PLACES: i32 = 1;
 /// The longest quoted fragment of a comment, in characters.
 pub const MAX_QUOTE: usize = 500;
 
-/// The longest proposal or comment, in characters.
-pub const MAX_TEXT: usize = 4_000;
+/// The longest proposal, in characters: an operator's file runs to 7,000.
+pub const MAX_TEXT: usize = 20_000;
+
+/// The longest comment, in characters.
+pub const MAX_COMMENT: usize = 4_000;
 
 /// A line's status, by its edit key.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -74,9 +77,18 @@ pub fn editable(edit_key: &str) -> bool {
 /// A proposal's text as stored: line breaks as LF, trimmed. `None` when
 /// empty or too long.
 pub fn clean_text(text: &str) -> Option<String> {
+    clean_up_to(text, MAX_TEXT)
+}
+
+/// A comment's text as stored, as a proposal's. `None` when empty or too long.
+pub fn clean_comment(text: &str) -> Option<String> {
+    clean_up_to(text, MAX_COMMENT)
+}
+
+fn clean_up_to(text: &str, max: usize) -> Option<String> {
     let t = text.replace("\r\n", "\n").replace('\r', "\n");
     let t = t.trim();
-    (!t.is_empty() && t.chars().count() <= MAX_TEXT).then(|| t.to_owned())
+    (!t.is_empty() && t.chars().count() <= max).then(|| t.to_owned())
 }
 
 #[cfg(test)]
@@ -114,5 +126,7 @@ mod tests {
         assert_eq!(clean_text("  Да.\r\nНет. ").as_deref(), Some("Да.\nНет."));
         assert_eq!(clean_text("   "), None);
         assert_eq!(clean_text(&"а".repeat(MAX_TEXT + 1)), None);
+        assert!(clean_text(&"а".repeat(MAX_COMMENT + 1)).is_some());
+        assert_eq!(clean_comment(&"а".repeat(MAX_COMMENT + 1)), None);
     }
 }

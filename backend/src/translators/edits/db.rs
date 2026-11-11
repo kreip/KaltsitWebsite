@@ -38,13 +38,17 @@ pub async fn place_line(pool: &PgPool, p: &EditPlace) -> Result<Option<PlaceLine
         let Some(key) = p.edit_key.as_deref() else {
             return Ok(None);
         };
-        let row: Option<(String, Option<String>)> = sqlx::query_as(
-            "SELECT edit_key, ru FROM translators.texts WHERE server = $1 AND edit_key = $2",
-        )
-        .bind(SERVER)
-        .bind(key)
-        .fetch_optional(pool)
-        .await?;
+        // A long entry is named by its md5 (`EditPlace::text_by_md5`), else by its English.
+        let sql = if EditPlace::md5_of(key).is_some() {
+            "SELECT edit_key, ru FROM translators.texts WHERE server = $1 AND md5(edit_key) = $2"
+        } else {
+            "SELECT edit_key, ru FROM translators.texts WHERE server = $1 AND edit_key = $2"
+        };
+        let row: Option<(String, Option<String>)> = sqlx::query_as(sql)
+            .bind(SERVER)
+            .bind(EditPlace::md5_of(key).unwrap_or(key))
+            .fetch_optional(pool)
+            .await?;
         return Ok(row.map(|(edit_key, ru_game)| PlaceLine {
             edit_key,
             ru_game,
@@ -911,7 +915,7 @@ pub async fn approve_key(
     sqlx::query(
         "INSERT INTO translators.approvals (edit_key, variant, proposal_id, text, approved_by, story_id, line, part)
          VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-         ON CONFLICT (edit_key) DO UPDATE SET variant = EXCLUDED.variant, proposal_id = EXCLUDED.proposal_id,
+         ON CONFLICT (md5(edit_key)) DO UPDATE SET variant = EXCLUDED.variant, proposal_id = EXCLUDED.proposal_id,
              text = EXCLUDED.text, approved_by = EXCLUDED.approved_by, approved_at = NOW(),
              story_id = EXCLUDED.story_id, line = EXCLUDED.line, part = EXCLUDED.part, outdated_at = NULL",
     )

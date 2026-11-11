@@ -1,6 +1,6 @@
 {
     "generatedBy": "bun run i18n:extract",
-    "generatedAt": "2026-11-11T20:32:34.845Z",
+    "generatedAt": "2026-11-11T20:58:58.801Z",
     "entries": [
         {
             "key": "admin.home.access.everyList",
@@ -54416,6 +54416,15 @@
             "placeholders": []
         },
         {
+            "key": "translators.at.note.voiceSet",
+            "namespace": "translators",
+            "source_text": "voice set {n}",
+            "description": "Part of the small line under a card's field name telling one text from the others at the same field: which set of voice lines it belongs to (the operator's own is 1; another form's or a dialect's follow).",
+            "placeholders": [
+                "n"
+            ]
+        },
+        {
             "key": "translators.at.operators",
             "namespace": "translators",
             "source_text": "Operator",
@@ -54448,6 +54457,13 @@
             "namespace": "translators",
             "source_text": "Module",
             "description": "One part of where a text stands in the game data, as in «Operator › Amiya › Skill 2 › description»: which object part; a number may follow.",
+            "placeholders": []
+        },
+        {
+            "key": "translators.at.part.record",
+            "namespace": "translators",
+            "source_text": "Operator record",
+            "description": "A part of an operator's archives in a place («Operator record 1 › description»): one of the operator's records (short personal stories unlocked with trust).",
             "placeholders": []
         },
         {
@@ -56031,6 +56047,20 @@
             "placeholders": []
         },
         {
+            "key": "translators.long.hide",
+            "namespace": "translators",
+            "source_text": "Fold",
+            "description": "Small button in a table row whose long text is unfolded: folds it back to a few lines.",
+            "placeholders": []
+        },
+        {
+            "key": "translators.long.show",
+            "namespace": "translators",
+            "source_text": "Show all",
+            "description": "Small button in a table row whose text is long and folded to a few lines: unfolds the whole row.",
+            "placeholders": []
+        },
+        {
             "key": "translators.meta.description",
             "namespace": "translators",
             "source_text": "Story text side by side: English, Russian as the game shows it now, and Chinese.",
@@ -56974,6 +57004,13 @@
                 "checked",
                 "waiting"
             ]
+        },
+        {
+            "key": "translators.sections.readStory",
+            "namespace": "translators",
+            "source_text": "Read in Story",
+            "description": "Link under an operator record's introduction in the archives card: opens the record's story in the Story tab.",
+            "placeholders": []
         },
         {
             "key": "translators.sections.same",

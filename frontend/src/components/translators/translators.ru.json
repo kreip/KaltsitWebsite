@@ -466,5 +466,10 @@
     "at.note.easy": "сюжетная обстановка",
     "at.note.normal": "стандартная обстановка",
     "at.note.tough": "неблагоприятная обстановка",
-    "sections.same": "{count, plural, one {# запись} few {# одинаковые записи} many {# одинаковых записей} other {# одинаковые записи}} игры"
+    "sections.same": "{count, plural, one {# запись} few {# одинаковые записи} many {# одинаковых записей} other {# одинаковые записи}} игры",
+    "at.part.record": "Личная история",
+    "at.note.voiceSet": "набор реплик {n}",
+    "long.show": "Показать полностью",
+    "long.hide": "Свернуть",
+    "sections.readStory": "Читать в «Сюжете»"
 }

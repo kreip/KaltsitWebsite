@@ -1803,6 +1803,26 @@ export const messages = {
         text: "{count, plural, one {# record} other {# identical records}} of the game",
         description: "Under an object's name in the picker of the Game sections tab: the game data keeps several records with this name and the very same texts; they are one card.",
     },
+    "at.part.record": {
+        text: "Operator record",
+        description: "A part of an operator's archives in a place («Operator record 1 › description»): one of the operator's records (short personal stories unlocked with trust).",
+    },
+    "at.note.voiceSet": {
+        text: "voice set {n}",
+        description: "Part of the small line under a card's field name telling one text from the others at the same field: which set of voice lines it belongs to (the operator's own is 1; another form's or a dialect's follow).",
+    },
+    "long.show": {
+        text: "Show all",
+        description: "Small button in a table row whose text is long and folded to a few lines: unfolds the whole row.",
+    },
+    "long.hide": {
+        text: "Fold",
+        description: "Small button in a table row whose long text is unfolded: folds it back to a few lines.",
+    },
+    "sections.readStory": {
+        text: "Read in Story",
+        description: "Link under an operator record's introduction in the archives card: opens the record's story in the Story tab.",
+    },
 } satisfies MessageMap;
 
 export const { keys } = defineMessages({ namespace, messages });

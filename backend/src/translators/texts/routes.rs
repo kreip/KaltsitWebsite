@@ -75,7 +75,7 @@ pub async fn search_texts(
 }
 
 /// The sections whose texts stand at objects (a card per object).
-const CARD_SECTIONS: &[&str] = &["operators", "enemies", "stages", "items"];
+const CARD_SECTIONS: &[&str] = &["operators", "enemies", "stages", "items", "archives"];
 
 fn check_card(section: &str) -> Result<(), ApiError> {
     if CARD_SECTIONS.contains(&section) {
@@ -87,8 +87,9 @@ fn check_card(section: &str) -> Result<(), ApiError> {
     }
 }
 
-/// The objects of a game section — operators, enemies, stages, items — with
-/// their names in the game's Russian and how much of each is checked.
+/// The objects of a game section — operators, enemies, stages, items, and
+/// the operators once more for their archives — with their names in the
+/// game's Russian and how much of each is checked.
 /// Members only.
 #[utoipa::path(
     get,
@@ -116,7 +117,8 @@ pub async fn objects(
 
 /// One object's texts as lines of the story's table, in the order the game
 /// shows them (an operator: name, class, trait, talents, skills, modules,
-/// base skills, outfits). Each is edited as the text itself: one
+/// base skills, outfits; its archives: the file's parts, the operator
+/// records, the modules' and outfits' stories, the voice lines). Each is edited as the text itself: one
 /// translation wherever the English stands. Members only.
 #[utoipa::path(
     get,
@@ -153,7 +155,7 @@ pub async fn object_lines(
         .flatten();
     let places: Vec<EditPlace> = texts
         .iter()
-        .map(|t| EditPlace::text(&t.hit.edit_key))
+        .map(|t| EditPlace::text_by_md5(&t.hit.edit_key, &t.hit.key_md5))
         .collect();
     let mut lines: Vec<TranslatorLine> = texts.iter().map(|t| text_line(&t.hit)).collect();
     let edits = edits::attach_at(&state.db, &places, &mut lines, |_| false).await?;
@@ -274,7 +276,7 @@ pub async fn search_lines(
                 lines.push(line);
             }
             None => {
-                places.push(EditPlace::text(&hit.edit_key));
+                places.push(EditPlace::text_by_md5(&hit.edit_key, &hit.key_md5));
                 lines.push(text_line(hit));
             }
         }

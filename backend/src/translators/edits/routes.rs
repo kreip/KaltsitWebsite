@@ -383,10 +383,10 @@ pub async fn create_comment(
     let line = db::place_line(&state.db, &input.place)
         .await?
         .ok_or(ApiError::NotFound)?;
-    let text = status::clean_text(&input.text).ok_or_else(|| {
+    let text = status::clean_comment(&input.text).ok_or_else(|| {
         ApiError::BadRequest(format!(
             "the comment is empty or longer than {} characters",
-            status::MAX_TEXT
+            status::MAX_COMMENT
         ))
     })?;
     let quote = input

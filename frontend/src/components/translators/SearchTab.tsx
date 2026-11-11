@@ -33,6 +33,7 @@ import type { TranslatorsMe } from "#/types/generated/TranslatorsMe";
 import type { RecommendRule } from "./checks";
 import { type EditorState, PlacesList, StatusDot } from "./LineEdits";
 import { analyse, PROSE, RuCell, Speaker } from "./LinesTable";
+import { Folded, isLong, useUnfolded } from "./LongText";
 import { GamePlace } from "./PlaceWords";
 import { type IFind, StoryText } from "./StoryText";
 import { Toggle } from "./SwitchToggle";
@@ -112,6 +113,7 @@ function Results({ rows, edits, me, find, showVariants, showDiff, t }: IResultsP
     const analyses = useMemo(() => rows.map((r) => analyse(r.line, byKey.get(r.line.editKey), r.place, null, rule)), [rows, byKey, rule]);
     // One editor open at a time: the row's text id and what it is open for.
     const [editing, setEditing] = useState<{ id: number; state: EditorState } | null>(null);
+    const unfolded = useUnfolded();
     // Who says it, as in the story's table: the column is there once a story line is found.
     const speakers = rows.some((r) => r.line.kind !== "text");
     return (
@@ -129,6 +131,10 @@ function Results({ rows, edits, me, find, showVariants, showDiff, t }: IResultsP
             <TableBody>
                 {rows.map((r, i) => {
                     const id = r.hit.id;
+                    // A long text (an operator's file) shows a few lines until clicked; an open editor needs it whole.
+                    const long = isLong(r.line.en, r.line.ruGame);
+                    const folded = long && !unfolded.has(String(id)) && editing?.id !== id;
+                    const unfold = () => unfolded.toggle(String(id));
                     return (
                         <TableRow key={id} data-status={r.line.status}>
                             <TableCell className="py-1.5 align-top text-subtle-foreground text-xs tabular-nums leading-snug">
@@ -139,6 +145,11 @@ function Results({ rows, edits, me, find, showVariants, showDiff, t }: IResultsP
                             </TableCell>
                             <TableCell className={PROSE}>
                                 <Where row={r} nickname={nickname} t={t} />
+                                {long ? (
+                                    <Button variant="link" size="xs" className="block h-auto px-0 text-xs" onClick={unfold} disabled={editing?.id === id}>
+                                        {folded ? t("long.show") : t("long.hide")}
+                                    </Button>
+                                ) : null}
                             </TableCell>
                             {speakers ? (
                                 <TableCell className={PROSE}>
@@ -146,24 +157,28 @@ function Results({ rows, edits, me, find, showVariants, showDiff, t }: IResultsP
                                 </TableCell>
                             ) : null}
                             <TableCell className={PROSE}>
-                                <RuCell
-                                    line={r.line}
-                                    analysis={analyses[i]}
-                                    place={r.place}
-                                    nickname={nickname}
-                                    showVariants={showVariants}
-                                    showDiff={showDiff}
-                                    edits={byKey.get(r.line.editKey)}
-                                    outdated={[]}
-                                    me={me}
-                                    editor={editing?.id === id ? editing.state : null}
-                                    onEditor={(state) => setEditing(state ? { id, state } : null)}
-                                    find={find}
-                                    t={t}
-                                />
+                                <Folded folded={folded} onOpen={unfold}>
+                                    <RuCell
+                                        line={r.line}
+                                        analysis={analyses[i]}
+                                        place={r.place}
+                                        nickname={nickname}
+                                        showVariants={showVariants}
+                                        showDiff={showDiff}
+                                        edits={byKey.get(r.line.editKey)}
+                                        outdated={[]}
+                                        me={me}
+                                        editor={editing?.id === id ? editing.state : null}
+                                        onEditor={(state) => setEditing(state ? { id, state } : null)}
+                                        find={find}
+                                        t={t}
+                                    />
+                                </Folded>
                             </TableCell>
                             <TableCell className={PROSE}>
-                                <StoryText text={r.line.en} nickname={nickname} find={find} />
+                                <Folded folded={folded} onOpen={unfold}>
+                                    <StoryText text={r.line.en} nickname={nickname} find={find} />
+                                </Folded>
                             </TableCell>
                         </TableRow>
                     );

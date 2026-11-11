@@ -16,7 +16,9 @@ export type EditPlace = {
      */
     part: number;
     /**
-     * A text outside the story: the English of its entry.
+     * A text outside the story: the English of its entry, or `md5:` and the
+     * md5 of that English (hex) for a long one, so that a place always fits
+     * an address.
      */
     editKey?: string;
 };

@@ -59,6 +59,10 @@ pub struct TextHit {
     pub id: i64,
     /// The entry an edit changes (its English).
     pub edit_key: String,
+    /// The md5 of the entry's English: a long entry's place names it by this.
+    #[serde(skip)]
+    #[ts(skip)]
+    pub key_md5: String,
     pub en: String,
     /// The Russian the game shows now.
     pub ru: Option<String>,
@@ -127,7 +131,7 @@ pub struct SearchLines {
 #[serde(rename_all = "camelCase")]
 #[into_params(parameter_in = Query)]
 pub struct ObjectsQuery {
-    /// A section that has objects: `operators`, `enemies`, `stages` or `items`.
+    /// A section that has objects: `operators`, `enemies`, `stages`, `items` or `archives`.
     pub section: String,
 }
 
@@ -141,12 +145,13 @@ pub struct ObjectLinesQuery {
     pub object: String,
 }
 
-/// An object of a game section: an operator, an enemy, a stage or a zone, an item.
+/// An object of a game section: an operator, an enemy, a stage or a zone, an
+/// item; in the archives, an operator again (its file, records, stories and voice lines).
 #[derive(Debug, Clone, Serialize, TS, ToSchema)]
 #[serde(rename_all = "camelCase")]
 #[ts(export)]
 pub struct GameObject {
-    /// What names it in the address: an operator's id in the game data; the
+    /// What names it in the address: an operator's id in the game data (also for its archives); the
     /// English name for the rest, where the game data keeps several objects
     /// under one name (a stage and its challenge mode) and they are one card.
     pub id: String,
@@ -181,9 +186,10 @@ pub struct ObjectLine {
     /// What tells it from the object's other texts at the same field, as
     /// codes: variants joined by `,`, the parts of one by `+`. `E2` elite,
     /// `L30` operator level, `P6` potential, `S7` skill level, `M3` mastery,
-    /// `T2` module stage, `N1` the number in a list, `C` challenge mode,
-    /// `DE` / `DN` / `DT` the story / standard / adverse environment, `#…` a
-    /// code of the game as it is. May be empty.
+    /// `T2` module stage, `N1` the number in a list, `V2` the voice set, `C`
+    /// challenge mode, `DE` / `DN` / `DT` the story / standard / adverse
+    /// environment, `#…` a code of the game as it is, `@…` the id of the
+    /// story an operator record's introduction leads to. May be empty.
     pub note: String,
     pub place: crate::translators::edits::dto::EditPlace,
     pub line: crate::translators::dto::TranslatorLine,

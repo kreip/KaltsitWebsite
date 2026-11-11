@@ -40,9 +40,10 @@ pub struct GamePlace {
     /// stage's challenge mode), as codes: variants joined by `,`, the parts
     /// of one by `+`. `E2` elite, `L30` operator level, `P6` potential, `S7`
     /// skill level, `M3` mastery, `T2` module stage, `N1` the number in a
-    /// list, `C` challenge mode, `DE` / `DN` / `DT` the story / standard /
-    /// adverse environment, `#…` a code of the game as it is. Empty when
-    /// nothing is known.
+    /// list, `V2` the voice set (another form's, a dialect's), `C` challenge
+    /// mode, `DE` / `DN` / `DT` the story / standard / adverse environment,
+    /// `#…` a code of the game as it is, `@…` the id of the story an operator
+    /// record's introduction leads to. Empty when nothing is known.
     pub note: String,
     pub text: String,
 }
@@ -340,6 +341,37 @@ fn operators(dir: &Path, out: &mut Vec<GamePlace>) {
                 );
             }
         }
+        // The archives, in the card's order: the file's parts, the operator
+        // records, then (below) the modules' and the outfits' stories and the voice lines.
+        if let Some(file) = files.get(id) {
+            for (i, part) in list(file, "StoryTextAudio").enumerate() {
+                o.add(ARCHIVES, "file.title", number(i), text(part, "StoryTitle"));
+                for story in list(part, "Stories") {
+                    o.add(ARCHIVES, "file.text", number(i), text(story, "StoryText"));
+                }
+            }
+            for (i, set) in list(file, "HandbookAvgList").enumerate() {
+                o.add(
+                    ARCHIVES,
+                    "record.name",
+                    number(i),
+                    text(set, "StorySetName"),
+                );
+                // Each story of the record: its introduction, with the story's id to read it by.
+                for story in list(set, "AvgList") {
+                    let note = text(story, "StoryId")
+                        .map(|id| format!("@{id}"))
+                        .unwrap_or_default();
+                    o.noted(
+                        ARCHIVES,
+                        "record.description",
+                        number(i),
+                        &note,
+                        text(story, "StoryIntro"),
+                    );
+                }
+            }
+        }
         let mut own = modules.get(id).cloned().unwrap_or_default();
         own.sort_by_key(|m| m.get("CharEquipOrder").and_then(Value::as_i64).unwrap_or(0));
         for (i, m) in own.iter().enumerate() {
@@ -402,19 +434,30 @@ fn operators(dir: &Path, out: &mut Vec<GamePlace>) {
             o.add(ARCHIVES, "skin.story", n, text(d, "Content"));
             o.add(ARCHIVES, "skin.dialog", n, text(d, "Dialog"));
         }
-        if let Some(file) = files.get(id) {
-            for (i, part) in list(file, "StoryTextAudio").enumerate() {
-                o.add(ARCHIVES, "file.title", number(i), text(part, "StoryTitle"));
-                for story in list(part, "Stories") {
-                    o.add(ARCHIVES, "file.text", number(i), text(story, "StoryText"));
-                }
-            }
-        }
+        // The voice lines: the operator's own set first, then the others (another
+        // form's, a dialect's), each by the game's order. A line keeps its number in
+        // its set, so a dialect's copy of the same text is the same place.
         let mut lines = words.get(id).cloned().unwrap_or_default();
-        lines.sort_by_key(|w| w.get("VoiceIndex").and_then(Value::as_i64).unwrap_or(0));
-        for (i, w) in lines.iter().enumerate() {
-            o.add(ARCHIVES, "voice.title", number(i), text(w, "VoiceTitle"));
-            o.add(ARCHIVES, "voice.text", number(i), text(w, "VoiceText"));
+        let set_of = |w: &Value| text(w, "WordKey").unwrap_or_default().to_owned();
+        let mut sets: Vec<String> = lines.iter().map(|w| set_of(w)).collect();
+        sets.sort_by_key(|k| (k.as_str() != id, k.clone()));
+        sets.dedup();
+        lines.sort_by_key(|w| {
+            (
+                sets.iter().position(|k| *k == set_of(w)),
+                w.get("VoiceIndex").and_then(Value::as_i64).unwrap_or(0),
+            )
+        });
+        for w in &lines {
+            let n = w
+                .get("VoiceIndex")
+                .and_then(Value::as_i64)
+                .and_then(|i| i16::try_from(i).ok())
+                .unwrap_or(0);
+            let set = sets.iter().position(|k| *k == set_of(w)).unwrap_or(0);
+            let note = format!("V{}", set + 1);
+            o.noted(ARCHIVES, "voice.title", n, &note, text(w, "VoiceTitle"));
+            o.noted(ARCHIVES, "voice.text", n, &note, text(w, "VoiceText"));
         }
     }
 }
@@ -653,12 +696,15 @@ mod tests {
         write(
             d,
             "handbook_info_table",
-            r#"{"HandbookDict":[{"key":"char_1","value":{"StoryTextAudio":[{"StoryTitle":"Profile","Stories":[{"StoryText":"She leads Rhodes Island."}]}]}}]}"#,
+            r#"{"HandbookDict":[{"key":"char_1","value":{"StoryTextAudio":[{"StoryTitle":"Profile","Stories":[{"StoryText":"She leads Rhodes Island."}]}],
+            "HandbookAvgList":[{"StorySetName":"A Day Off","AvgList":[{"StoryId":"story_1","StoryIntro":"She rests."}]}]}}]}"#,
         );
         write(
             d,
             "charword_table",
-            r#"{"CharWords":[{"key":"w1","value":{"CharId":"char_1","VoiceIndex":1,"VoiceTitle":"Greeting","VoiceText":"Hello, Doctor."}}]}"#,
+            r#"{"CharWords":[{"key":"w2","value":{"CharId":"char_1","WordKey":"char_1b","VoiceIndex":1,"VoiceTitle":"Greeting","VoiceText":"Hello again."}},
+            {"key":"w1","value":{"CharId":"char_1","WordKey":"char_1","VoiceIndex":1,"VoiceTitle":"Greeting","VoiceText":"Hello, Doctor."}},
+            {"key":"w3","value":{"CharId":"char_1","WordKey":"char_1_ITA","VoiceIndex":1,"VoiceTitle":"Greeting","VoiceText":"Hello, Doctor."}}]}"#,
         );
         let all = places(d);
         let got: Vec<(&str, &str, i16, &str)> = all
@@ -678,6 +724,10 @@ mod tests {
                 (OPERATORS, "talent.description", 1, "Recovers more SP"),
                 (OPERATORS, "skill.name", 1, "Tactical Chant"),
                 (OPERATORS, "skill.description", 1, "ASPD +{x}"),
+                (ARCHIVES, "file.title", 1, "Profile"),
+                (ARCHIVES, "file.text", 1, "She leads Rhodes Island."),
+                (ARCHIVES, "record.name", 1, "A Day Off"),
+                (ARCHIVES, "record.description", 1, "She rests."),
                 (OPERATORS, "module.name", 1, "Ring"),
                 (ARCHIVES, "module.story", 1, "A long story"),
                 (OPERATORS, "module.mission", 1, "Clear 1-1"),
@@ -689,14 +739,19 @@ mod tests {
                 (OPERATORS, "skin.group", 1, "Test Collection"),
                 (OPERATORS, "skin.usage", 1, "A favorite outfit."),
                 (ARCHIVES, "skin.story", 1, "Gray sky."),
-                (ARCHIVES, "file.title", 1, "Profile"),
-                (ARCHIVES, "file.text", 1, "She leads Rhodes Island."),
                 (ARCHIVES, "voice.title", 1, "Greeting"),
                 (ARCHIVES, "voice.text", 1, "Hello, Doctor."),
+                // Another form's set: the same line under the same number, told apart by its note.
+                (ARCHIVES, "voice.text", 1, "Hello again."),
                 // A device has a name and no class.
                 (OPERATORS, "name", 0, "Crate"),
             ]
         );
+        let note = |text: &str| -> &str { &all.iter().find(|p| p.text == text).unwrap().note };
+        assert_eq!(note("She rests."), "@story_1");
+        // The dialect's copy of the line is the operator's own; the other form's is its set's.
+        assert_eq!(note("Hello, Doctor."), "V1,V2");
+        assert_eq!(note("Hello again."), "V3");
     }
 
     #[test]

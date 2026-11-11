@@ -26,11 +26,18 @@ pub struct EditPlace {
     pub line: i32,
     /// The option number of a decision, else 0.
     pub part: i16,
-    /// A text outside the story: the English of its entry.
+    /// A text outside the story: the English of its entry, or `md5:` and the
+    /// md5 of that English (hex) for a long one, so that a place always fits
+    /// an address.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     #[ts(optional)]
     pub edit_key: Option<String>,
 }
+
+/// An entry with an English longer than this (bytes) is named by its md5.
+pub const LONG_KEY: usize = 256;
+
+const MD5_PREFIX: &str = "md5:";
 
 /// The story id of a text outside the story: every edit there is for every place of its entry.
 pub const TEXT_PLACE: &str = "@text";
@@ -49,6 +56,22 @@ impl EditPlace {
             part: 0,
             edit_key: Some(edit_key.to_owned()),
         }
+    }
+
+    /// The place of a text outside the story, a long one by the md5 of its
+    /// English (as Postgres's `md5()` gives it).
+    pub fn text_by_md5(edit_key: &str, md5: &str) -> Self {
+        if edit_key.len() > LONG_KEY {
+            Self::text(&format!("{MD5_PREFIX}{md5}"))
+        } else {
+            Self::text(edit_key)
+        }
+    }
+
+    /// The md5 a key names its entry by, when it does (`md5:` and 32 hex digits).
+    pub fn md5_of(key: &str) -> Option<&str> {
+        key.strip_prefix(MD5_PREFIX)
+            .filter(|h| h.len() == 32 && h.bytes().all(|b| b.is_ascii_hexdigit()))
     }
 }
 

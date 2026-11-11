@@ -9,7 +9,7 @@ import type { messages } from "./translators.messages";
 
 type T = TypedT<typeof messages>;
 
-const PARTS = new Set(["talent", "skill", "module", "base", "skin", "file", "voice", "zone"]);
+const PARTS = new Set(["talent", "skill", "module", "base", "skin", "file", "record", "voice", "zone"]);
 const FIELDS = new Set(["name", "appellation", "class", "subclass", "tag", "trait", "description", "potential", "mission", "effect", "story", "group", "usage", "dialog", "title", "text", "ability", "obtain", "first", "second", "third", "locked"]);
 const SECTIONS = new Set(["story", "operators", "enemies", "stages", "items", "archives", "other"]);
 
@@ -33,7 +33,7 @@ export function fieldLabel(section: string, field: string, idx: number, t: T): s
 }
 
 /** The words of a note's codes that carry a number, and of those that stand alone. */
-const NUMBERED: Record<string, string> = { E: "elite", L: "level", P: "potential", S: "skillLevel", M: "mastery", T: "moduleStage", N: "number" };
+const NUMBERED: Record<string, string> = { E: "elite", L: "level", P: "potential", S: "skillLevel", M: "mastery", T: "moduleStage", N: "number", V: "voiceSet" };
 const NAMED: Record<string, string> = { C: "challenge", DE: "easy", DN: "normal", DT: "tough" };
 
 /** One code in words; several numbers of one kind as a range («skill level 1–7»). */
@@ -53,7 +53,8 @@ function codeWords(code: string, upTo: number | null, t: T): string {
  * 1–3», «Challenge Mode». Variants are joined by `,`, the parts of one by `+`.
  */
 export function noteWords(note: string, t: T): string {
-    const variants = note.split(",").filter(Boolean);
+    // `@…` names a story to read (`noteStories`), not a difference.
+    const variants = note.split(",").filter((v) => v && !v.startsWith("@"));
     const out: string[] = [];
     for (let i = 0; i < variants.length; i++) {
         const v = variants[i];
@@ -80,8 +81,16 @@ export function noteWords(note: string, t: T): string {
     return out.join(", ");
 }
 
+/** The stories a note leads to (an operator record's introduction: the record's story in the Story tab). */
+export function noteStories(note: string): string[] {
+    return note
+        .split(",")
+        .filter((v) => v.startsWith("@"))
+        .map((v) => v.slice(1));
+}
+
 /** The game sections whose texts stand at objects: a card per object on the Game sections tab. */
-export const CARD_SECTIONS = ["operators", "enemies", "stages", "items"] as const;
+export const CARD_SECTIONS = ["operators", "enemies", "stages", "items", "archives"] as const;
 export type CardSection = (typeof CARD_SECTIONS)[number];
 
 export function isCardSection(section: string): section is CardSection {
@@ -90,11 +99,11 @@ export function isCardSection(section: string): section is CardSection {
 
 /**
  * What names an object in the address (the backend's `GameObject.id`): an
- * operator's id in the game data; the English name for the rest, where
- * several records under one name are one card.
+ * operator's id in the game data (for its card and for its archives); the
+ * English name for the rest, where several records under one name are one card.
  */
 export function objectKey(section: string, objectId: string | null, objectEn: string | null): string | null {
-    return section === "operators" ? objectId : objectEn;
+    return section === "operators" || section === "archives" ? objectId : objectEn;
 }
 
 export function sectionWord(section: string, t: T): string {

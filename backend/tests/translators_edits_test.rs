@@ -666,6 +666,7 @@ async fn texts_are_stored_and_searched() {
         object_en: "Ursus".to_owned(),
         field: "name".to_owned(),
         idx: 0,
+        note: String::new(),
         ord: 0,
     }];
     line(
@@ -925,5 +926,164 @@ async fn texts_are_stored_and_searched() {
     assert!(!backend::translators::export::for_plugin(Some(
         "ambiguous:story"
     )));
+    drop_db(pool, name).await;
+}
+
+/// A text pages long (an operator's file) is proposed, voted on, commented,
+/// approved and approved again: its key is too long for a b-tree. Its place
+/// names it by the md5 of its English. The archives' objects are the
+/// operators, named by the operator's own name.
+#[tokio::test]
+#[ignore = "creates and drops a database on the local Postgres"]
+async fn a_long_text_is_edited() {
+    use backend::translators::edits::dto::LONG_KEY;
+    use backend::translators::texts::{self, TextPlace, TextRow};
+    let (pool, name) = fresh_db().await;
+    let lead = user(&pool, "lead").await;
+    let a = user(&pool, "anna").await;
+    // Random-looking text: it must not compress into a short index entry.
+    let long: String = (0..1500)
+        .map(|i| format!("{:x} ", (i * 2_654_435_761_u64) % 1_000_003))
+        .collect::<String>()
+        .trim()
+        .to_owned();
+    assert!(long.len() > 6_000 && long.len() > LONG_KEY);
+    let row = |key: &str, ru: &str, section: &'static str| TextRow {
+        edit_key: key.to_owned(),
+        en: key.to_owned(),
+        ru: Some(ru.to_owned()),
+        file: Some("11_ui.txt".to_owned()),
+        plugin_role: None,
+        ru_plugin: None,
+        sections: vec![section],
+        places: 1,
+    };
+    let at = |key: &str, section: &'static str, field: &str, note: &str| TextPlace {
+        edit_key: key.to_owned(),
+        section,
+        object_id: "char_1".to_owned(),
+        object_en: "Amiya".to_owned(),
+        field: field.to_owned(),
+        idx: if field == "name" { 0 } else { 1 },
+        note: note.to_owned(),
+        ord: 0,
+    };
+    let rows = vec![
+        row("Amiya", "Амия", "operators"),
+        row(&long, "Очень длинный текст.", "archives"),
+    ];
+    let places = vec![
+        at("Amiya", "operators", "name", ""),
+        at(&long, "archives", "file.text", "V1"),
+    ];
+    let mut tx = pool.begin().await.unwrap();
+    texts::db::store(&mut tx, "en", &rows, &places)
+        .await
+        .unwrap();
+    tx.commit().await.unwrap();
+
+    // The archives' object is the operator, by its id, with the operator's Russian name.
+    let objects = texts::db::objects(&pool, "en", "archives").await.unwrap();
+    assert_eq!(objects.len(), 1);
+    assert_eq!(objects[0].id, "char_1");
+    assert_eq!(objects[0].ru.as_deref(), Some("Амия"));
+    assert_eq!(objects[0].total, 1);
+    let card = texts::db::object_texts(&pool, "en", "archives", "char_1")
+        .await
+        .unwrap();
+    assert_eq!(card.len(), 1);
+    assert_eq!(card[0].note, "V1");
+
+    // The place names the long entry by its md5; a short one by its English.
+    let here = EditPlace::text_by_md5(&long, &card[0].hit.key_md5);
+    let named = here.edit_key.clone().unwrap();
+    assert!(named.starts_with("md5:") && named.len() == 36);
+    assert_eq!(
+        EditPlace::text_by_md5("Amiya", "0").edit_key.as_deref(),
+        Some("Amiya")
+    );
+    let found = db::place_line(&pool, &here).await.unwrap().unwrap();
+    assert_eq!(found.edit_key, long);
+    assert_eq!(found.ru_game.as_deref(), Some("Очень длинный текст."));
+
+    let ru = "Перевод. ".repeat(700);
+    let ru = ru.trim();
+    let id = db::upsert_proposal(&pool, &long, &here, ru, "own", false, a)
+        .await
+        .unwrap();
+    // Written again: the same proposal (one per author and entry).
+    let again = db::upsert_proposal(&pool, &long, &here, "Короче.", "own", false, a)
+        .await
+        .unwrap();
+    assert_eq!(id, again);
+    db::set_agreement(
+        &pool,
+        &db::Vote {
+            key: &long,
+            variant: "proposal",
+            proposal: Some(id),
+            place: None,
+            text: None,
+        },
+        lead,
+        true,
+    )
+    .await
+    .unwrap();
+    db::add_comment(
+        &pool,
+        &long,
+        &here,
+        &db::NewComment {
+            text: "Проверить имя.",
+            quote: None,
+            kind: "remark",
+            variant: None,
+            proposal_id: None,
+            variant_text: None,
+        },
+        a,
+    )
+    .await
+    .unwrap();
+    db::approve_key(&pool, &long, "proposal", Some(id), "Короче.", &here, lead)
+        .await
+        .unwrap();
+    // Approved again: the entry keeps one approval.
+    db::approve_key(
+        &pool,
+        &long,
+        "game",
+        None,
+        "Очень длинный текст.",
+        &here,
+        lead,
+    )
+    .await
+    .unwrap();
+    let e = db::key_edits(&pool, std::slice::from_ref(&long))
+        .await
+        .unwrap();
+    assert_eq!(e.len(), 1);
+    assert_eq!(e[0].proposals.len(), 1);
+    assert_eq!(e[0].proposals[0].agreements.len(), 1);
+    assert_eq!(e[0].comments.len(), 1);
+    assert_eq!(e[0].approval.as_ref().unwrap().variant, "game");
+    let n: i64 = sqlx::query_scalar("SELECT COUNT(*) FROM translators.approvals")
+        .fetch_one(&pool)
+        .await
+        .unwrap();
+    assert_eq!(n, 1);
+    let objects = texts::db::objects(&pool, "en", "archives").await.unwrap();
+    assert_eq!(objects[0].approved, 1);
+    db::mark_outdated(&pool).await.unwrap();
+    db::withdraw_key(&pool, &long, &here, lead).await.unwrap();
+    assert!(
+        db::history(&pool, &long, &here, Some("Очень длинный текст."))
+            .await
+            .unwrap()
+            .len()
+            >= 4
+    );
     drop_db(pool, name).await;
 }

@@ -160,6 +160,7 @@ fn conditions<'q>(
 struct HitRow {
     id: i64,
     edit_key: String,
+    key_md5: String,
     en: String,
     ru: Option<String>,
     file: Option<String>,
@@ -191,7 +192,8 @@ pub async fn search(
     // The page is cut first and the states are read for its rows only, so the scan may run in parallel.
     let mut page: QueryBuilder<Postgres> = QueryBuilder::new(format!(
         "SELECT t.*, CASE WHEN {APPROVED} THEN 'approved' WHEN {PROPOSED} THEN 'proposed' ELSE 'unchecked' END AS status
-         FROM (SELECT t.id, t.edit_key, t.en, t.ru, t.file, t.plugin_role, t.ru_plugin, t.sections, t.places
+         FROM (SELECT t.id, t.edit_key, md5(t.edit_key) AS key_md5, t.en, t.ru, t.file, t.plugin_role,
+                      t.ru_plugin, t.sections, t.places
                FROM translators.texts t"
     ));
     conditions(&mut page, server, q, &folded);
@@ -270,6 +272,7 @@ pub async fn search(
             at: at.remove(&r.edit_key).unwrap_or_default(),
             id: r.id,
             edit_key: r.edit_key,
+            key_md5: r.key_md5,
             en: r.en,
             ru: r.ru,
             file: r.file,
@@ -283,12 +286,12 @@ pub async fn search(
     Ok((total, hits))
 }
 
-/// What names an object of a section: an operator is one record of the game
-/// data (its id); elsewhere the game data keeps several records under one
+/// What names an object of a section: an operator (and its archives) is one
+/// record of the game data (its id); elsewhere the game data keeps several records under one
 /// name (a stage and its challenge mode, an enemy and its event twin), and
 /// they are one object, by the name.
 fn object_key(section: &str) -> &'static str {
-    if section == super::gamedata::OPERATORS {
+    if section == super::gamedata::OPERATORS || section == super::gamedata::ARCHIVES {
         "p.object_id"
     } else {
         "p.object_en"
@@ -325,22 +328,40 @@ pub async fn objects(
     section: &str,
 ) -> Result<Vec<super::dto::GameObject>, sqlx::Error> {
     let key = object_key(section);
+    // An object's name is its own text; an operator's archives are named by the operator.
+    let (names, name_en, name_ru) = if section == super::gamedata::ARCHIVES {
+        (
+            "LEFT JOIN (SELECT n.object_id, MIN(t.en) AS en, MIN(t.ru) AS ru
+                        FROM translators.text_places n
+                        JOIN translators.texts t ON t.server = n.server AND t.edit_key = n.edit_key
+                        WHERE n.server = $1 AND n.section = 'operators' AND n.field = 'name'
+                        GROUP BY 1) t ON t.object_id = p.object_id",
+            "MIN(t.en)",
+            "MIN(t.ru)",
+        )
+    } else {
+        (
+            "LEFT JOIN translators.texts t
+                 ON p.field = 'name' AND t.server = p.server AND t.edit_key = p.edit_key",
+            "MIN(t.en)",
+            "MIN(t.ru)",
+        )
+    };
     let rows: Vec<ObjectRow> = sqlx::query_as(&format!(
         "WITH keyed AS (
              SELECT DISTINCT edit_key FROM translators.proposals
              WHERE deleted_at IS NULL AND NOT context AND outdated_at IS NULL)
          SELECT {key} AS id,
                 MIN(p.object_en) AS en,
-                MIN(t.en) AS name_en,
-                MIN(t.ru) AS name_ru,
+                {name_en} AS name_en,
+                {name_ru} AS name_ru,
                 COUNT(DISTINCT p.edit_key) FILTER (WHERE p.edit_key ~ '[[:alnum:]]')::int AS total,
                 COUNT(DISTINCT p.edit_key) FILTER (WHERE p.edit_key ~ '[[:alnum:]]'
                     AND a.edit_key IS NOT NULL)::int AS approved,
                 COUNT(DISTINCT p.edit_key) FILTER (WHERE p.edit_key ~ '[[:alnum:]]'
                     AND a.edit_key IS NULL AND k.edit_key IS NOT NULL)::int AS waiting
          FROM translators.text_places p
-         LEFT JOIN translators.texts t
-             ON p.field = 'name' AND t.server = p.server AND t.edit_key = p.edit_key
+         {names}
          LEFT JOIN translators.approvals a ON a.edit_key = p.edit_key AND a.outdated_at IS NULL
          LEFT JOIN keyed k ON k.edit_key = p.edit_key
          WHERE p.server = $1 AND p.section = $2
@@ -534,8 +555,8 @@ pub async fn object_texts(
 ) -> Result<Vec<ObjectText>, sqlx::Error> {
     let key = object_key(section);
     let rows: Vec<ObjectTextRow> = sqlx::query_as(&format!(
-        "SELECT x.field, x.idx, x.note, t.id, t.edit_key, t.en, t.ru, t.file, t.plugin_role, t.ru_plugin,
-                t.sections, t.places, '' AS status
+        "SELECT x.field, x.idx, x.note, t.id, t.edit_key, md5(t.edit_key) AS key_md5, t.en, t.ru, t.file,
+                t.plugin_role, t.ru_plugin, t.sections, t.places, '' AS status
          FROM (SELECT p.field, p.idx, p.edit_key, MIN(p.ord) AS ord, MIN(p.object_id) AS object_id,
                       COALESCE(string_agg(DISTINCT NULLIF(p.note, ''), ','), '') AS note
                FROM translators.text_places p
@@ -559,6 +580,7 @@ pub async fn object_texts(
                 at: Vec::new(),
                 id: r.hit.id,
                 edit_key: r.hit.edit_key,
+                key_md5: r.hit.key_md5,
                 en: r.hit.en,
                 ru: r.hit.ru,
                 file: r.hit.file,
@@ -674,6 +696,7 @@ mod tests {
     #[test]
     fn an_operator_is_a_record_and_the_rest_go_by_name() {
         assert_eq!(object_key("operators"), "p.object_id");
+        assert_eq!(object_key("archives"), "p.object_id");
         assert_eq!(object_key("stages"), "p.object_en");
     }
 }

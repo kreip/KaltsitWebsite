@@ -3,7 +3,7 @@ import { formatMessage } from "#/lib/i18n";
 import type { TypedT } from "#/lib/i18n/messages";
 import type { messages } from "./translators.messages";
 import ru from "./translators.ru.json";
-import { fieldLabel, fieldWords, fileWord, gameWhere, isCardSection, noteWords, objectKey, plainText, tableWord } from "./where";
+import { fieldLabel, fieldWords, fileWord, gameWhere, isCardSection, noteStories, noteWords, objectKey, plainText, tableWord } from "./where";
 
 const t = ((key: string, args?: Parameters<typeof formatMessage>[2]) => formatMessage((ru as Record<string, string>)[key], "ru", args)) as unknown as TypedT<typeof messages>;
 
@@ -28,6 +28,7 @@ describe("where a text stands, in words", () => {
 
     it("names an object by its id for an operator and by its name for the rest", () => {
         expect(objectKey("operators", "char_002_amiya", "Amiya")).toBe("char_002_amiya");
+        expect(objectKey("archives", "char_002_amiya", "Amiya")).toBe("char_002_amiya");
         expect(objectKey("stages", "main_00-01", "0-1 Collapse")).toBe("0-1 Collapse");
         expect(isCardSection("operators")).toBe(true);
         expect(isCardSection("other")).toBe(false);
@@ -64,5 +65,15 @@ describe("where a text stands, in words", () => {
         expect(noteWords("#PB1,#ES7", t)).toBe("PB1, ES7");
         expect(noteWords("N2", t)).toBe("№ 2");
         expect(noteWords("", t)).toBe("");
+    });
+
+    it("names the parts of an operator's archives and the story a record leads to", () => {
+        expect(fieldLabel("archives", "file.text", 3, t)).toBe("Досье 3 · текст");
+        expect(fieldLabel("archives", "record.description", 1, t)).toBe("Личная история 1 · описание");
+        expect(fieldLabel("archives", "voice.text", 12, t)).toBe("Реплика 12 · текст");
+        expect(noteStories("@story_amiya_1,V2")).toEqual(["story_amiya_1"]);
+        expect(noteWords("@story_amiya_1", t)).toBe("");
+        expect(noteWords("V1,V3", t)).toBe("набор реплик 1, набор реплик 3");
+        expect(isCardSection("archives")).toBe(true);
     });
 });
