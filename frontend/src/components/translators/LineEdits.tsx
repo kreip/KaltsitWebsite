@@ -1,8 +1,8 @@
 /**
  * Editing one story line: the approved variant,
  * the translators' proposals, remarks and translator's notes under the
- * Russian, the cell's actions on hover (propose, remark, note; a double click
- * on the Russian also proposes), the in-row editor and the save dialog: an
+ * Russian, the cell's actions on hover (propose, remark, note, history, and
+ * for the lead approve or withdraw), the in-row editor and the save dialog: an
  * entry in more than one place is saved for all its places (with the list and
  * a confirmation) or for this place only (a context translation).
  */
@@ -494,10 +494,11 @@ function selectedIn(within: Element | null): string | null {
 }
 
 /**
- * The Russian cell's actions, at its top right on hover or keyboard focus
- * (always on a touch screen): agree with and (the lead) approve the game's
- * text, propose, remark, note. The game's text's buttons live here, not at
- * the end of the text, which the panel would cover on a long line. A remark or note quotes
+ * The Russian cell's actions, at the top right of the game's text on hover or
+ * keyboard focus (always on a touch screen): agree with and (the lead) approve
+ * the game's text or withdraw what is approved, propose, remark, note. The
+ * game's text's buttons live here, not at the end of the text, which the
+ * panel would cover on a long line. A remark or note quotes
  * the text selected in the row (read before the click can clear it). History
  * opens the history of the line's translation (LineHistory.tsx).
  */

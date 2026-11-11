@@ -3,9 +3,9 @@
  * English | Chinese (optional). Under the Russian: the glossary terms of the
  * line's English with whether the Russian holds their form, the proposals,
  * Sova's and the AI's variants (each with "Propose this"), the notes and
- * remarks. Hovering the Russian shows its actions (LineEdits.tsx); a double
- * click on it proposes. With Service on, the stage commands sit between the
- * lines as gray rows, in words.
+ * remarks. Hovering the Russian shows its actions (LineEdits.tsx), over the
+ * game's text and under the approved variant. With Service on, the stage
+ * commands sit between the lines as gray rows, in words.
  */
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Check, X } from "lucide-react";
@@ -20,7 +20,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "#
 import { toastManager } from "#/components/ui/toast";
 import { useFormatters, useT } from "#/lib/i18n";
 import type { TypedT } from "#/lib/i18n/messages";
-import { setRecommendRuleFn, translatorsMeQueryOptions } from "#/lib/translators/api";
+import { type AgreeVariant, setRecommendRuleFn, translatorsMeQueryOptions } from "#/lib/translators/api";
 import { cn } from "#/lib/utils";
 import type { EditPlace } from "#/types/generated/EditPlace";
 import type { KeyEdits } from "#/types/generated/KeyEdits";
@@ -194,39 +194,39 @@ export function RuCell({ line, analysis, place, nickname, showVariants, showDiff
             {approved !== variant ? <ApproveButton place={place} variant={variant} me={me} approved={false} t={t} /> : null}
         </>
     );
+    // What is approved here (the entry, else a one-place proposal): the panel withdraws it too.
+    const approvedHere = proposalsAt(edits, place).find((p) => p.context && p.approvedAt !== null);
+    const withdraw = edits?.approval ? (
+        <ApproveButton place={place} variant={edits.approval.variant as AgreeVariant} proposalId={edits.approval.proposalId ?? undefined} me={me} approved t={t} />
+    ) : approvedHere ? (
+        <ApproveButton place={place} variant="proposal" proposalId={approvedHere.id} me={me} approved t={t} />
+    ) : null;
     const take = (source: "sova" | "ai", text: string) => (
         <Button variant="link" size="xs" className="h-auto px-0 text-xs" onClick={() => onEditor({ kind: "proposal", text, source, context: false })}>
             {t("action.proposeThis")}
         </Button>
     );
     return (
-        <div className="group/cell relative flex flex-col gap-1">
-            {editor === null ? (
-                <CellActions
-                    line={line}
-                    onOpen={onEditor}
-                    onHistory={() => setHistory(true)}
-                    game={
-                        line.ruGame && line.editable ? (
-                            <>
-                                <AgreeButton place={place} variant="game" people={edits?.gameAgreements ?? []} me={me} t={t} />
-                                {approved !== "game" ? <ApproveButton place={place} variant="game" me={me} approved={false} t={t} /> : null}
-                            </>
-                        ) : null
-                    }
-                    t={t}
-                />
-            ) : null}
+        <div className="group/cell flex flex-col gap-1">
             {history ? <LineHistoryDialog place={place} open={history} onOpenChange={setHistory} nickname={nickname} t={t} /> : null}
             <ApprovedVariant edits={edits} place={place} me={me} nickname={nickname} marks={marks("approved")} compareWith={showDiff ? line.ruGame : null} t={t} />
-            {/* biome-ignore lint/a11y/noStaticElementInteractions: a shortcut; the Propose button is the accessible way */}
-            <div
-                onDoubleClick={() => {
-                    if (!line.editable || editor) return;
-                    window.getSelection()?.removeAllRanges();
-                    onEditor({ kind: "proposal", text: line.ruGame ?? "", source: "own", context: false });
-                }}
-            >
+            {/* The actions hang over the game's text, under the approved variant: its line (who approved, Withdraw) stays in sight. */}
+            <div className="relative">
+                {editor === null ? (
+                    <CellActions
+                        line={line}
+                        onOpen={onEditor}
+                        onHistory={() => setHistory(true)}
+                        game={
+                            <>
+                                {line.ruGame && line.editable ? <AgreeButton place={place} variant="game" people={edits?.gameAgreements ?? []} me={me} t={t} /> : null}
+                                {line.ruGame && line.editable && approved !== "game" ? <ApproveButton place={place} variant="game" me={me} approved={false} t={t} /> : null}
+                                {withdraw}
+                            </>
+                        }
+                        t={t}
+                    />
+                ) : null}
                 {line.ruGame ? <StoryText text={line.ruGame} nickname={nickname} quotes={quotes} find={find} /> : <span className="text-subtle-foreground">{t("ru.missing")}</span>}
                 {marks("game", true)}
                 {line.ruGame && line.editable && (edits?.gameAgreements.length ?? 0) > 0 ? <AgreeButton place={place} variant="game" people={edits?.gameAgreements ?? []} me={me} t={t} /> : null}
