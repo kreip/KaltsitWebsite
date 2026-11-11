@@ -39,7 +39,7 @@ import { GamePlace } from "./PlaceWords";
 import { StoryText } from "./StoryText";
 import { useStoryNames } from "./storyNames";
 import { TextDiff } from "./TextDiff";
-import { TokenEditor } from "./TokenEditor";
+import { type ITokenLabels, paletteOf, TokenEditor } from "./TokenEditor";
 import type { messages } from "./translators.messages";
 
 type T = TypedT<typeof messages>;
@@ -693,6 +693,11 @@ function PlacesNote({ line, place, nickname, t }: { line: TranslatorLine; place:
     );
 }
 
+/** The token editor's words. */
+export function tokenLabels(t: T): ITokenLabels {
+    return { insertNickname: t("editor.insertNickname"), insertToken: (token) => t("editor.insertToken", { token }), remove: t("editor.removeToken") };
+}
+
 interface IEditorProps {
     line: TranslatorLine;
     place: EditPlace;
@@ -729,7 +734,7 @@ export function ProposalEditor({ line, place, initial, source, context, nickname
             <label htmlFor={id} className="text-subtle-foreground text-xs">
                 {source === "own" ? t("editor.label") : t(`editor.label.${source}` as "editor.label.sova")}
             </label>
-            <TokenEditor id={id} initial={initial} nickname={nickname} onChange={setText} onSubmit={submit} onCancel={onClose} insertLabel={t("editor.insertNickname")} describedBy={hintId} />
+            <TokenEditor id={id} initial={initial} nickname={nickname} palette={paletteOf(line.en)} onChange={setText} onSubmit={submit} onCancel={onClose} labels={tokenLabels(t)} describedBy={hintId} />
             <span id={hintId} className="text-subtle-foreground text-xs">
                 {t("save.proposalOnly")}
             </span>

@@ -24,11 +24,11 @@ import { deleteProposalFn, editsQueryOptions, proposalVersionsQueryOptions, rewr
 import type { EditRow } from "#/types/generated/EditRow";
 import type { TranslatorsMe } from "#/types/generated/TranslatorsMe";
 import { ExportDialog } from "./ExportDialog";
-import { CONFIRM_PLACES, cleanText, exportsForGame, isLead, marksReleases, SaveDialog, useEditMutation } from "./LineEdits";
+import { CONFIRM_PLACES, cleanText, exportsForGame, isLead, marksReleases, SaveDialog, tokenLabels, useEditMutation } from "./LineEdits";
 import { StoryText } from "./StoryText";
 import { useStoryNames } from "./storyNames";
 import { TextDiff } from "./TextDiff";
-import { TokenEditor } from "./TokenEditor";
+import { paletteOf, TokenEditor } from "./TokenEditor";
 import type { messages } from "./translators.messages";
 import { plainText, TEXT_PLACE } from "./where";
 
@@ -118,7 +118,7 @@ function Rewrite({ row, nickname, onClose, t }: { row: EditRow; nickname: string
             <label htmlFor={id} className="text-subtle-foreground text-xs">
                 {t("editor.rewrite")}
             </label>
-            <TokenEditor id={id} initial={row.proposal.text} nickname={nickname} onChange={setText} onSubmit={submit} onCancel={onClose} insertLabel={t("editor.insertNickname")} />
+            <TokenEditor id={id} initial={row.proposal.text} nickname={nickname} palette={paletteOf(row.en)} onChange={setText} onSubmit={submit} onCancel={onClose} labels={tokenLabels(t)} />
             <span className="text-subtle-foreground text-xs">{t("save.proposalOnly")}</span>
             {sameAsGame ? <span className="text-subtle-foreground text-xs">{t("editor.sameAsGame")}</span> : null}
             {several ? <span className="text-warning-foreground text-xs">{t("places.note", { count: row.places - 1 })}</span> : null}

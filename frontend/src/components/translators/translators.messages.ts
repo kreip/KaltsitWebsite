@@ -1747,6 +1747,14 @@ export const messages = {
         text: "name",
         description: "What of an operator or an enemy a text is, in the list of a text's places and in the object's card: its name (an item or a stage has a «title» instead).",
     },
+    "editor.insertToken": {
+        text: "Insert {token}",
+        description: "Tooltip of a button under the editor that inserts one substitution of the English original ({0}, {atk:0%}) at the cursor.",
+    },
+    "editor.removeToken": {
+        text: "Remove",
+        description: "Accessible name of the small cross on a substitution chip in the editor: removes the chip.",
+    },
 } satisfies MessageMap;
 
 export const { keys } = defineMessages({ namespace, messages });

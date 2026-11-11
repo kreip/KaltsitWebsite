@@ -452,5 +452,7 @@
     "sections.progressLong": "Проверено {checked} · ждут решения {waiting}",
     "sections.progressLabel": "Прогресс объекта",
     "at.field.class": "класс",
-    "at.field.who": "имя"
+    "at.field.who": "имя",
+    "editor.insertToken": "Вставить {token}",
+    "editor.removeToken": "Убрать"
 }
