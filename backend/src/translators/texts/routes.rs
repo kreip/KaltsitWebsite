@@ -75,7 +75,7 @@ pub async fn search_texts(
 }
 
 /// The sections whose texts stand at objects (a card per object).
-const CARD_SECTIONS: &[&str] = &["operators"];
+const CARD_SECTIONS: &[&str] = &["operators", "enemies"];
 
 fn check_card(section: &str) -> Result<(), ApiError> {
     if CARD_SECTIONS.contains(&section) {

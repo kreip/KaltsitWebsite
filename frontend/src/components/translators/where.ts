@@ -33,7 +33,7 @@ export function fieldLabel(section: string, field: string, idx: number, t: T): s
 }
 
 /** The game sections whose texts stand at objects: a card per object on the Game sections tab. */
-export const CARD_SECTIONS = ["operators"] as const;
+export const CARD_SECTIONS = ["operators", "enemies"] as const;
 export type CardSection = (typeof CARD_SECTIONS)[number];
 
 export function isCardSection(section: string): section is CardSection {
