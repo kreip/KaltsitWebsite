@@ -88,6 +88,12 @@ Russian (any case, ё = е), with filters by section and state. From the command
 
 It prints how many texts match, the database time and the first results.
 
+The page's **Search** tab (`/translators?tab=search&q=…`) is the same search with the
+story table's actions in the results (`GET /api/translators/search`). A text that stands
+in the story is edited at its first story line; any other as the text itself — the
+place `storyId = "@text"` with the entry's English in `editKey` — one translation
+everywhere. The query and the filters are in the address, so a search is a link.
+
 ## Export
 
 "My edits" → "Export…" prepares one archive (`.zip`) for the pack's maintainer:
@@ -97,7 +103,8 @@ It prints how many texts match, the database time and the first results.
   everything else stays byte for byte;
 - `14_new.txt`: entries none of the pack's files has (the pack's own `14_new.txt`, once
   it has one, with the new entries at its end);
-- `plugin_strings.tsv`: lines the RichTextFix plugin shows from its built-in catalog;
+- `plugin_strings.tsv`: lines the RichTextFix plugin shows from its built-in catalog
+  (any role but `ambiguous:…`: story, skill, operator…), with the role;
 - `story_lines.tsv`: every approved story line with its place (for the bundles);
 - `report.txt`: each changed line (file, line number, before → after, who approved).
 
