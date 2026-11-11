@@ -1267,6 +1267,270 @@ export const messages = {
         text: "Couldn't change the rule.",
         description: "Toast when saving the recommended rule failed.",
     },
+    "tabs.search": {
+        text: "Search",
+        description: "Tab of the translators' section: search every text of the game and edit it in the results.",
+    },
+    "search.label": {
+        text: "Search every text",
+        description: "Search tab of the translators' section: accessible name of the search box.",
+    },
+    "search.placeholder": {
+        text: "English or Russian…",
+        description: "Search tab of the translators' section: placeholder of the search box (it searches both).",
+    },
+    "search.clear": {
+        text: "Clear",
+        description: "Search tab of the translators' section: button that clears the search box.",
+    },
+    "search.whole": {
+        text: "Whole word",
+        description: "Search tab of the translators' section: checkbox, match whole words only.",
+    },
+    "search.section": {
+        text: "Section",
+        description: "Search tab of the translators' section: label of the section select.",
+    },
+    "search.status": {
+        text: "State",
+        description: "Search tab of the translators' section: label of the state select.",
+    },
+    "search.section.all": {
+        text: "All",
+        description: "Search tab of the translators' section: section select, every section.",
+    },
+    "search.section.story": {
+        text: "Story",
+        description: "Search tab of the translators' section: section select.",
+    },
+    "search.section.operators": {
+        text: "Operators",
+        description: "Search tab of the translators' section: section select.",
+    },
+    "search.section.enemies": {
+        text: "Enemies",
+        description: "Search tab of the translators' section: section select.",
+    },
+    "search.section.stages": {
+        text: "Stages",
+        description: "Search tab of the translators' section: section select.",
+    },
+    "search.section.items": {
+        text: "Items",
+        description: "Search tab of the translators' section: section select.",
+    },
+    "search.section.archives": {
+        text: "Archives",
+        description: "Search tab of the translators' section: section select (operator files, voice lines, outfit and module stories).",
+    },
+    "search.section.other": {
+        text: "Interface and other",
+        description: "Search tab of the translators' section: section select, the rest of the game's texts.",
+    },
+    "search.status.all": {
+        text: "All",
+        description: "Search tab of the translators' section: state select, any state.",
+    },
+    "search.status.unchecked": {
+        text: "Not checked",
+        description: "Search tab of the translators' section: state select, nobody proposed or approved anything.",
+    },
+    "search.status.proposed": {
+        text: "Has proposals",
+        description: "Search tab of the translators' section: state select.",
+    },
+    "search.status.approved": {
+        text: "Approved",
+        description: "Search tab of the translators' section: state select.",
+    },
+    "search.status.untranslated": {
+        text: "Not translated",
+        description: "Search tab of the translators' section: state select, the game shows no Russian.",
+    },
+    "search.found": {
+        text: "Found: {count} · {millis} ms",
+        description: "Search tab of the translators' section: how many texts match and how long the search took; count and millis come formatted.",
+    },
+    "search.prompt": {
+        text: "Type a word, or choose a section or a state.",
+        description: "Search tab of the translators' section: shown before anything is asked.",
+    },
+    "search.none": {
+        text: "Nothing found.",
+        description: "Search tab of the translators' section: no text matches.",
+    },
+    "search.more": {
+        text: "Show more",
+        description: "Search tab of the translators' section: button under the results that loads the next 50.",
+    },
+    "search.shown": {
+        text: "Shown {shown} of {total}",
+        description: "Search tab of the translators' section: next to Show more; numbers come formatted.",
+    },
+    "search.load": {
+        text: "Couldn't search.",
+        description: "Search tab of the translators' section: the search failed.",
+    },
+    "search.table": {
+        text: "Found texts",
+        description: "Search tab of the translators' section: accessible name of the results table.",
+    },
+    "search.where": {
+        text: "Where",
+        description: "Search tab of the translators' section: column header, where the text stands in the game.",
+    },
+    "search.alsoIn": {
+        text: "also in {count, plural, one {# place} other {# places}}",
+        description: "Search tab of the translators' section: under the places shown, how many more hold the same text.",
+    },
+    "where.text": {
+        text: "Game text · open in Search",
+        description: "My edits: where a proposal for a text outside the story was made; links to the Search tab.",
+    },
+    "at.story": {
+        text: "Story",
+        description: "One part of where a text stands in the game data, as in «Operator › Amiya › Skill 2 › description»: the section, singular.",
+    },
+    "at.operators": {
+        text: "Operator",
+        description: "One part of where a text stands in the game data, as in «Operator › Amiya › Skill 2 › description»: the section, singular.",
+    },
+    "at.enemies": {
+        text: "Enemy",
+        description: "One part of where a text stands in the game data, as in «Operator › Amiya › Skill 2 › description»: the section, singular.",
+    },
+    "at.stages": {
+        text: "Stage",
+        description: "One part of where a text stands in the game data, as in «Operator › Amiya › Skill 2 › description»: the section, singular.",
+    },
+    "at.items": {
+        text: "Item",
+        description: "One part of where a text stands in the game data, as in «Operator › Amiya › Skill 2 › description»: the section, singular.",
+    },
+    "at.archives": {
+        text: "Archives",
+        description: "One part of where a text stands in the game data, as in «Operator › Amiya › Skill 2 › description»: the section, singular.",
+    },
+    "at.other": {
+        text: "Interface and other",
+        description: "One part of where a text stands in the game data, as in «Operator › Amiya › Skill 2 › description»: the section, singular.",
+    },
+    "at.part.talent": {
+        text: "Talent",
+        description: "One part of where a text stands in the game data, as in «Operator › Amiya › Skill 2 › description»: which object part; a number may follow.",
+    },
+    "at.part.skill": {
+        text: "Skill",
+        description: "One part of where a text stands in the game data, as in «Operator › Amiya › Skill 2 › description»: which object part; a number may follow.",
+    },
+    "at.part.module": {
+        text: "Module",
+        description: "One part of where a text stands in the game data, as in «Operator › Amiya › Skill 2 › description»: which object part; a number may follow.",
+    },
+    "at.part.base": {
+        text: "Base skill",
+        description: "One part of where a text stands in the game data, as in «Operator › Amiya › Skill 2 › description»: which object part; a number may follow.",
+    },
+    "at.part.skin": {
+        text: "Outfit",
+        description: "One part of where a text stands in the game data, as in «Operator › Amiya › Skill 2 › description»: which object part; a number may follow.",
+    },
+    "at.part.file": {
+        text: "File",
+        description: "One part of where a text stands in the game data, as in «Operator › Amiya › Skill 2 › description»: which object part; a number may follow.",
+    },
+    "at.part.voice": {
+        text: "Voice line",
+        description: "One part of where a text stands in the game data, as in «Operator › Amiya › Skill 2 › description»: which object part; a number may follow.",
+    },
+    "at.part.zone": {
+        text: "Zone",
+        description: "One part of where a text stands in the game data, as in «Operator › Amiya › Skill 2 › description»: which object part; a number may follow.",
+    },
+    "at.field.name": {
+        text: "name",
+        description: "One part of where a text stands in the game data, as in «Operator › Amiya › Skill 2 › description»: the field, lower case.",
+    },
+    "at.field.appellation": {
+        text: "appellation",
+        description: "One part of where a text stands in the game data, as in «Operator › Amiya › Skill 2 › description»: the field, lower case.",
+    },
+    "at.field.subclass": {
+        text: "branch",
+        description: "One part of where a text stands in the game data, as in «Operator › Amiya › Skill 2 › description»: the field, lower case.",
+    },
+    "at.field.tag": {
+        text: "tag",
+        description: "One part of where a text stands in the game data, as in «Operator › Amiya › Skill 2 › description»: the field, lower case.",
+    },
+    "at.field.trait": {
+        text: "trait",
+        description: "One part of where a text stands in the game data, as in «Operator › Amiya › Skill 2 › description»: the field, lower case.",
+    },
+    "at.field.description": {
+        text: "description",
+        description: "One part of where a text stands in the game data, as in «Operator › Amiya › Skill 2 › description»: the field, lower case.",
+    },
+    "at.field.potential": {
+        text: "potential",
+        description: "One part of where a text stands in the game data, as in «Operator › Amiya › Skill 2 › description»: the field, lower case.",
+    },
+    "at.field.mission": {
+        text: "mission",
+        description: "One part of where a text stands in the game data, as in «Operator › Amiya › Skill 2 › description»: the field, lower case.",
+    },
+    "at.field.effect": {
+        text: "effect",
+        description: "One part of where a text stands in the game data, as in «Operator › Amiya › Skill 2 › description»: the field, lower case.",
+    },
+    "at.field.story": {
+        text: "story",
+        description: "One part of where a text stands in the game data, as in «Operator › Amiya › Skill 2 › description»: the field, lower case.",
+    },
+    "at.field.group": {
+        text: "series",
+        description: "One part of where a text stands in the game data, as in «Operator › Amiya › Skill 2 › description»: the field, lower case.",
+    },
+    "at.field.usage": {
+        text: "usage",
+        description: "One part of where a text stands in the game data, as in «Operator › Amiya › Skill 2 › description»: the field, lower case.",
+    },
+    "at.field.dialog": {
+        text: "quote",
+        description: "One part of where a text stands in the game data, as in «Operator › Amiya › Skill 2 › description»: the field, lower case.",
+    },
+    "at.field.title": {
+        text: "title",
+        description: "One part of where a text stands in the game data, as in «Operator › Amiya › Skill 2 › description»: the field, lower case.",
+    },
+    "at.field.text": {
+        text: "text",
+        description: "One part of where a text stands in the game data, as in «Operator › Amiya › Skill 2 › description»: the field, lower case.",
+    },
+    "at.field.ability": {
+        text: "ability",
+        description: "One part of where a text stands in the game data, as in «Operator › Amiya › Skill 2 › description»: the field, lower case.",
+    },
+    "at.field.obtain": {
+        text: "how to get",
+        description: "One part of where a text stands in the game data, as in «Operator › Amiya › Skill 2 › description»: the field, lower case.",
+    },
+    "at.field.first": {
+        text: "name, part 1",
+        description: "One part of where a text stands in the game data, as in «Operator › Amiya › Skill 2 › description»: the field, lower case.",
+    },
+    "at.field.second": {
+        text: "name, part 2",
+        description: "One part of where a text stands in the game data, as in «Operator › Amiya › Skill 2 › description»: the field, lower case.",
+    },
+    "at.field.third": {
+        text: "name, part 3",
+        description: "One part of where a text stands in the game data, as in «Operator › Amiya › Skill 2 › description»: the field, lower case.",
+    },
+    "at.field.locked": {
+        text: "when locked",
+        description: "One part of where a text stands in the game data, as in «Operator › Amiya › Skill 2 › description»: the field, lower case.",
+    },
 } satisfies MessageMap;
 
 export const { keys } = defineMessages({ namespace, messages });

@@ -4,7 +4,7 @@
  * http-only `site_token` reaches the backend: the section's data is only
  * answered to a member (`translators.members`).
  */
-import { queryOptions } from "@tanstack/react-query";
+import { infiniteQueryOptions, queryOptions } from "@tanstack/react-query";
 import { createServerFn } from "@tanstack/react-start";
 import { setCookie } from "@tanstack/react-start/server";
 import { env } from "#/env";
@@ -25,6 +25,7 @@ import type { LoginResponse } from "#/types/generated/LoginResponse";
 import type { NameRu } from "#/types/generated/NameRu";
 import type { ProposalVersion } from "#/types/generated/ProposalVersion";
 import type { Release } from "#/types/generated/Release";
+import type { SearchLines } from "#/types/generated/SearchLines";
 import type { StoryProgress } from "#/types/generated/StoryProgress";
 import type { TranslatorStoryLines } from "#/types/generated/TranslatorStoryLines";
 import type { TranslatorsMe } from "#/types/generated/TranslatorsMe";
@@ -95,6 +96,13 @@ export const EDIT_QUERY_ROOTS = [
     [...TRANSLATORS_QUERY_ROOT, "edits"],
 ] as const;
 
+/** A place in an address: a text outside the story also names its entry. */
+function placeQuery(place: EditPlace): URLSearchParams {
+    const q = new URLSearchParams({ storyId: place.storyId, line: String(place.line), part: String(place.part) });
+    if (place.editKey !== undefined) q.set("editKey", place.editKey);
+    return q;
+}
+
 async function send(path: string, method: string, body?: unknown): Promise<Response> {
     const res = await backendFetch(path, { method, bearerToken: optionalSiteToken(), body: body === undefined ? undefined : JSON.stringify(body) });
     if (!res.ok) throw await parseError(res);
@@ -140,14 +148,13 @@ export function proposalVersionsQueryOptions(id: number) {
 export const getLineHistoryFn = createServerFn({ method: "GET" })
     .inputValidator((d: { place: EditPlace }) => d)
     .handler(async ({ data }): Promise<LineHistory> => {
-        const q = new URLSearchParams({ storyId: data.place.storyId, line: String(data.place.line), part: String(data.place.part) });
-        const res = await send(`/translators/history?${q}`, "GET");
+        const res = await send(`/translators/history?${placeQuery(data.place)}`, "GET");
         return (await res.json()) as LineHistory;
     });
 
 /** Under the lines' key, so every edit refreshes an open history. */
 export function lineHistoryQueryOptions(place: EditPlace) {
-    return queryOptions({ queryKey: [...TRANSLATORS_QUERY_ROOT, "lines", "history", place.storyId, place.line, place.part], queryFn: () => getLineHistoryFn({ data: { place } }) });
+    return queryOptions({ queryKey: [...TRANSLATORS_QUERY_ROOT, "lines", "history", place.storyId, place.line, place.part, place.editKey ?? null], queryFn: () => getLineHistoryFn({ data: { place } }) });
 }
 
 /** Agree with a variant of the line's entry or take it back; `proposalId` null = keep as in the game. */
@@ -259,14 +266,13 @@ export const resolveCommentFn = createServerFn({ method: "POST" })
 export const getPlacesFn = createServerFn({ method: "GET" })
     .inputValidator((d: EditPlace) => d)
     .handler(async ({ data }): Promise<KeyPlaces> => {
-        const q = new URLSearchParams({ storyId: data.storyId, line: String(data.line), part: String(data.part) });
-        const res = await send(`/translators/places?${q}`, "GET");
+        const res = await send(`/translators/places?${placeQuery(data)}`, "GET");
         return (await res.json()) as KeyPlaces;
     });
 
 /** Every place of the entry at a place. */
 export function placesQueryOptions(place: EditPlace) {
-    return queryOptions({ queryKey: [...TRANSLATORS_QUERY_ROOT, "places", place.storyId, place.line, place.part], queryFn: () => getPlacesFn({ data: place }), staleTime: 5 * 60_000 });
+    return queryOptions({ queryKey: [...TRANSLATORS_QUERY_ROOT, "places", place.storyId, place.line, place.part, place.editKey ?? null], queryFn: () => getPlacesFn({ data: place }), staleTime: 5 * 60_000 });
 }
 
 export const getEditsFn = createServerFn({ method: "GET" })
@@ -329,3 +335,40 @@ export const translatorsDevLoginFn = createServerFn({ method: "POST" }).handler(
     setCookie("auth_indicator", "1", { ...COOKIE_BASE, httpOnly: false });
     return { uid };
 });
+
+// ---- The search over every text (the Search tab).
+
+export interface ISearchQuery {
+    q: string;
+    whole: boolean;
+    section: string | null;
+    status: string | null;
+}
+
+/** How many found texts a page brings. */
+export const SEARCH_PAGE = 50;
+
+export const searchLinesFn = createServerFn({ method: "GET" })
+    .inputValidator((d: ISearchQuery & { offset: number }) => d)
+    .handler(async ({ data }): Promise<SearchLines> => {
+        const q = new URLSearchParams({ q: data.q, offset: String(data.offset), limit: String(SEARCH_PAGE) });
+        if (data.whole) q.set("whole", "true");
+        if (data.section) q.set("section", data.section);
+        if (data.status) q.set("status", data.status);
+        const res = await send(`/translators/search?${q}`, "GET");
+        return (await res.json()) as SearchLines;
+    });
+
+/** Under the lines' key, so every edit refreshes the results; 50 at a time. */
+export function searchLinesQueryOptions(query: ISearchQuery) {
+    return infiniteQueryOptions({
+        queryKey: [...TRANSLATORS_QUERY_ROOT, "lines", "search", query],
+        queryFn: ({ pageParam }) => searchLinesFn({ data: { ...query, offset: pageParam } }),
+        initialPageParam: 0,
+        getNextPageParam: (last, pages) => {
+            const loaded = pages.reduce((n, p) => n + p.rows.length, 0);
+            return last.rows.length > 0 && loaded < last.total ? loaded : undefined;
+        },
+        staleTime: 60_000,
+    });
+}

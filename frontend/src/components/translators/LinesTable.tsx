@@ -34,7 +34,7 @@ import { type Address, checkVariant, type ICandidate, type IVariantCheck, neighb
 import { AgreeButton, ApproveButton, ApprovedVariant, approvedVariant, CellActions, CommentEditor, diffLabels, type EditorState, isLead, LineComments, OutdatedHere, ProposalEditor, Proposals, placeOf, placeVotes, proposalsAt, quotesAt, StatusDot, TONE, Toned, VariantNotes } from "./LineEdits";
 import { LineHistoryDialog } from "./LineHistory";
 import { Marks } from "./Marks";
-import { StoryText } from "./StoryText";
+import { type IFind, StoryText } from "./StoryText";
 import { DISPLAYED_KINDS, describeCommands } from "./service";
 import { TextDiff } from "./TextDiff";
 import type { messages } from "./translators.messages";
@@ -42,9 +42,9 @@ import type { messages } from "./translators.messages";
 type T = TypedT<typeof messages>;
 
 /** A prose cell wraps, reads from the top and stays dense (the kit cell is one nowrap line). */
-const PROSE = "whitespace-normal py-1.5 align-top leading-snug";
+export const PROSE = "whitespace-normal py-1.5 align-top leading-snug";
 
-function Speaker({ line, t }: { line: TranslatorLine; t: T }): React.ReactElement | null {
+export function Speaker({ line, t }: { line: TranslatorLine; t: T }): React.ReactElement | null {
     if (line.kind === "option")
         return (
             <Badge variant="tint" size="sm">
@@ -158,10 +158,11 @@ export function analyse(line: TranslatorLine, edits: KeyEdits | undefined, place
     return { checks, recommended: line.editable ? recommend(candidates, approvedHere, rule) : null };
 }
 
-interface IRuCellProps {
+export interface IRuCellProps {
     line: TranslatorLine;
     analysis: IAnalysis;
-    storyId: string;
+    /** Where the line stands: a story line, or a text outside the story (the search). */
+    place: EditPlace;
     nickname: string;
     showVariants: boolean;
     /** Compare: the proposals and the approved text as changes against the text one step back. */
@@ -171,13 +172,14 @@ interface IRuCellProps {
     me: TranslatorsMe;
     editor: EditorState | null;
     onEditor: (state: EditorState | null) => void;
+    /** The search's text, highlighted in the game's Russian. */
+    find?: IFind | null;
     t: T;
 }
 
-function RuCell({ line, analysis, storyId, nickname, showVariants, showDiff, edits, outdated, me, editor, onEditor, t }: IRuCellProps): React.ReactElement {
+export function RuCell({ line, analysis, place, nickname, showVariants, showDiff, edits, outdated, me, editor, onEditor, find = null, t }: IRuCellProps): React.ReactElement {
     const f = useFormatters();
     const [history, setHistory] = useState(false);
-    const place = placeOf(storyId, line);
     const quotes = quotesAt(edits, place);
     const notes = { edits, place, me, t };
     const { checks, recommended } = analysis;
@@ -225,7 +227,7 @@ function RuCell({ line, analysis, storyId, nickname, showVariants, showDiff, edi
                     onEditor({ kind: "proposal", text: line.ruGame ?? "", source: "own", context: false });
                 }}
             >
-                {line.ruGame ? <StoryText text={line.ruGame} nickname={nickname} quotes={quotes} /> : <span className="text-subtle-foreground">{t("ru.missing")}</span>}
+                {line.ruGame ? <StoryText text={line.ruGame} nickname={nickname} quotes={quotes} find={find} /> : <span className="text-subtle-foreground">{t("ru.missing")}</span>}
                 {marks("game", true)}
                 {line.ruGame && line.editable && (edits?.gameAgreements.length ?? 0) > 0 ? <AgreeButton place={place} variant="game" people={edits?.gameAgreements ?? []} me={me} t={t} /> : null}
             </div>
@@ -439,7 +441,7 @@ export function LinesTable({ storyId, lines, edits, outdated, me, label, showCn,
                                         <RuCell
                                             line={line}
                                             analysis={analyses[i]}
-                                            storyId={storyId}
+                                            place={placeOf(storyId, line)}
                                             nickname={nickname}
                                             showVariants={showVariants}
                                             showDiff={showDiff}

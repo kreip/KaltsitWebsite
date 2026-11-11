@@ -30,6 +30,7 @@ import { useStoryNames } from "./storyNames";
 import { TextDiff } from "./TextDiff";
 import { TokenEditor } from "./TokenEditor";
 import type { messages } from "./translators.messages";
+import { plainText, TEXT_PLACE } from "./where";
 
 type T = TypedT<typeof messages>;
 
@@ -45,6 +46,16 @@ const STATE_VARIANT = {
 function Where({ row, t }: { row: EditRow; t: T }): React.ReactElement {
     const nameOf = useStoryNames();
     const { place } = row.proposal;
+    // A text outside the story: it is found again in Search.
+    if (place.storyId === TEXT_PLACE)
+        return (
+            <span className="flex flex-col gap-0.5">
+                <Link to="/translators" search={{ tab: "search", q: plainText(row.proposal.editKey) }} className="underline-offset-4 hover:underline">
+                    {t("where.text")}
+                </Link>
+                {row.places > 1 ? <span className="text-subtle-foreground text-xs">{t("where.places", { count: row.places })}</span> : null}
+            </span>
+        );
     const n = nameOf(place.storyId);
     const label = t("where.item", { group: n?.group ?? "", story: n?.story ?? place.storyId, n: row.ord === null ? "?" : row.ord + 1 });
     return (

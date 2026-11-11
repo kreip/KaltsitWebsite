@@ -1,6 +1,6 @@
 {
     "generatedBy": "bun run i18n:extract",
-    "generatedAt": "2026-11-11T03:02:39.567Z",
+    "generatedAt": "2026-11-11T15:22:51.452Z",
     "entries": [
         {
             "key": "admin.home.access.everyList",
@@ -54101,6 +54101,258 @@
             ]
         },
         {
+            "key": "translators.at.archives",
+            "namespace": "translators",
+            "source_text": "Archives",
+            "description": "One part of where a text stands in the game data, as in «Operator › Amiya › Skill 2 › description»: the section, singular.",
+            "placeholders": []
+        },
+        {
+            "key": "translators.at.enemies",
+            "namespace": "translators",
+            "source_text": "Enemy",
+            "description": "One part of where a text stands in the game data, as in «Operator › Amiya › Skill 2 › description»: the section, singular.",
+            "placeholders": []
+        },
+        {
+            "key": "translators.at.field.ability",
+            "namespace": "translators",
+            "source_text": "ability",
+            "description": "One part of where a text stands in the game data, as in «Operator › Amiya › Skill 2 › description»: the field, lower case.",
+            "placeholders": []
+        },
+        {
+            "key": "translators.at.field.appellation",
+            "namespace": "translators",
+            "source_text": "appellation",
+            "description": "One part of where a text stands in the game data, as in «Operator › Amiya › Skill 2 › description»: the field, lower case.",
+            "placeholders": []
+        },
+        {
+            "key": "translators.at.field.description",
+            "namespace": "translators",
+            "source_text": "description",
+            "description": "One part of where a text stands in the game data, as in «Operator › Amiya › Skill 2 › description»: the field, lower case.",
+            "placeholders": []
+        },
+        {
+            "key": "translators.at.field.dialog",
+            "namespace": "translators",
+            "source_text": "quote",
+            "description": "One part of where a text stands in the game data, as in «Operator › Amiya › Skill 2 › description»: the field, lower case.",
+            "placeholders": []
+        },
+        {
+            "key": "translators.at.field.effect",
+            "namespace": "translators",
+            "source_text": "effect",
+            "description": "One part of where a text stands in the game data, as in «Operator › Amiya › Skill 2 › description»: the field, lower case.",
+            "placeholders": []
+        },
+        {
+            "key": "translators.at.field.first",
+            "namespace": "translators",
+            "source_text": "name, part 1",
+            "description": "One part of where a text stands in the game data, as in «Operator › Amiya › Skill 2 › description»: the field, lower case.",
+            "placeholders": []
+        },
+        {
+            "key": "translators.at.field.group",
+            "namespace": "translators",
+            "source_text": "series",
+            "description": "One part of where a text stands in the game data, as in «Operator › Amiya › Skill 2 › description»: the field, lower case.",
+            "placeholders": []
+        },
+        {
+            "key": "translators.at.field.locked",
+            "namespace": "translators",
+            "source_text": "when locked",
+            "description": "One part of where a text stands in the game data, as in «Operator › Amiya › Skill 2 › description»: the field, lower case.",
+            "placeholders": []
+        },
+        {
+            "key": "translators.at.field.mission",
+            "namespace": "translators",
+            "source_text": "mission",
+            "description": "One part of where a text stands in the game data, as in «Operator › Amiya › Skill 2 › description»: the field, lower case.",
+            "placeholders": []
+        },
+        {
+            "key": "translators.at.field.name",
+            "namespace": "translators",
+            "source_text": "name",
+            "description": "One part of where a text stands in the game data, as in «Operator › Amiya › Skill 2 › description»: the field, lower case.",
+            "placeholders": []
+        },
+        {
+            "key": "translators.at.field.obtain",
+            "namespace": "translators",
+            "source_text": "how to get",
+            "description": "One part of where a text stands in the game data, as in «Operator › Amiya › Skill 2 › description»: the field, lower case.",
+            "placeholders": []
+        },
+        {
+            "key": "translators.at.field.potential",
+            "namespace": "translators",
+            "source_text": "potential",
+            "description": "One part of where a text stands in the game data, as in «Operator › Amiya › Skill 2 › description»: the field, lower case.",
+            "placeholders": []
+        },
+        {
+            "key": "translators.at.field.second",
+            "namespace": "translators",
+            "source_text": "name, part 2",
+            "description": "One part of where a text stands in the game data, as in «Operator › Amiya › Skill 2 › description»: the field, lower case.",
+            "placeholders": []
+        },
+        {
+            "key": "translators.at.field.story",
+            "namespace": "translators",
+            "source_text": "story",
+            "description": "One part of where a text stands in the game data, as in «Operator › Amiya › Skill 2 › description»: the field, lower case.",
+            "placeholders": []
+        },
+        {
+            "key": "translators.at.field.subclass",
+            "namespace": "translators",
+            "source_text": "branch",
+            "description": "One part of where a text stands in the game data, as in «Operator › Amiya › Skill 2 › description»: the field, lower case.",
+            "placeholders": []
+        },
+        {
+            "key": "translators.at.field.tag",
+            "namespace": "translators",
+            "source_text": "tag",
+            "description": "One part of where a text stands in the game data, as in «Operator › Amiya › Skill 2 › description»: the field, lower case.",
+            "placeholders": []
+        },
+        {
+            "key": "translators.at.field.text",
+            "namespace": "translators",
+            "source_text": "text",
+            "description": "One part of where a text stands in the game data, as in «Operator › Amiya › Skill 2 › description»: the field, lower case.",
+            "placeholders": []
+        },
+        {
+            "key": "translators.at.field.third",
+            "namespace": "translators",
+            "source_text": "name, part 3",
+            "description": "One part of where a text stands in the game data, as in «Operator › Amiya › Skill 2 › description»: the field, lower case.",
+            "placeholders": []
+        },
+        {
+            "key": "translators.at.field.title",
+            "namespace": "translators",
+            "source_text": "title",
+            "description": "One part of where a text stands in the game data, as in «Operator › Amiya › Skill 2 › description»: the field, lower case.",
+            "placeholders": []
+        },
+        {
+            "key": "translators.at.field.trait",
+            "namespace": "translators",
+            "source_text": "trait",
+            "description": "One part of where a text stands in the game data, as in «Operator › Amiya › Skill 2 › description»: the field, lower case.",
+            "placeholders": []
+        },
+        {
+            "key": "translators.at.field.usage",
+            "namespace": "translators",
+            "source_text": "usage",
+            "description": "One part of where a text stands in the game data, as in «Operator › Amiya › Skill 2 › description»: the field, lower case.",
+            "placeholders": []
+        },
+        {
+            "key": "translators.at.items",
+            "namespace": "translators",
+            "source_text": "Item",
+            "description": "One part of where a text stands in the game data, as in «Operator › Amiya › Skill 2 › description»: the section, singular.",
+            "placeholders": []
+        },
+        {
+            "key": "translators.at.operators",
+            "namespace": "translators",
+            "source_text": "Operator",
+            "description": "One part of where a text stands in the game data, as in «Operator › Amiya › Skill 2 › description»: the section, singular.",
+            "placeholders": []
+        },
+        {
+            "key": "translators.at.other",
+            "namespace": "translators",
+            "source_text": "Interface and other",
+            "description": "One part of where a text stands in the game data, as in «Operator › Amiya › Skill 2 › description»: the section, singular.",
+            "placeholders": []
+        },
+        {
+            "key": "translators.at.part.base",
+            "namespace": "translators",
+            "source_text": "Base skill",
+            "description": "One part of where a text stands in the game data, as in «Operator › Amiya › Skill 2 › description»: which object part; a number may follow.",
+            "placeholders": []
+        },
+        {
+            "key": "translators.at.part.file",
+            "namespace": "translators",
+            "source_text": "File",
+            "description": "One part of where a text stands in the game data, as in «Operator › Amiya › Skill 2 › description»: which object part; a number may follow.",
+            "placeholders": []
+        },
+        {
+            "key": "translators.at.part.module",
+            "namespace": "translators",
+            "source_text": "Module",
+            "description": "One part of where a text stands in the game data, as in «Operator › Amiya › Skill 2 › description»: which object part; a number may follow.",
+            "placeholders": []
+        },
+        {
+            "key": "translators.at.part.skill",
+            "namespace": "translators",
+            "source_text": "Skill",
+            "description": "One part of where a text stands in the game data, as in «Operator › Amiya › Skill 2 › description»: which object part; a number may follow.",
+            "placeholders": []
+        },
+        {
+            "key": "translators.at.part.skin",
+            "namespace": "translators",
+            "source_text": "Outfit",
+            "description": "One part of where a text stands in the game data, as in «Operator › Amiya › Skill 2 › description»: which object part; a number may follow.",
+            "placeholders": []
+        },
+        {
+            "key": "translators.at.part.talent",
+            "namespace": "translators",
+            "source_text": "Talent",
+            "description": "One part of where a text stands in the game data, as in «Operator › Amiya › Skill 2 › description»: which object part; a number may follow.",
+            "placeholders": []
+        },
+        {
+            "key": "translators.at.part.voice",
+            "namespace": "translators",
+            "source_text": "Voice line",
+            "description": "One part of where a text stands in the game data, as in «Operator › Amiya › Skill 2 › description»: which object part; a number may follow.",
+            "placeholders": []
+        },
+        {
+            "key": "translators.at.part.zone",
+            "namespace": "translators",
+            "source_text": "Zone",
+            "description": "One part of where a text stands in the game data, as in «Operator › Amiya › Skill 2 › description»: which object part; a number may follow.",
+            "placeholders": []
+        },
+        {
+            "key": "translators.at.stages",
+            "namespace": "translators",
+            "source_text": "Stage",
+            "description": "One part of where a text stands in the game data, as in «Operator › Amiya › Skill 2 › description»: the section, singular.",
+            "placeholders": []
+        },
+        {
+            "key": "translators.at.story",
+            "namespace": "translators",
+            "source_text": "Story",
+            "description": "One part of where a text stands in the game data, as in «Operator › Amiya › Skill 2 › description»: the section, singular.",
+            "placeholders": []
+        },
+        {
             "key": "translators.book.back",
             "namespace": "translators",
             "source_text": "Back to the section",
@@ -56055,6 +56307,210 @@
             ]
         },
         {
+            "key": "translators.search.alsoIn",
+            "namespace": "translators",
+            "source_text": "also in {count, plural, one {# place} other {# places}}",
+            "description": "Search tab of the translators' section: under the places shown, how many more hold the same text.",
+            "placeholders": [
+                "count"
+            ]
+        },
+        {
+            "key": "translators.search.clear",
+            "namespace": "translators",
+            "source_text": "Clear",
+            "description": "Search tab of the translators' section: button that clears the search box.",
+            "placeholders": []
+        },
+        {
+            "key": "translators.search.found",
+            "namespace": "translators",
+            "source_text": "Found: {count} · {millis} ms",
+            "description": "Search tab of the translators' section: how many texts match and how long the search took; count and millis come formatted.",
+            "placeholders": [
+                "count",
+                "millis"
+            ]
+        },
+        {
+            "key": "translators.search.label",
+            "namespace": "translators",
+            "source_text": "Search every text",
+            "description": "Search tab of the translators' section: accessible name of the search box.",
+            "placeholders": []
+        },
+        {
+            "key": "translators.search.load",
+            "namespace": "translators",
+            "source_text": "Couldn't search.",
+            "description": "Search tab of the translators' section: the search failed.",
+            "placeholders": []
+        },
+        {
+            "key": "translators.search.more",
+            "namespace": "translators",
+            "source_text": "Show more",
+            "description": "Search tab of the translators' section: button under the results that loads the next 50.",
+            "placeholders": []
+        },
+        {
+            "key": "translators.search.none",
+            "namespace": "translators",
+            "source_text": "Nothing found.",
+            "description": "Search tab of the translators' section: no text matches.",
+            "placeholders": []
+        },
+        {
+            "key": "translators.search.placeholder",
+            "namespace": "translators",
+            "source_text": "English or Russian…",
+            "description": "Search tab of the translators' section: placeholder of the search box (it searches both).",
+            "placeholders": []
+        },
+        {
+            "key": "translators.search.prompt",
+            "namespace": "translators",
+            "source_text": "Type a word, or choose a section or a state.",
+            "description": "Search tab of the translators' section: shown before anything is asked.",
+            "placeholders": []
+        },
+        {
+            "key": "translators.search.section",
+            "namespace": "translators",
+            "source_text": "Section",
+            "description": "Search tab of the translators' section: label of the section select.",
+            "placeholders": []
+        },
+        {
+            "key": "translators.search.section.all",
+            "namespace": "translators",
+            "source_text": "All",
+            "description": "Search tab of the translators' section: section select, every section.",
+            "placeholders": []
+        },
+        {
+            "key": "translators.search.section.archives",
+            "namespace": "translators",
+            "source_text": "Archives",
+            "description": "Search tab of the translators' section: section select (operator files, voice lines, outfit and module stories).",
+            "placeholders": []
+        },
+        {
+            "key": "translators.search.section.enemies",
+            "namespace": "translators",
+            "source_text": "Enemies",
+            "description": "Search tab of the translators' section: section select.",
+            "placeholders": []
+        },
+        {
+            "key": "translators.search.section.items",
+            "namespace": "translators",
+            "source_text": "Items",
+            "description": "Search tab of the translators' section: section select.",
+            "placeholders": []
+        },
+        {
+            "key": "translators.search.section.operators",
+            "namespace": "translators",
+            "source_text": "Operators",
+            "description": "Search tab of the translators' section: section select.",
+            "placeholders": []
+        },
+        {
+            "key": "translators.search.section.other",
+            "namespace": "translators",
+            "source_text": "Interface and other",
+            "description": "Search tab of the translators' section: section select, the rest of the game's texts.",
+            "placeholders": []
+        },
+        {
+            "key": "translators.search.section.stages",
+            "namespace": "translators",
+            "source_text": "Stages",
+            "description": "Search tab of the translators' section: section select.",
+            "placeholders": []
+        },
+        {
+            "key": "translators.search.section.story",
+            "namespace": "translators",
+            "source_text": "Story",
+            "description": "Search tab of the translators' section: section select.",
+            "placeholders": []
+        },
+        {
+            "key": "translators.search.shown",
+            "namespace": "translators",
+            "source_text": "Shown {shown} of {total}",
+            "description": "Search tab of the translators' section: next to Show more; numbers come formatted.",
+            "placeholders": [
+                "shown",
+                "total"
+            ]
+        },
+        {
+            "key": "translators.search.status",
+            "namespace": "translators",
+            "source_text": "State",
+            "description": "Search tab of the translators' section: label of the state select.",
+            "placeholders": []
+        },
+        {
+            "key": "translators.search.status.all",
+            "namespace": "translators",
+            "source_text": "All",
+            "description": "Search tab of the translators' section: state select, any state.",
+            "placeholders": []
+        },
+        {
+            "key": "translators.search.status.approved",
+            "namespace": "translators",
+            "source_text": "Approved",
+            "description": "Search tab of the translators' section: state select.",
+            "placeholders": []
+        },
+        {
+            "key": "translators.search.status.proposed",
+            "namespace": "translators",
+            "source_text": "Has proposals",
+            "description": "Search tab of the translators' section: state select.",
+            "placeholders": []
+        },
+        {
+            "key": "translators.search.status.unchecked",
+            "namespace": "translators",
+            "source_text": "Not checked",
+            "description": "Search tab of the translators' section: state select, nobody proposed or approved anything.",
+            "placeholders": []
+        },
+        {
+            "key": "translators.search.status.untranslated",
+            "namespace": "translators",
+            "source_text": "Not translated",
+            "description": "Search tab of the translators' section: state select, the game shows no Russian.",
+            "placeholders": []
+        },
+        {
+            "key": "translators.search.table",
+            "namespace": "translators",
+            "source_text": "Found texts",
+            "description": "Search tab of the translators' section: accessible name of the results table.",
+            "placeholders": []
+        },
+        {
+            "key": "translators.search.where",
+            "namespace": "translators",
+            "source_text": "Where",
+            "description": "Search tab of the translators' section: column header, where the text stands in the game.",
+            "placeholders": []
+        },
+        {
+            "key": "translators.search.whole",
+            "namespace": "translators",
+            "source_text": "Whole word",
+            "description": "Search tab of the translators' section: checkbox, match whole words only.",
+            "placeholders": []
+        },
+        {
             "key": "translators.service.background",
             "namespace": "translators",
             "source_text": "Background: {name}",
@@ -56374,6 +56830,13 @@
             "placeholders": []
         },
         {
+            "key": "translators.tabs.search",
+            "namespace": "translators",
+            "source_text": "Search",
+            "description": "Tab of the translators' section: search every text of the game and edit it in the results.",
+            "placeholders": []
+        },
+        {
             "key": "translators.tabs.story",
             "namespace": "translators",
             "source_text": "Story",
@@ -56483,6 +56946,13 @@
             "placeholders": [
                 "count"
             ]
+        },
+        {
+            "key": "translators.where.text",
+            "namespace": "translators",
+            "source_text": "Game text · open in Search",
+            "description": "My edits: where a proposal for a text outside the story was made; links to the Search tab.",
+            "placeholders": []
         },
         {
             "key": "user.leaderboard.breadcrumb.current",

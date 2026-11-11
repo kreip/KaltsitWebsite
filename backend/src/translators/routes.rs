@@ -167,6 +167,43 @@ pub async fn story_lines(
 ) -> Result<Json<TranslatorStoryLines>, ApiError> {
     require_member(&state, &auth).await?;
     let mut lines = db::story_lines(&state.db, SERVER, &story_id, true).await?;
+    let (edits, outdated) = edits::attach(&state.db, &story_id, &mut lines).await?;
+    let places: Vec<edits::dto::EditPlace> = lines
+        .iter()
+        .map(|l| edits::dto::EditPlace {
+            story_id: story_id.clone(),
+            line: i32::try_from(l.line).unwrap_or(0),
+            part: l.part,
+            edit_key: None,
+        })
+        .collect();
+    mark_glossary(&state, &mut lines, &places, &edits).await?;
+    let sova_notes = edits::db::sova_notes(&state.db, &story_id).await?;
+    let reads = edits::db::story_reads(&state.db, &story_id).await?;
+    let imported_at = db::last_import(&state.db, SERVER)
+        .await?
+        .map(|t| t.timestamp());
+    Ok(Json(TranslatorStoryLines {
+        story_id,
+        imported_at,
+        hints: true,
+        lines,
+        edits,
+        outdated,
+        sova_notes,
+        reads,
+    }))
+}
+
+/// The glossary's terms in each line's English, whether the game's Russian
+/// holds their form, and which variants (the game's, Sova's, the AI's, the
+/// approved text, the proposals that show at the line's place) lack one.
+pub async fn mark_glossary(
+    state: &AppState,
+    lines: &mut [super::dto::TranslatorLine],
+    places: &[edits::dto::EditPlace],
+    edits: &[edits::dto::KeyEdits],
+) -> Result<(), ApiError> {
     let stored = glossary::load(&state.db).await?;
     let terms: Vec<_> = stored.iter().map(glossary::StoredTerm::as_term).collect();
     // Per line: the checked terms (not Sova's sheet) by the English they matched.
@@ -209,17 +246,13 @@ pub async fn story_lines(
             }
         }
     }
-    let (edits, outdated) = edits::attach(&state.db, &story_id, &mut lines).await?;
-    let sova_notes = edits::db::sova_notes(&state.db, &story_id).await?;
-    let reads = edits::db::story_reads(&state.db, &story_id).await?;
     // Every variant of every line against the line's glossary terms.
     let by_key: std::collections::HashMap<&str, &edits::dto::KeyEdits> =
         edits.iter().map(|e| (e.edit_key.as_str(), e)).collect();
-    for (line, groups) in lines.iter_mut().zip(&checked) {
+    for ((line, groups), here) in lines.iter_mut().zip(&checked).zip(places) {
         if groups.is_empty() {
             continue;
         }
-        let here = (i32::try_from(line.line).unwrap_or(0), line.part);
         let mut variants: Vec<(String, String)> = Vec::new();
         for (name, text) in [
             ("game", &line.ru_game),
@@ -236,7 +269,8 @@ pub async fn story_lines(
             }
             for p in &e.proposals {
                 if !p.context
-                    || (p.place.story_id == story_id && (p.place.line, p.place.part) == here)
+                    || (p.place.story_id == here.story_id
+                        && (p.place.line, p.place.part) == (here.line, here.part))
                 {
                     variants.push((format!("proposal:{}", p.id), p.text.clone()));
                 }
@@ -260,19 +294,7 @@ pub async fn story_lines(
             }
         }
     }
-    let imported_at = db::last_import(&state.db, SERVER)
-        .await?
-        .map(|t| t.timestamp());
-    Ok(Json(TranslatorStoryLines {
-        story_id,
-        imported_at,
-        hints: true,
-        lines,
-        edits,
-        outdated,
-        sova_notes,
-        reads,
-    }))
+    Ok(())
 }
 
 /// The whole team glossary as last downloaded. Members only.

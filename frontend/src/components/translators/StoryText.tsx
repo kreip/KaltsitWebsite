@@ -2,7 +2,7 @@
  * A story text in the translators' section: the story markup (italics,
  * colour, paragraphs) as the reader renders it, `{@nickname}` as a chip with
  * the signed-in member's nickname (the saved text keeps the token as it is),
- * and the fragments quoted by comments highlighted.
+ * the fragments quoted by comments highlighted, and what the search found.
  */
 import type React from "react";
 import { Badge } from "#/components/ui/badge";
@@ -28,15 +28,55 @@ export function NicknameChip({ nickname }: { nickname: string }): React.ReactEle
     );
 }
 
-/** Split a plain run by the quotes (each marked) and the nickname marker (a chip). */
-function renderRun(value: string, nickname: string, quotes: readonly string[], key: string): React.ReactNode[] {
+/** What the search looks for: any case, ё = е, whole words only when `whole`. */
+export interface IFind {
+    q: string;
+    whole: boolean;
+}
+
+function foldText(s: string): string {
+    return s.toLowerCase().replaceAll("ё", "е");
+}
+
+const WORD = /[\p{L}\p{N}_]/u;
+
+/** Where the search's text first stands in a run, as [start, end); null when it does not. */
+function findIn(value: string, find: IFind | null | undefined): [number, number] | null {
+    const q = find ? foldText(find.q.trim()) : "";
+    if (!q || !find) return null;
+    const folded = foldText(value);
+    // Lower case of a few letters changes the length; then the positions would lie.
+    if (folded.length !== value.length) return null;
+    for (let at = folded.indexOf(q); at >= 0; at = folded.indexOf(q, at + 1)) {
+        const end = at + q.length;
+        if (!find.whole || (!WORD.test(value[at - 1] ?? "") && !WORD.test(value[end] ?? ""))) return [at, end];
+    }
+    return null;
+}
+
+const MARK = "rounded-sm bg-warning/20 text-foreground";
+
+/** Split a plain run by the quotes and the search's text (each marked) and the nickname marker (a chip). */
+function renderRun(value: string, nickname: string, quotes: readonly string[], key: string, find?: IFind | null): React.ReactNode[] {
     const out: React.ReactNode[] = [];
+    const found = findIn(value, find);
+    if (found) {
+        const [at, end] = found;
+        out.push(...renderRun(value.slice(0, at), nickname, quotes, `${key}c`, find));
+        out.push(
+            <mark key={`${key}f`} className={MARK}>
+                {renderRun(value.slice(at, end), nickname, [], `${key}g`)}
+            </mark>,
+        );
+        out.push(...renderRun(value.slice(end), nickname, quotes, `${key}d`, find));
+        return out;
+    }
     const quote = quotes.find((q) => q && value.includes(q));
     if (quote) {
         const at = value.indexOf(quote);
         out.push(...renderRun(value.slice(0, at), nickname, quotes, `${key}a`));
         out.push(
-            <mark key={`${key}m`} className="rounded-sm bg-warning/20 text-foreground">
+            <mark key={`${key}m`} className={MARK}>
                 {renderRun(quote, nickname, [], `${key}q`)}
             </mark>,
         );
@@ -53,11 +93,11 @@ function renderRun(value: string, nickname: string, quotes: readonly string[], k
     return out;
 }
 
-function renderNodes(nodes: TextNode[], nickname: string, quotes: readonly string[], prefix: string): React.ReactNode[] {
+function renderNodes(nodes: TextNode[], nickname: string, quotes: readonly string[], prefix: string, find?: IFind | null): React.ReactNode[] {
     return nodes.map((n, i) => {
         const key = `${prefix}${i}`;
-        if (n.kind === "text") return <span key={key}>{renderRun(n.value, nickname, quotes, key)}</span>;
-        const children = renderNodes(n.children, nickname, quotes, `${key}.`);
+        if (n.kind === "text") return <span key={key}>{renderRun(n.value, nickname, quotes, key, find)}</span>;
+        const children = renderNodes(n.children, nickname, quotes, `${key}.`, find);
         if (n.kind === "inline") return n.tag === "i" ? <em key={key}>{children}</em> : n.tag === "b" ? <strong key={key}>{children}</strong> : <u key={key}>{children}</u>;
         if (n.kind === "color")
             return (
@@ -79,10 +119,12 @@ export interface IStoryTextProps {
     nickname: string;
     /** Fragments to highlight (comments' quotes). */
     quotes?: readonly string[];
+    /** The search's text, highlighted where it stands. */
+    find?: IFind | null;
 }
 
-export function StoryText({ text, nickname, quotes = [] }: IStoryTextProps): React.ReactElement {
+export function StoryText({ text, nickname, quotes = [], find = null }: IStoryTextProps): React.ReactElement {
     // A quote is the selected text, where the chip read as the nickname.
     const marks = quotes.map((q) => q.replaceAll(nickname, NICK));
-    return <span className="whitespace-pre-line">{renderNodes(parseStoryText(prepare(text)), nickname, marks, "t")}</span>;
+    return <span className="whitespace-pre-line">{renderNodes(parseStoryText(prepare(text)), nickname, marks, "t", find)}</span>;
 }

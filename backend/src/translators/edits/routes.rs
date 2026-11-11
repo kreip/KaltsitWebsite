@@ -109,6 +109,11 @@ pub async fn create_proposal(
     if !matches!(input.source.as_str(), "own" | "sova" | "ai") {
         return Err(ApiError::BadRequest("source: own, sova or ai".into()));
     }
+    if input.context && input.place.is_text() {
+        return Err(ApiError::BadRequest(
+            "a text outside the story has one translation everywhere".into(),
+        ));
+    }
     let line = editable_place(&state, &input.place).await?;
     let text = proposal_text(&input.text, line.ru_game.as_deref())?;
     check_many(&state, &line.edit_key, input.confirm_many, input.context).await?;

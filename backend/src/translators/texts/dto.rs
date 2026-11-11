@@ -92,3 +92,32 @@ pub struct TextSearch {
     #[ts(type = "number")]
     pub indexed: i64,
 }
+
+/// One found text as the search screen shows it: like a story line, at the
+/// place an edit is made from (its first story line, else the text itself).
+#[derive(Debug, Serialize, TS, ToSchema)]
+#[serde(rename_all = "camelCase")]
+#[ts(export)]
+pub struct SearchLine {
+    pub hit: TextHit,
+    pub place: crate::translators::edits::dto::EditPlace,
+    pub line: crate::translators::dto::TranslatorLine,
+}
+
+/// A page of the search screen.
+#[derive(Debug, Serialize, TS, ToSchema)]
+#[serde(rename_all = "camelCase")]
+#[ts(export)]
+pub struct SearchLines {
+    /// Every text that matches.
+    #[ts(type = "number")]
+    pub total: i64,
+    pub rows: Vec<SearchLine>,
+    /// What was proposed, approved and said for the rows' entries (by `editKey`).
+    pub edits: Vec<crate::translators::edits::dto::KeyEdits>,
+    /// How long the search took in the database, in milliseconds.
+    pub millis: u32,
+    /// How many texts the list holds; 0 before the first import builds it.
+    #[ts(type = "number")]
+    pub indexed: i64,
+}

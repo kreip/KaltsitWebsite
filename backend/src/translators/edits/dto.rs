@@ -13,7 +13,9 @@ pub struct EditPerson {
     pub name: String,
 }
 
-/// One displayed text of one story: where an edit was made.
+/// One displayed text of one story: where an edit was made. A text outside
+/// the story (found by the search) is the place [`TEXT_PLACE`] with line and
+/// part 0 and its entry's English in `editKey`.
 #[derive(Debug, Clone, Serialize, Deserialize, TS, ToSchema, IntoParams)]
 #[serde(rename_all = "camelCase")]
 #[into_params(parameter_in = Query)]
@@ -24,6 +26,30 @@ pub struct EditPlace {
     pub line: i32,
     /// The option number of a decision, else 0.
     pub part: i16,
+    /// A text outside the story: the English of its entry.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
+    pub edit_key: Option<String>,
+}
+
+/// The story id of a text outside the story: every edit there is for every place of its entry.
+pub const TEXT_PLACE: &str = "@text";
+
+impl EditPlace {
+    /// A text outside the story (operators, items, the interface...).
+    pub fn is_text(&self) -> bool {
+        self.story_id == TEXT_PLACE
+    }
+
+    /// The place of a text outside the story.
+    pub fn text(edit_key: &str) -> Self {
+        Self {
+            story_id: TEXT_PLACE.to_owned(),
+            line: 0,
+            part: 0,
+            edit_key: Some(edit_key.to_owned()),
+        }
+    }
 }
 
 /// A translator's proposed Russian for one dictionary entry.
@@ -263,11 +289,20 @@ pub struct ResolveInput {
     pub resolved: bool,
 }
 
-/// One story line holding the entry.
+/// One place holding the entry: a story line, or a field of a game object.
 #[derive(Debug, Clone, Serialize, TS, ToSchema)]
 #[serde(rename_all = "camelCase")]
 #[ts(export)]
 pub struct KeyPlace {
+    /// `story`, else the game data's section (`operators`, `items`...): then
+    /// the story fields are empty and the object's fields are set.
+    pub section: String,
+    /// The game object's English name (a table's name for `other`).
+    pub object_en: Option<String>,
+    /// `name`, `skill.description`... (as in `TextAt`).
+    pub field: Option<String>,
+    /// Which one of several, from 1; 0 when there is one.
+    pub idx: Option<i16>,
     pub story_id: String,
     pub line: i32,
     pub part: i16,
@@ -285,7 +320,7 @@ pub struct KeyPlace {
 pub struct KeyPlaces {
     pub edit_key: String,
     pub total: i32,
-    /// Up to 500, in story order.
+    /// Up to 500: the story's in story order, then the game data's.
     pub places: Vec<KeyPlace>,
 }
 

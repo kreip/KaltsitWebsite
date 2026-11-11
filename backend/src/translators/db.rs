@@ -157,9 +157,47 @@ pub async fn story_lines(
     .bind(hints)
     .fetch_all(pool)
     .await?;
+    Ok(rows.into_iter().map(Row::into_line).collect())
+}
+
+/// The first story line holding each key (in story order), with its story:
+/// a text the search found is shown and edited there.
+pub async fn first_story_lines(
+    pool: &PgPool,
+    server: &str,
+    keys: &[String],
+) -> Result<Vec<(String, TranslatorLine)>, sqlx::Error> {
+    let rows: Vec<(String, Row)> = sqlx::query_as::<_, StoryRow>(
+        "SELECT DISTINCT ON (edit_key) story_id, line, part, kind, speaker_en, speaker_ru, en, ru_game,
+                ru_game_source, ru_game_match, plugin_role, ru_dict, speaker_cn, cn, edit_key, sova, ai
+         FROM translators.story_lines
+         WHERE server = $1 AND edit_key = ANY($2)
+         ORDER BY edit_key, story_id, ord",
+    )
+    .bind(server)
+    .bind(keys)
+    .fetch_all(pool)
+    .await?
+    .into_iter()
+    .map(|r| (r.story_id, r.row))
+    .collect();
     Ok(rows
         .into_iter()
-        .map(|r| TranslatorLine {
+        .map(|(id, r)| (id, r.into_line()))
+        .collect())
+}
+
+#[derive(sqlx::FromRow)]
+struct StoryRow {
+    story_id: String,
+    #[sqlx(flatten)]
+    row: Row,
+}
+
+impl Row {
+    fn into_line(self) -> TranslatorLine {
+        let r = self;
+        TranslatorLine {
             line: u32::try_from(r.line).unwrap_or(0),
             part: r.part,
             kind: r.kind,
@@ -185,8 +223,8 @@ pub async fn story_lines(
             places: 1,
             status: String::new(),
             variant_glossary: Vec::new(),
-        })
-        .collect())
+        }
+    }
 }
 
 /// When the server's lines were last imported, if ever.

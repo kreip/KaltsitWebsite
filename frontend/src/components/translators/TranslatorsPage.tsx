@@ -4,7 +4,8 @@
  *
  * Story tab: pick a chapter and a story, read its lines as Russian as the game
  * shows it now | English | Chinese, with the glossary's terms and Sova's and
- * the AI's variants. Glossary tab: the team's whole glossary. The chapter list
+ * the AI's variants. Search tab: every text of the game (SearchTab.tsx).
+ * Glossary tab: the team's whole glossary. The chapter list
  * is the story library's own index; the lines come from the section's import
  * (`/api/translators`).
  */
@@ -23,7 +24,6 @@ import { Meter } from "#/components/ui/meter";
 import { PageHeader } from "#/components/ui/page-header";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "#/components/ui/select";
 import { Skeleton } from "#/components/ui/skeleton";
-import { Switch } from "#/components/ui/switch";
 import { Tabs, TabsList, TabsPanel, TabsTab } from "#/components/ui/tabs";
 import { Toggle as KitToggle } from "#/components/ui/toggle";
 import { storyIndexQueryOptions, storyQueryOptions } from "#/lib/api/story";
@@ -37,14 +37,16 @@ import { GlossaryTab } from "./GlossaryTab";
 import { TONE, Toned, useEditMutation } from "./LineEdits";
 import { LinesTable } from "./LinesTable";
 import { MyEditsTab } from "./MyEditsTab";
+import { type SearchSection, type SearchStatus, SearchTab } from "./SearchTab";
 import { SectionLocale } from "./SectionLocale";
+import { Toggle } from "./SwitchToggle";
 import { charBase } from "./service";
 import { entryLabel, groupLabel, useRename } from "./storyNames";
 import type { messages } from "./translators.messages";
 
 type T = TypedT<typeof messages>;
 
-export type TranslatorsTab = "story" | "glossary" | "edits";
+export type TranslatorsTab = "story" | "search" | "glossary" | "edits";
 
 export interface ITranslatorsSearch {
     tab?: TranslatorsTab;
@@ -57,6 +59,11 @@ export interface ITranslatorsSearch {
     variants?: false;
     /** Compare: proposals as their changes against the text one step back. */
     diff?: boolean;
+    /** Search: the text looked for, whole words only, the section and the state. */
+    q?: string;
+    whole?: boolean;
+    section?: SearchSection;
+    status?: SearchStatus;
 }
 
 interface IGroupItem {
@@ -214,18 +221,6 @@ interface ISearchProps {
     onSearch: (next: ITranslatorsSearch) => void;
 }
 
-function Toggle({ id, checked, onChange, label, hint }: { id: string; checked: boolean; onChange: (checked: boolean) => void; label: string; hint: string }): React.ReactElement {
-    return (
-        <label htmlFor={id} className="flex items-center gap-3">
-            <Switch id={id} checked={checked} onCheckedChange={onChange} />
-            <span className="flex flex-col gap-0.5">
-                <span className="font-medium text-sm">{label}</span>
-                <span className="text-muted-foreground text-xs">{hint}</span>
-            </span>
-        </label>
-    );
-}
-
 function StoryTab({ search, onSearch }: ISearchProps): React.ReactElement {
     const t: T = useT("translators");
     const ids = { chapter: useId(), story: useId(), cn: useId(), service: useId(), variants: useId(), diff: useId() };
@@ -379,11 +374,15 @@ function Page({ search, onSearch }: ISearchProps): React.ReactElement {
                 <Tabs value={tab} onValueChange={(v: string) => onSearch({ ...search, tab: v === "story" ? undefined : (v as TranslatorsTab) })}>
                     <TabsList aria-label={t("tabs.label")}>
                         <TabsTab value="story">{t("tabs.story")}</TabsTab>
+                        <TabsTab value="search">{t("tabs.search")}</TabsTab>
                         <TabsTab value="glossary">{t("tabs.glossary")}</TabsTab>
                         <TabsTab value="edits">{t("tabs.edits")}</TabsTab>
                     </TabsList>
                     <TabsPanel value="story" className="flex flex-col gap-6 pt-4">
                         <StoryTab search={search} onSearch={onSearch} />
+                    </TabsPanel>
+                    <TabsPanel value="search" className="flex flex-col gap-6 pt-4">
+                        <SearchTab search={search} onSearch={onSearch} />
                     </TabsPanel>
                     <TabsPanel value="glossary" className="flex flex-col gap-6 pt-4">
                         <GlossaryTab />

@@ -40,6 +40,7 @@ import { useStoryNames } from "./storyNames";
 import { TextDiff } from "./TextDiff";
 import { TokenEditor } from "./TokenEditor";
 import type { messages } from "./translators.messages";
+import { gameWhere } from "./where";
 
 type T = TypedT<typeof messages>;
 
@@ -560,6 +561,13 @@ export function PlacesList({ place, nickname, t }: { place: EditPlace; nickname:
         <div className="flex flex-col gap-1">
             <ul className="flex max-h-72 flex-col gap-2 overflow-y-auto text-xs">
                 {places.map((p) => {
+                    // A field of the game data: where it stands, in words.
+                    if (p.section !== "story")
+                        return (
+                            <li key={`${p.section}-${p.objectEn}-${p.field}-${p.idx}`} className="flex flex-col gap-0.5 border-s-2 ps-2">
+                                <span className="font-medium">{gameWhere(p.section, p.objectEn, p.field, p.idx, t)}</span>
+                            </li>
+                        );
                     const n = nameOf(p.storyId);
                     const here = samePlace(p, place);
                     return (

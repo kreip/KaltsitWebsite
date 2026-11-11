@@ -84,6 +84,7 @@ fn place(story: &str, line: i32) -> EditPlace {
         story_id: story.to_owned(),
         line,
         part: 0,
+        edit_key: None,
     }
 }
 
@@ -841,5 +842,88 @@ async fn texts_are_stored_and_searched() {
     })
     .await;
     assert_eq!(page, (4, vec!["Excursus".to_owned(), "Ursus Slug".into()]));
+
+    // A text outside the story is edited as the text itself: one translation everywhere.
+    let slug = EditPlace::text("Ursus Slug");
+    let at = db::place_line(&pool, &slug)
+        .await
+        .unwrap()
+        .expect("a text place");
+    assert_eq!(at.ru_game.as_deref(), Some("Урсусский слизень"));
+    assert!(at.sova.is_none());
+    assert!(
+        db::place_line(&pool, &EditPlace::text("No such text"))
+            .await
+            .unwrap()
+            .is_none()
+    );
+    let id = db::upsert_proposal(
+        &pool,
+        "Ursus Slug",
+        &slug,
+        "Урсусская слизь",
+        "own",
+        false,
+        a,
+    )
+    .await
+    .unwrap();
+    let e = db::key_edits(&pool, &["Ursus Slug".to_owned()])
+        .await
+        .unwrap();
+    assert_eq!(e[0].proposals[0].id, id);
+    assert!(e[0].proposals[0].place.is_text());
+    assert_eq!(
+        db::key_ru_game(&pool, "Ursus Slug")
+            .await
+            .unwrap()
+            .as_deref(),
+        Some("Урсусский слизень")
+    );
+    // Places: the list's count for a text outside the story, the story's where it is more.
+    let counts = db::place_counts(&pool, &["Ursus".to_owned(), key.to_owned()])
+        .await
+        .unwrap();
+    assert_eq!(counts.get("Ursus"), Some(&1));
+    assert_eq!(counts.get(key), Some(&1));
+    let listed = db::places(&pool, "Ursus", 10).await.unwrap();
+    assert_eq!(listed.len(), 1);
+    assert_eq!(listed[0].section, "operators");
+    assert_eq!(listed[0].object_en.as_deref(), Some("Ursus"));
+    // My edits show its English and Russian from the list.
+    let mine = db::edit_rows(&pool, Some(a)).await.unwrap();
+    let row = mine.iter().find(|r| r.proposal.id == id).unwrap();
+    assert_eq!(row.en, "<i>Ursus</i> Slug");
+    assert_eq!(row.ru_game.as_deref(), Some("Урсусский слизень"));
+    // Not outdated while the list holds its English.
+    db::mark_outdated(&pool).await.unwrap();
+    let e = db::key_edits(&pool, &["Ursus Slug".to_owned()])
+        .await
+        .unwrap();
+    assert!(!e[0].proposals[0].outdated);
+    // The export takes its Russian from the list.
+    db::approve_key(
+        &pool,
+        "Ursus Slug",
+        "proposal",
+        Some(id),
+        "Урсусская слизь",
+        &slug,
+        lead,
+    )
+    .await
+    .unwrap();
+    let out = backend::translators::export::rows(&pool, false)
+        .await
+        .unwrap();
+    let r = out.iter().find(|r| r.edit_key == "Ursus Slug").unwrap();
+    assert_eq!(r.ru_game.as_deref(), Some("Урсусский слизень"));
+    assert!(!backend::translators::export::for_plugin(
+        r.plugin_role.as_deref()
+    ));
+    assert!(backend::translators::export::for_plugin(Some("operator")));
+    assert!(!backend::translators::export::for_plugin(Some(
+        "ambiguous:story"
+    )));
     drop_db(pool, name).await;
 }

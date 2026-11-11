@@ -12,6 +12,7 @@ use super::dto::{
 };
 use super::status;
 use crate::translators::SERVER;
+use crate::translators::texts::gamedata::STORY;
 
 /// How a member's name shows: the game nickname, else the uid.
 const NAME: &str = "COALESCE(NULLIF(u.nickname, ''), u.uid)";
@@ -32,6 +33,25 @@ pub struct PlaceLine {
 }
 
 pub async fn place_line(pool: &PgPool, p: &EditPlace) -> Result<Option<PlaceLine>, sqlx::Error> {
+    // A text outside the story: its entry in the list of every text (no Sova, no AI there).
+    if p.is_text() {
+        let Some(key) = p.edit_key.as_deref() else {
+            return Ok(None);
+        };
+        let row: Option<(String, Option<String>)> = sqlx::query_as(
+            "SELECT edit_key, ru FROM translators.texts WHERE server = $1 AND edit_key = $2",
+        )
+        .bind(SERVER)
+        .bind(key)
+        .fetch_optional(pool)
+        .await?;
+        return Ok(row.map(|(edit_key, ru_game)| PlaceLine {
+            edit_key,
+            ru_game,
+            sova: None,
+            ai: None,
+        }));
+    }
     #[allow(clippy::type_complexity)]
     let row: Option<(String, Option<String>, Option<String>, Option<String>)> = sqlx::query_as(
         "SELECT edit_key, ru_game, sova, ai FROM translators.story_lines
@@ -54,7 +74,12 @@ pub async fn place_line(pool: &PgPool, p: &EditPlace) -> Result<Option<PlaceLine
 /// The game's Russian for a key (the same at every place).
 pub async fn key_ru_game(pool: &PgPool, key: &str) -> Result<Option<String>, sqlx::Error> {
     let row: Option<Option<String>> = sqlx::query_scalar(
-        "SELECT ru_game FROM translators.story_lines WHERE server = $1 AND edit_key = $2 LIMIT 1",
+        "SELECT ru FROM (
+             (SELECT ru_game AS ru, 0 AS o FROM translators.story_lines
+              WHERE server = $1 AND edit_key = $2 LIMIT 1)
+             UNION ALL
+             (SELECT ru, 1 FROM translators.texts WHERE server = $1 AND edit_key = $2)
+         ) x ORDER BY o LIMIT 1",
     )
     .bind(SERVER)
     .bind(key)
@@ -63,14 +88,20 @@ pub async fn key_ru_game(pool: &PgPool, key: &str) -> Result<Option<String>, sql
     Ok(row.flatten())
 }
 
-/// How many story lines hold each key.
+/// How many places hold each key: story lines and fields of the game data
+/// (the list of every text counts both; the story's count when it is more).
 pub async fn place_counts(
     pool: &PgPool,
     keys: &[String],
 ) -> Result<HashMap<String, i32>, sqlx::Error> {
     let rows: Vec<(String, i64)> = sqlx::query_as(
-        "SELECT edit_key, COUNT(*) FROM translators.story_lines
-         WHERE server = $1 AND edit_key = ANY($2) GROUP BY edit_key",
+        "SELECT edit_key, MAX(n) FROM (
+             SELECT edit_key, COUNT(*) AS n FROM translators.story_lines
+             WHERE server = $1 AND edit_key = ANY($2) GROUP BY edit_key
+             UNION ALL
+             SELECT edit_key, places::bigint FROM translators.texts
+             WHERE server = $1 AND edit_key = ANY($2)
+         ) x GROUP BY edit_key",
     )
     .bind(SERVER)
     .bind(keys)
@@ -99,17 +130,50 @@ pub async fn places(pool: &PgPool, key: &str, limit: i64) -> Result<Vec<KeyPlace
     .bind(limit)
     .fetch_all(pool)
     .await?;
-    Ok(rows
+    let mut out: Vec<KeyPlace> = rows
         .into_iter()
         .map(|(story_id, line, part, ord, before, after)| KeyPlace {
+            section: STORY.to_owned(),
             story_id,
             line,
             part,
             ord,
             before,
             after,
+            object_en: None,
+            field: None,
+            idx: None,
         })
-        .collect())
+        .collect();
+    // Then the fields of the game data holding it.
+    let left = limit - i64::try_from(out.len()).unwrap_or(limit);
+    if left > 0 {
+        let game: Vec<(String, String, String, i16)> = sqlx::query_as(
+            "SELECT section, object_en, field, idx FROM translators.text_places
+             WHERE server = $1 AND edit_key = $2 ORDER BY section, object_id, ord LIMIT $3",
+        )
+        .bind(SERVER)
+        .bind(key)
+        .bind(left)
+        .fetch_all(pool)
+        .await?;
+        out.extend(
+            game.into_iter()
+                .map(|(section, object_en, field, idx)| KeyPlace {
+                    section,
+                    story_id: String::new(),
+                    line: 0,
+                    part: 0,
+                    ord: 0,
+                    before: None,
+                    after: None,
+                    object_en: Some(object_en),
+                    field: Some(field),
+                    idx: Some(idx),
+                }),
+        );
+    }
+    Ok(out)
 }
 
 #[derive(sqlx::FromRow)]
@@ -161,6 +225,7 @@ impl ProposalRow {
                 story_id: self.story_id,
                 line: self.line,
                 part: self.part,
+                edit_key: None,
             },
             context: self.context,
             outdated: self.outdated_at.is_some(),
@@ -303,6 +368,7 @@ pub async fn key_edits(pool: &PgPool, keys: &[String]) -> Result<Vec<KeyEdits>, 
                 story_id,
                 line,
                 part,
+                edit_key: None,
             },
             people,
         });
@@ -413,6 +479,7 @@ async fn comments(
                         story_id: c.story_id,
                         line: c.line,
                         part: c.part,
+                        edit_key: None,
                     },
                     quote: c.quote,
                     kind: c.kind,
@@ -1123,16 +1190,23 @@ pub async fn edit_rows(pool: &PgPool, author: Option<Uuid>) -> Result<Vec<EditRo
     let rows: Vec<EditRowDb> = sqlx::query_as(&format!(
         "SELECT {PROPOSAL_COLUMNS},
                 k.en, k.ru_game, here.ord,
-                (SELECT COUNT(*) FROM translators.story_lines s
-                  WHERE s.server = $1 AND s.edit_key = p.edit_key) AS places,
+                GREATEST((SELECT COUNT(*) FROM translators.story_lines s
+                           WHERE s.server = $1 AND s.edit_key = p.edit_key),
+                         (SELECT t.places FROM translators.texts t
+                           WHERE t.server = $1 AND t.edit_key = p.edit_key), 0) AS places,
                 (a.edit_key IS NOT NULL) AS approved, a.proposal_id AS approved_proposal
          FROM translators.proposals p
          JOIN users u ON u.id = p.author_id
          LEFT JOIN LATERAL (
-             SELECT s.en, s.ru_game FROM translators.story_lines s
-             WHERE s.server = $1 AND s.edit_key = p.edit_key
-             ORDER BY (s.story_id = p.story_id AND s.line = p.line AND s.part = p.part) DESC
-             LIMIT 1
+             SELECT x.en, x.ru_game FROM (
+                 (SELECT s.en, s.ru_game, 0 AS o FROM translators.story_lines s
+                  WHERE s.server = $1 AND s.edit_key = p.edit_key
+                  ORDER BY (s.story_id = p.story_id AND s.line = p.line AND s.part = p.part) DESC
+                  LIMIT 1)
+                 UNION ALL
+                 (SELECT t.en, t.ru, 1 FROM translators.texts t
+                  WHERE t.server = $1 AND t.edit_key = p.edit_key)
+             ) x ORDER BY x.o LIMIT 1
          ) k ON TRUE
          LEFT JOIN translators.story_lines here
              ON here.server = $1 AND here.story_id = p.story_id AND here.line = p.line
@@ -1183,6 +1257,8 @@ pub async fn mark_outdated(pool: &PgPool) -> Result<(), sqlx::Error> {
             "UPDATE translators.{table} t SET outdated_at = CASE
                  WHEN EXISTS (SELECT 1 FROM translators.story_lines s
                               WHERE s.server = $1 AND s.edit_key = t.edit_key)
+                   OR EXISTS (SELECT 1 FROM translators.texts x
+                              WHERE x.server = $1 AND x.edit_key = t.edit_key)
                  THEN NULL ELSE COALESCE(t.outdated_at, NOW()) END"
         ))
         .bind(SERVER)

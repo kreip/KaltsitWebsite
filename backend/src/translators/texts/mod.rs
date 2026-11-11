@@ -25,7 +25,9 @@ use crate::app::state::AppState;
 use gamedata::{GamePlace, OTHER, STORY};
 
 pub fn router() -> OpenApiRouter<AppState> {
-    OpenApiRouter::new().routes(routes!(routes::search_texts))
+    OpenApiRouter::new()
+        .routes(routes!(routes::search_texts))
+        .routes(routes!(routes::search_lines))
 }
 
 /// One entry of the list.

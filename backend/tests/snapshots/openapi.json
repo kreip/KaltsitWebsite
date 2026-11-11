@@ -13496,6 +13496,15 @@
               "type": "integer",
               "format": "int32"
             }
+          },
+          {
+            "name": "editKey",
+            "in": "query",
+            "description": "A text outside the story: the English of its entry.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
           }
         ],
         "responses": {
@@ -13702,6 +13711,15 @@
             "schema": {
               "type": "integer",
               "format": "int32"
+            }
+          },
+          {
+            "name": "editKey",
+            "in": "query",
+            "description": "A text outside the story: the English of its entry.",
+            "required": false,
+            "schema": {
+              "type": "string"
             }
           }
         ],
@@ -14041,6 +14059,101 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Release"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        },
+        "security": [
+          {
+            "bearer_auth": []
+          }
+        ]
+      }
+    },
+    "/api/translators/search": {
+      "get": {
+        "tags": [
+          "translators"
+        ],
+        "summary": "The search screen: the same search, each found text as a line of the\nstory's table — at its first story line (with Sova's and the AI's\nvariants there), else as the text itself, whose edit holds everywhere —\nwith the edits of their entries. Members only.",
+        "operationId": "search_lines",
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "description": "A part of the English or of the Russian: any case, ё = е. Empty lists everything the filters leave.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "whole",
+            "in": "query",
+            "description": "Whole words only.",
+            "required": false,
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "section",
+            "in": "query",
+            "description": "`story`, `operators`, `enemies`, `stages`, `items`, `archives` or `other`.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "description": "`unchecked` (nobody proposed or approved anything), `proposed`,\n`approved`, `untranslated` (no Russian) or `plugin` (the plugin's catalog holds it).",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "Up to 200; 50 when left out.",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A page of the matching texts as lines, their count and the database time.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SearchLines"
                 }
               }
             }
@@ -23440,13 +23553,20 @@
       },
       "EditPlace": {
         "type": "object",
-        "description": "One displayed text of one story: where an edit was made.",
+        "description": "One displayed text of one story: where an edit was made. A text outside\nthe story (found by the search) is the place [`TEXT_PLACE`] with line and\npart 0 and its entry's English in `editKey`.",
         "required": [
           "storyId",
           "line",
           "part"
         ],
         "properties": {
+          "editKey": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "A text outside the story: the English of its entry."
+          },
           "line": {
             "type": "integer",
             "format": "int32",
@@ -26465,8 +26585,9 @@
       },
       "KeyPlace": {
         "type": "object",
-        "description": "One story line holding the entry.",
+        "description": "One place holding the entry: a story line, or a field of a game object.",
         "required": [
+          "section",
           "storyId",
           "line",
           "part",
@@ -26486,9 +26607,31 @@
             ],
             "description": "The line before and after it in the story: the game's Russian, else the English."
           },
+          "field": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "`name`, `skill.description`... (as in `TextAt`)."
+          },
+          "idx": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int32",
+            "description": "Which one of several, from 1; 0 when there is one."
+          },
           "line": {
             "type": "integer",
             "format": "int32"
+          },
+          "objectEn": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The game object's English name (a table's name for `other`)."
           },
           "ord": {
             "type": "integer",
@@ -26498,6 +26641,10 @@
           "part": {
             "type": "integer",
             "format": "int32"
+          },
+          "section": {
+            "type": "string",
+            "description": "`story`, else the game data's section (`operators`, `items`...): then\nthe story fields are empty and the object's fields are set."
           },
           "storyId": {
             "type": "string"
@@ -26521,7 +26668,7 @@
             "items": {
               "$ref": "#/components/schemas/KeyPlace"
             },
-            "description": "Up to 500, in story order."
+            "description": "Up to 500: the story's in story order, then the game data's."
           },
           "total": {
             "type": "integer",
@@ -33083,6 +33230,68 @@
           }
         ],
         "description": "One player search row: the profile plus the value of the sort that\nranked it. `metric` is the count for a count sort and `register_ts` for\nthe join-date sort; it is `None` under the score sort, where the\nprofile's `total_score` already is the value."
+      },
+      "SearchLine": {
+        "type": "object",
+        "description": "One found text as the search screen shows it: like a story line, at the\nplace an edit is made from (its first story line, else the text itself).",
+        "required": [
+          "hit",
+          "place",
+          "line"
+        ],
+        "properties": {
+          "hit": {
+            "$ref": "#/components/schemas/TextHit"
+          },
+          "line": {
+            "$ref": "#/components/schemas/TranslatorLine"
+          },
+          "place": {
+            "$ref": "#/components/schemas/EditPlace"
+          }
+        }
+      },
+      "SearchLines": {
+        "type": "object",
+        "description": "A page of the search screen.",
+        "required": [
+          "total",
+          "rows",
+          "edits",
+          "millis",
+          "indexed"
+        ],
+        "properties": {
+          "edits": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/KeyEdits"
+            },
+            "description": "What was proposed, approved and said for the rows' entries (by `editKey`)."
+          },
+          "indexed": {
+            "type": "integer",
+            "format": "int64",
+            "description": "How many texts the list holds; 0 before the first import builds it."
+          },
+          "millis": {
+            "type": "integer",
+            "format": "int32",
+            "description": "How long the search took in the database, in milliseconds.",
+            "minimum": 0
+          },
+          "rows": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SearchLine"
+            }
+          },
+          "total": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Every text that matches."
+          }
+        }
       },
       "SearchPage": {
         "type": "object",

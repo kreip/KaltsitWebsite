@@ -206,11 +206,23 @@ pub struct Place {
     pub ru_game: Option<String>,
 }
 
+/// The plugin's catalog holds the text and translates it (any role but
+/// `ambiguous:…`, which it leaves in English): the edit goes to the plugin's list.
+pub fn for_plugin(role: Option<&str>) -> bool {
+    role.is_some_and(|r| !r.is_empty() && !r.starts_with("ambiguous"))
+}
+
 /// The entries of a mode, by key.
 pub async fn rows(pool: &PgPool, review: bool) -> Result<Vec<Row>, sqlx::Error> {
+    // The game's Russian and the plugin's role: from a story line, else from the list of every text.
     let first_line = "LEFT JOIN LATERAL (
-             SELECT s.ru_game, s.plugin_role FROM translators.story_lines s
-             WHERE s.server = $1 AND s.edit_key = x.edit_key LIMIT 1) k ON TRUE";
+             SELECT y.ru_game, y.plugin_role FROM (
+                 (SELECT s.ru_game, s.plugin_role, 0 AS o FROM translators.story_lines s
+                  WHERE s.server = $1 AND s.edit_key = x.edit_key LIMIT 1)
+                 UNION ALL
+                 (SELECT t.ru, t.plugin_role, 1 FROM translators.texts t
+                  WHERE t.server = $1 AND t.edit_key = x.edit_key)
+             ) y ORDER BY y.o LIMIT 1) k ON TRUE";
     if review {
         sqlx::query_as(&format!(
             "SELECT x.edit_key, x.text, k.ru_game, k.plugin_role, x.alternatives,
@@ -412,7 +424,7 @@ pub fn build(
         }
         by_key.insert(r.edit_key.as_str(), r);
         report.with_alternatives += i32::from(r.alternatives > 1);
-        if r.plugin_role.as_deref() == Some("story") {
+        if for_plugin(r.plugin_role.as_deref()) {
             plugin.push(vec![
                 r.edit_key.clone(),
                 r.ru_game.clone().unwrap_or_default(),
@@ -1013,7 +1025,7 @@ pub async fn mark_release(
         if r.ru_game.as_deref() == Some(r.text.as_str()) {
             continue;
         }
-        let kind = if r.plugin_role.as_deref() == Some("story") {
+        let kind = if for_plugin(r.plugin_role.as_deref()) {
             "plugin"
         } else {
             "dictionary"

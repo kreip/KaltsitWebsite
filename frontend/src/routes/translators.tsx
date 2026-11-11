@@ -1,5 +1,6 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import type React from "react";
+import { SEARCH_SECTIONS, SEARCH_STATUSES } from "#/components/translators/SearchTab";
 import { type ITranslatorsSearch, TranslatorsPage } from "#/components/translators/TranslatorsPage";
 import { RouteError } from "#/components/ui/route-error";
 import { seo } from "#/lib/seo";
@@ -11,12 +12,19 @@ export const Route = createFileRoute("/translators")({
     validateSearch: (search: Record<string, unknown>): ITranslatorsSearch => {
         const out: ITranslatorsSearch = {};
         const on = (v: unknown) => v === true || v === 1 || v === "1" || v === "true";
-        if (search.tab === "glossary" || search.tab === "edits") out.tab = search.tab;
+        if (search.tab === "search" || search.tab === "glossary" || search.tab === "edits") out.tab = search.tab;
         if (typeof search.group === "string" && search.group) out.group = search.group;
         if (typeof search.story === "string" && search.story) out.story = search.story;
         if (on(search.cn)) out.cn = true;
         if (on(search.service)) out.service = true;
         if (on(search.diff)) out.diff = true;
+        if (typeof search.q === "string" && search.q.trim()) out.q = search.q.trim();
+        else if (typeof search.q === "number") out.q = String(search.q);
+        if (on(search.whole)) out.whole = true;
+        const section = SEARCH_SECTIONS.find((s) => s === search.section);
+        if (section) out.section = section;
+        const status = SEARCH_STATUSES.find((s) => s === search.status);
+        if (status) out.status = status;
         if (search.variants === false || search.variants === 0 || search.variants === "0" || search.variants === "false") out.variants = false;
         return out;
     },
