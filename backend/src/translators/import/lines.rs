@@ -238,6 +238,11 @@ impl<'a> Matcher<'a> {
         Some((key, &e.value, &e.file, "normalized"))
     }
 
+    /// The dictionary entry of a text, whole: `(key, value, file)`.
+    pub fn entry(&self, text: &str) -> Option<(&'a str, &'a str, &'a str)> {
+        self.dict_entry(text).map(|(k, v, f, _)| (k, v, f))
+    }
+
     /// One text through the dictionaries: `(value, file, how)`.
     fn dict_one(&self, text: &str) -> Option<(&'a str, &'a str, &'static str)> {
         self.dict_entry(text).map(|(_, v, f, how)| (v, f, how))

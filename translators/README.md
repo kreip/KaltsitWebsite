@@ -36,7 +36,7 @@ Tables: Postgres schema `translators` (own migrations, `translators._migrations`
    ```
 
 2. Build and start: `docker compose up -d --build`
-3. Import (re-runnable; replaces the section's rows, reads the sources only):
+3. Import (re-runnable, about 3 minutes; replaces the section's rows, reads the sources only):
    `./translators/import.sh`
 4. Open http://localhost:3000/translators
 
@@ -72,6 +72,21 @@ roles (they must have signed in to the site once; the command replaces the roles
 - `admin` can do everything.
 
 One person can hold several roles (`./translators/role.sh <uid> editor maintainer`).
+
+## Every text in one list
+
+The import also builds `translators.texts`: one row per entry (the English an edit is
+keyed by) for the story, the game data by section (operators, enemies, stages, items,
+archives) and every other entry of the pack's dictionaries and the plugin's catalog,
+with the game data places of each (`translators.text_places`: operator › skill 2 ›
+description). `GET /api/translators/texts` searches it by a part of the English or the
+Russian (any case, ё = е), with filters by section and state. From the command line:
+
+    python3 translators/search.py ursus
+    python3 translators/search.py урсус --section operators --limit 5
+    python3 translators/search.py sp --whole --status unchecked
+
+It prints how many texts match, the database time and the first results.
 
 ## Export
 

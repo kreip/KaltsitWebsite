@@ -14204,6 +14204,101 @@
         ]
       }
     },
+    "/api/translators/texts": {
+      "get": {
+        "tags": [
+          "translators"
+        ],
+        "summary": "Search every text of the game — the story, the game data by section\n(operators, enemies, stages, items, archives) and the rest of the pack's\ndictionaries — by a part of its English or Russian (any case, ё = е),\nwith filters by section and state. Shortest English first. Members only\n(and the internal service key, for measuring).",
+        "operationId": "search_texts",
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "description": "A part of the English or of the Russian: any case, ё = е. Empty lists everything the filters leave.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "whole",
+            "in": "query",
+            "description": "Whole words only.",
+            "required": false,
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "section",
+            "in": "query",
+            "description": "`story`, `operators`, `enemies`, `stages`, `items`, `archives` or `other`.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "description": "`unchecked` (nobody proposed or approved anything), `proposed`,\n`approved`, `untranslated` (no Russian) or `plugin` (the plugin's catalog holds it).",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "Up to 200; 50 when left out.",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A page of the matching texts, their count and the database time.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TextSearch"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        },
+        "security": [
+          {
+            "bearer_auth": []
+          }
+        ]
+      }
+    },
     "/api/upcoming": {
       "get": {
         "tags": [
@@ -36967,6 +37062,185 @@
           "next",
           "unknown"
         ]
+      },
+      "TextAt": {
+        "type": "object",
+        "description": "One place of a found text: a story line, or a field of a game object.",
+        "required": [
+          "section"
+        ],
+        "properties": {
+          "field": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "`name`, `trait`, `talent.description`, `skill.name`, `module.effect`, ..."
+          },
+          "idx": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int32",
+            "description": "Which one of several (skill 2), from 1; 0 when there is one."
+          },
+          "line": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int32"
+          },
+          "objectEn": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "objectId": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "A game object: its id and English name (a table's name for `other`)."
+          },
+          "ord": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int32"
+          },
+          "part": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int32"
+          },
+          "section": {
+            "type": "string",
+            "description": "`story`, `operators`, `enemies`, `stages`, `items`, `archives` or `other`."
+          },
+          "storyId": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "A story line: the story, its line in the EN script, the option number and the line's order in the story."
+          }
+        }
+      },
+      "TextHit": {
+        "type": "object",
+        "description": "One found text.",
+        "required": [
+          "id",
+          "editKey",
+          "en",
+          "sections",
+          "places",
+          "status",
+          "at"
+        ],
+        "properties": {
+          "at": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TextAt"
+            },
+            "description": "Its first places, the game data's before the story's."
+          },
+          "editKey": {
+            "type": "string",
+            "description": "The entry an edit changes (its English)."
+          },
+          "en": {
+            "type": "string"
+          },
+          "file": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The dictionary file holding it, or `plugin:<role>`."
+          },
+          "id": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "places": {
+            "type": "integer",
+            "format": "int32",
+            "description": "Story lines and game data places holding it."
+          },
+          "pluginRole": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The plugin's catalog also holds it, under this role."
+          },
+          "ru": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The Russian the game shows now."
+          },
+          "ruPlugin": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The plugin's Russian when it differs."
+          },
+          "sections": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "status": {
+            "type": "string",
+            "description": "`unchecked`, `proposed` or `approved`."
+          }
+        }
+      },
+      "TextSearch": {
+        "type": "object",
+        "description": "A page of the search.",
+        "required": [
+          "total",
+          "rows",
+          "millis",
+          "indexed"
+        ],
+        "properties": {
+          "indexed": {
+            "type": "integer",
+            "format": "int64",
+            "description": "How many texts the list holds (as of the last import); 0 before the first import builds it."
+          },
+          "millis": {
+            "type": "integer",
+            "format": "int32",
+            "description": "How long the database took, in milliseconds.",
+            "minimum": 0
+          },
+          "rows": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TextHit"
+            }
+          },
+          "total": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Every text that matches."
+          }
+        }
       },
       "ThemeKind": {
         "type": "string",

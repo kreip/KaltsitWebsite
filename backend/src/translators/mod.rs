@@ -15,6 +15,7 @@ pub mod export;
 pub mod glossary;
 pub mod import;
 pub mod routes;
+pub mod texts;
 
 use utoipa_axum::router::OpenApiRouter;
 use utoipa_axum::routes;
@@ -43,4 +44,5 @@ pub fn router() -> OpenApiRouter<AppState> {
         .routes(routes!(routes::export_archive))
         .routes(routes!(routes::mark_release, routes::list_releases))
         .merge(edits::router())
+        .merge(texts::router())
 }

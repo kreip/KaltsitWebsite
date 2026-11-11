@@ -94,6 +94,10 @@ pub struct ImportSummary {
     pub arktr_rows_by_text: usize,
     pub arktr_rows_unattached: usize,
     pub arktr_unattached_examples: Vec<Unmatched>,
+    /// The list of every text: its entries, by section (one entry may stand in several), and the game data places.
+    pub texts: usize,
+    pub texts_by_section: HashMap<String, usize>,
+    pub text_places: usize,
     pub millis: u128,
 }
 
@@ -122,6 +126,8 @@ pub struct Built {
     pub sova_notes: Vec<(String, Vec<String>)>,
     /// The library's chapter and story names with the game's Russian (`en`, `ru`).
     pub names_ru: Vec<(String, String)>,
+    /// Every text of the game in one list (see [`crate::translators::texts`]).
+    pub texts: crate::translators::texts::Texts,
     pub summary: ImportSummary,
 }
 
@@ -350,11 +356,27 @@ pub fn build(
         })
         .collect();
     names_ru.sort();
+    let texts = crate::translators::texts::collect(
+        &dict,
+        plugin.as_ref(),
+        &matcher,
+        &out,
+        &assets_dir.join("gamedata").join("excel"),
+    );
+    summary.texts = texts.rows.len();
+    summary.text_places = texts.places.len();
+    for r in &texts.rows {
+        for s in &r.sections {
+            *summary.texts_by_section.entry((*s).to_owned()).or_default() += 1;
+        }
+    }
+    summary.millis = started.elapsed().as_millis();
     Ok(Built {
         stories: out,
         chars,
         sova_notes,
         names_ru,
+        texts,
         summary,
     })
 }
@@ -376,6 +398,7 @@ pub async fn store(
         chars,
         sova_notes,
         names_ru,
+        texts,
         summary,
     } = built;
     // 20 binds per row, under Postgres's 65,535-parameter limit.
@@ -490,6 +513,7 @@ pub async fn store(
         });
         qb.build().execute(&mut *tx).await?;
     }
+    crate::translators::texts::db::store(&mut tx, server, &texts.rows, &texts.places).await?;
     sqlx::query(
         "INSERT INTO translators.imports (server, started_at, summary) VALUES ($1, $2, $3)",
     )

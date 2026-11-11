@@ -505,6 +505,7 @@ async fn history_of_a_line() {
         chars: Vec::new(),
         sova_notes: Vec::new(),
         names_ru: Vec::new(),
+        texts: backend::translators::texts::Texts::default(),
         summary: import::ImportSummary::default(),
     };
     let keys = ["Hello.".to_owned(), "Bye.".to_owned()];
@@ -600,5 +601,245 @@ async fn recommend_rule_setting() {
     assert_eq!(tdb::recommend_rule(&pool).await.unwrap(), "A");
     tdb::set_recommend_rule(&pool, "B", lead).await.unwrap();
     assert_eq!(tdb::recommend_rule(&pool).await.unwrap(), "B");
+    drop_db(pool, name).await;
+}
+
+/// The list of every text: stored by the import's transaction, searched by a
+/// part of the English or the Russian, with the section and state filters.
+#[tokio::test]
+#[ignore = "creates and drops a database on the local Postgres"]
+async fn texts_are_stored_and_searched() {
+    use backend::translators::texts::dto::TextQuery;
+    use backend::translators::texts::{self, TextPlace, TextRow};
+    let (pool, name) = fresh_db().await;
+    let lead = user(&pool, "lead").await;
+    let a = user(&pool, "anna").await;
+    let row =
+        |key: &str, en: &str, ru: Option<&str>, sections: &[&'static str], role: Option<&str>| {
+            TextRow {
+                edit_key: key.to_owned(),
+                en: en.to_owned(),
+                ru: ru.map(str::to_owned),
+                file: ru.map(|_| "11_ui.txt".to_owned()),
+                plugin_role: role.map(str::to_owned),
+                ru_plugin: None,
+                sections: sections.to_vec(),
+                places: 1,
+            }
+        };
+    let rows = vec![
+        row(
+            "Ursus",
+            "Ursus",
+            Some("Урсус"),
+            &["operators", "story"],
+            Some("operator"),
+        ),
+        row(
+            "You bunch... aren't from Ursus...",
+            "You bunch... aren't from Ursus...",
+            Some("Вы, ребята... не из Урсуса..."),
+            &["story"],
+            None,
+        ),
+        row(
+            "Ursus Slug",
+            "<i>Ursus</i> Slug",
+            Some("Урсусский слизень"),
+            &["enemies"],
+            None,
+        ),
+        row(
+            "Excursus",
+            "Excursus",
+            Some("Отступление"),
+            &["other"],
+            None,
+        ),
+        row("Ёлка_100%", "Ёлка_100%", None, &["items"], None),
+    ];
+    let places = vec![TextPlace {
+        edit_key: "Ursus".to_owned(),
+        section: "operators",
+        object_id: "char_1".to_owned(),
+        object_en: "Ursus".to_owned(),
+        field: "name".to_owned(),
+        idx: 0,
+        ord: 0,
+    }];
+    line(
+        &pool,
+        "s1",
+        4,
+        0,
+        "You bunch... aren't from Ursus...",
+        "Вы, ребята... не из Урсуса...",
+    )
+    .await;
+    let mut tx = pool.begin().await.unwrap();
+    texts::db::store(&mut tx, "en", &rows, &places)
+        .await
+        .unwrap();
+    tx.commit().await.unwrap();
+    // A second load replaces the first.
+    let mut tx = pool.begin().await.unwrap();
+    texts::db::store(&mut tx, "en", &rows, &places)
+        .await
+        .unwrap();
+    tx.commit().await.unwrap();
+    assert_eq!(texts::db::indexed(&pool, "en").await.unwrap(), 5);
+
+    let find = |q: TextQuery| {
+        let pool = pool.clone();
+        async move {
+            let (total, hits) = texts::db::search(&pool, "en", &q).await.unwrap();
+            (
+                total,
+                hits.into_iter().map(|h| h.edit_key).collect::<Vec<_>>(),
+            )
+        }
+    };
+    let q = |s: &str| TextQuery {
+        q: s.to_owned(),
+        ..TextQuery::default()
+    };
+    // By the English, any case, shortest first; tags do not get in the way.
+    assert_eq!(
+        find(q("URSUS")).await,
+        (
+            4,
+            vec![
+                "Ursus".to_owned(),
+                "Excursus".into(),
+                "Ursus Slug".into(),
+                "You bunch... aren't from Ursus...".into()
+            ]
+        )
+    );
+    // By the Russian; ё = е; `%` and `_` are ordinary characters.
+    assert_eq!(find(q("урсусский")).await.1, vec!["Ursus Slug".to_owned()]);
+    assert_eq!(find(q("елка_100%")).await.1, vec!["Ёлка_100%".to_owned()]);
+    assert_eq!(find(q("100_")).await.0, 0);
+    // Whole words only.
+    let whole = find(TextQuery {
+        whole: true,
+        ..q("ursus")
+    })
+    .await;
+    assert_eq!(whole.0, 3);
+    assert!(!whole.1.contains(&"Excursus".to_owned()));
+    // The filters.
+    assert_eq!(
+        find(TextQuery {
+            section: Some("enemies".into()),
+            ..q("ursus")
+        })
+        .await
+        .1,
+        vec!["Ursus Slug".to_owned()]
+    );
+    assert_eq!(
+        find(TextQuery {
+            status: Some("untranslated".into()),
+            ..q("")
+        })
+        .await
+        .1,
+        vec!["Ёлка_100%".to_owned()]
+    );
+    assert_eq!(
+        find(TextQuery {
+            status: Some("plugin".into()),
+            ..q("")
+        })
+        .await
+        .1,
+        vec!["Ursus".to_owned()]
+    );
+    let key = "You bunch... aren't from Ursus...";
+    let p = db::upsert_proposal(
+        &pool,
+        key,
+        &place("s1", 4),
+        "Вы не из Урсуса?",
+        "own",
+        false,
+        a,
+    )
+    .await
+    .unwrap();
+    assert_eq!(
+        find(TextQuery {
+            status: Some("proposed".into()),
+            ..q("")
+        })
+        .await
+        .1,
+        vec![key.to_owned()]
+    );
+    assert_eq!(
+        find(TextQuery {
+            status: Some("unchecked".into()),
+            ..q("")
+        })
+        .await
+        .0,
+        4
+    );
+    db::approve_key(
+        &pool,
+        key,
+        "proposal",
+        Some(p),
+        "Вы не из Урсуса?",
+        &place("s1", 4),
+        lead,
+    )
+    .await
+    .unwrap();
+    assert_eq!(
+        find(TextQuery {
+            status: Some("proposed".into()),
+            ..q("")
+        })
+        .await
+        .0,
+        0
+    );
+    let (_, hits) = texts::db::search(
+        &pool,
+        "en",
+        &TextQuery {
+            status: Some("approved".into()),
+            ..q("")
+        },
+    )
+    .await
+    .unwrap();
+    assert_eq!(hits.len(), 1);
+    assert_eq!(hits[0].status, "approved");
+    // A found text comes with its places: the game data's, then the story's.
+    assert_eq!(hits[0].at[0].story_id.as_deref(), Some("s1"));
+    let (_, ursus) = texts::db::search(
+        &pool,
+        "en",
+        &TextQuery {
+            whole: true,
+            section: Some("operators".into()),
+            ..q("ursus")
+        },
+    )
+    .await
+    .unwrap();
+    assert_eq!(ursus[0].at[0].object_id.as_deref(), Some("char_1"));
+    assert_eq!(ursus[0].at[0].field.as_deref(), Some("name"));
+    // Paging.
+    let page = find(TextQuery {
+        limit: Some(2),
+        offset: Some(1),
+        ..q("ursus")
+    })
+    .await;
+    assert_eq!(page, (4, vec!["Excursus".to_owned(), "Ursus Slug".into()]));
     drop_db(pool, name).await;
 }

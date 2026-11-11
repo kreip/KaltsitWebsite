@@ -466,7 +466,8 @@ pub async fn run_import(
         tokio::spawn(async move {
             let result = import_now(&state2, sources).await;
             if let Err(e) = &result {
-                tracing::error!(error = %e, "translators import failed");
+                // The cause too: an internal error's own text says nothing.
+                tracing::error!(error = %e, cause = ?e, "translators import failed");
                 *lock_error() = Some(e.to_string());
             }
             IMPORT_RUNNING.store(false, Ordering::SeqCst);
