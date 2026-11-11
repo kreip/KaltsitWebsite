@@ -104,7 +104,8 @@ def main() -> int:
         req = urllib.request.Request(
             base + path,
             method=method,
-            data=None if body is None else json.dumps(body).encode(),
+            # Compact: the whole catalog goes in one request, close to the backend's 2 MiB body limit.
+            data=None if body is None else json.dumps(body, separators=(",", ":"), ensure_ascii=False).encode(),
             headers={"x-service-key": key, "content-type": "application/json"},
         )
         with urllib.request.urlopen(req, timeout=60) as res:

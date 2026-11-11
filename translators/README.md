@@ -94,6 +94,9 @@ in the story is edited at its first story line; any other as the text itself —
 place `storyId = "@text"` with the entry's English in `editKey` — one translation
 everywhere. The query and the filters are in the address, so a search is a link.
 
+In the results a place of the game data is named in words (`Interface and other › Medals`,
+never the table's name: that shows on hover); "N more" unfolds every place of the text.
+
 ## Export
 
 "My edits" → "Export…" prepares one archive (`.zip`) for the pack's maintainer:

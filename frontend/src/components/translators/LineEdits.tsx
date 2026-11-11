@@ -35,12 +35,12 @@ import type { OutdatedEdit } from "#/types/generated/OutdatedEdit";
 import type { Proposal } from "#/types/generated/Proposal";
 import type { TranslatorLine } from "#/types/generated/TranslatorLine";
 import type { TranslatorsMe } from "#/types/generated/TranslatorsMe";
+import { GamePlace } from "./PlaceWords";
 import { StoryText } from "./StoryText";
 import { useStoryNames } from "./storyNames";
 import { TextDiff } from "./TextDiff";
 import { TokenEditor } from "./TokenEditor";
 import type { messages } from "./translators.messages";
-import { gameWhere } from "./where";
 
 type T = TypedT<typeof messages>;
 
@@ -550,8 +550,8 @@ export function CellActions({ line, onOpen, onHistory, game, t }: { line: Transl
     );
 }
 
-/** Every place of the entry, with the lines before and after, as links. */
-export function PlacesList({ place, nickname, t }: { place: EditPlace; nickname: string; t: T }): React.ReactElement {
+/** Every place of the entry as links, with the lines before and after (`compact`: the places only). */
+export function PlacesList({ place, nickname, compact = false, t }: { place: EditPlace; nickname: string; compact?: boolean; t: T }): React.ReactElement {
     const query = useQuery(placesQueryOptions(place));
     const nameOf = useStoryNames();
     if (query.isError) return <LoadFailed layout="inline" message={t("places.load")} onRetry={() => query.refetch()} />;
@@ -559,20 +559,22 @@ export function PlacesList({ place, nickname, t }: { place: EditPlace; nickname:
     const { places, total } = query.data;
     return (
         <div className="flex flex-col gap-1">
-            <ul className="flex max-h-72 flex-col gap-2 overflow-y-auto text-xs">
+            <ul className={cn("flex max-h-72 flex-col overflow-y-auto text-xs", compact ? "gap-1" : "gap-2")}>
                 {places.map((p) => {
                     // A field of the game data: where it stands, in words.
                     if (p.section !== "story")
                         return (
                             <li key={`${p.section}-${p.objectEn}-${p.field}-${p.idx}`} className="flex flex-col gap-0.5 border-s-2 ps-2">
-                                <span className="font-medium">{gameWhere(p.section, p.objectEn, p.field, p.idx, t)}</span>
+                                <span className={compact ? undefined : "font-medium"}>
+                                    <GamePlace section={p.section} objectId={null} objectEn={p.objectEn} field={p.field} idx={p.idx} t={t} />
+                                </span>
                             </li>
                         );
                     const n = nameOf(p.storyId);
                     const here = samePlace(p, place);
                     return (
                         <li key={`${p.storyId}-${p.line}-${p.part}`} className="flex flex-col gap-0.5 border-s-2 ps-2">
-                            <span className="font-medium">
+                            <span className={compact ? undefined : "font-medium"}>
                                 {n ? (
                                     <Link to="/translators" search={{ group: n.groupId, story: p.storyId }} hash={`n-${p.ord + 1}`} className="underline-offset-4 hover:underline">
                                         {t("places.item", { group: n.group, story: n.story, n: p.ord + 1 })}
@@ -582,12 +584,12 @@ export function PlacesList({ place, nickname, t }: { place: EditPlace; nickname:
                                 )}
                                 {here ? <span className="font-normal text-subtle-foreground"> · {t("places.here")}</span> : null}
                             </span>
-                            {p.before ? (
+                            {!compact && p.before ? (
                                 <span className="text-subtle-foreground">
                                     {t("places.before")} <StoryText text={p.before} nickname={nickname} />
                                 </span>
                             ) : null}
-                            {p.after ? (
+                            {!compact && p.after ? (
                                 <span className="text-subtle-foreground">
                                     {t("places.after")} <StoryText text={p.after} nickname={nickname} />
                                 </span>

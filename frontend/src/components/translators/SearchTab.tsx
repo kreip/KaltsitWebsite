@@ -14,6 +14,7 @@ import { useEffect, useId, useMemo, useRef, useState } from "react";
 import { SearchField } from "#/components/SearchField";
 import { Button } from "#/components/ui/button";
 import { Checkbox } from "#/components/ui/checkbox";
+import { Collapsible, CollapsiblePanel, CollapsibleTrigger } from "#/components/ui/collapsible";
 import { Empty, EmptyHeader, EmptyTitle } from "#/components/ui/empty";
 import { Label } from "#/components/ui/label";
 import { LoadFailed } from "#/components/ui/load-failed";
@@ -30,13 +31,14 @@ import type { SearchLine } from "#/types/generated/SearchLine";
 import type { TextAt } from "#/types/generated/TextAt";
 import type { TranslatorsMe } from "#/types/generated/TranslatorsMe";
 import type { RecommendRule } from "./checks";
-import { type EditorState, StatusDot } from "./LineEdits";
+import { type EditorState, PlacesList, StatusDot } from "./LineEdits";
 import { analyse, PROSE, RuCell, Speaker } from "./LinesTable";
+import { GamePlace } from "./PlaceWords";
 import { type IFind, StoryText } from "./StoryText";
 import { Toggle } from "./SwitchToggle";
 import { useStoryNames } from "./storyNames";
 import type { messages } from "./translators.messages";
-import { gameWhere, sectionWord } from "./where";
+import { fileWord, sectionWord } from "./where";
 
 type T = TypedT<typeof messages>;
 
@@ -58,7 +60,7 @@ export interface ISearchState {
 /** One place of a found text: a link to the story line, or the game object's field in words. */
 function Place({ at, t }: { at: TextAt; t: T }): React.ReactElement {
     const nameOf = useStoryNames();
-    if (at.storyId === null) return <span>{gameWhere(at.section, at.objectEn, at.field, at.idx, t)}</span>;
+    if (at.storyId === null) return <GamePlace section={at.section} objectId={at.objectId} objectEn={at.objectEn} field={at.field} idx={at.idx} t={t} />;
     const n = nameOf(at.storyId);
     const label = t("where.item", { group: n?.group ?? "", story: n?.story ?? at.storyId, n: at.ord === null ? "?" : at.ord + 1 });
     if (!n) return <span>{label}</span>;
@@ -69,20 +71,27 @@ function Place({ at, t }: { at: TextAt; t: T }): React.ReactElement {
     );
 }
 
-function Where({ row, t }: { row: SearchLine; t: T }): React.ReactElement {
+/** Where a found text stands: its first place, and "N more" that unfolds every place of it. */
+function Where({ row, nickname, t }: { row: SearchLine; nickname: string; t: T }): React.ReactElement {
     const { hit } = row;
-    // Places past those shown (the line's count is at least 1 even for a text tied to none).
-    const more = (hit.places > 0 ? Math.max(row.line.places, hit.places) : 0) - hit.at.length;
+    const [open, setOpen] = useState(false);
+    const first = hit.at.at(0);
+    // The line's count is at least 1 even for a text tied to no place.
+    const total = hit.places > 0 ? Math.max(row.line.places, hit.places) : 0;
+    const more = total - (first ? 1 : 0);
     return (
-        <span className="flex flex-col items-start gap-0.5 text-xs">
-            {hit.at.map((at) => (
-                <Place key={`${at.section}-${at.storyId ?? at.objectId}-${at.line ?? at.field}-${at.part ?? at.idx}`} at={at} t={t} />
-            ))}
-            {/* An entry of the dictionaries tied to no known place: its section and file. */}
-            {hit.at.length === 0 ? <span>{[sectionWord(hit.sections[0] ?? "other", t), hit.file].filter(Boolean).join(" · ")}</span> : null}
-            {row.line.kind !== "text" ? <Speaker line={row.line} t={t} /> : null}
-            {more > 0 ? <span className="text-subtle-foreground">{t("search.alsoIn", { count: more })}</span> : null}
-        </span>
+        <Collapsible open={open} onOpenChange={setOpen} className="flex flex-col items-start gap-0.5 text-xs">
+            {open ? null : first ? (
+                <Place at={first} t={t} />
+            ) : (
+                // An entry of the dictionaries tied to no known place: its section and where it is kept.
+                <span title={hit.file ?? undefined}>{[sectionWord(hit.sections.at(0) ?? "other", t), hit.file ? fileWord(hit.file, t) : null].filter(Boolean).join(" › ")}</span>
+            )}
+            {more > 0 ? <CollapsibleTrigger render={<Button variant="link" size="xs" className="h-auto px-0 text-subtle-foreground text-xs" />}>{open ? t("search.fewer") : t("search.alsoIn", { count: more })}</CollapsibleTrigger> : null}
+            <CollapsiblePanel className="w-full">
+                <PlacesList place={row.place} nickname={nickname} compact t={t} />
+            </CollapsiblePanel>
+        </Collapsible>
     );
 }
 
@@ -103,12 +112,16 @@ function Results({ rows, edits, me, find, showVariants, showDiff, t }: IResultsP
     const analyses = useMemo(() => rows.map((r) => analyse(r.line, byKey.get(r.line.editKey), r.place, null, rule)), [rows, byKey, rule]);
     // One editor open at a time: the row's text id and what it is open for.
     const [editing, setEditing] = useState<{ id: number; state: EditorState } | null>(null);
+    // Who says it, as in the story's table: the column is there once a story line is found.
+    const speakers = rows.some((r) => r.line.kind !== "text");
     return (
-        <Table aria-label={t("search.table")}>
+        // Fixed widths: the Russian and the English share what the narrow columns leave, half each.
+        <Table aria-label={t("search.table")} className="wrap-anywhere min-w-3xl table-fixed">
             <TableHeader>
                 <TableRow>
                     <TableHead className="w-12">{t("table.line")}</TableHead>
                     <TableHead className="w-56">{t("search.where")}</TableHead>
+                    {speakers ? <TableHead className="w-36">{t("table.speaker")}</TableHead> : null}
                     <TableHead>{t("table.ru")}</TableHead>
                     <TableHead>{t("table.en")}</TableHead>
                 </TableRow>
@@ -125,8 +138,13 @@ function Results({ rows, edits, me, find, showVariants, showDiff, t }: IResultsP
                                 </span>
                             </TableCell>
                             <TableCell className={PROSE}>
-                                <Where row={r} t={t} />
+                                <Where row={r} nickname={nickname} t={t} />
                             </TableCell>
+                            {speakers ? (
+                                <TableCell className={PROSE}>
+                                    <Speaker line={r.line} t={t} />
+                                </TableCell>
+                            ) : null}
                             <TableCell className={PROSE}>
                                 <RuCell
                                     line={r.line}

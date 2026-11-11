@@ -1380,8 +1380,8 @@ export const messages = {
         description: "Search tab of the translators' section: column header, where the text stands in the game.",
     },
     "search.alsoIn": {
-        text: "also in {count, plural, one {# place} other {# places}}",
-        description: "Search tab of the translators' section: under the places shown, how many more hold the same text.",
+        text: "{count} more",
+        description: "Search tab of the translators' section: a button under the first place of a found text saying how many more places hold the same text; a click unfolds the list.",
     },
     "where.text": {
         text: "Game text · open in Search",
@@ -1530,6 +1530,146 @@ export const messages = {
     "at.field.locked": {
         text: "when locked",
         description: "One part of where a text stands in the game data, as in «Operator › Amiya › Skill 2 › description»: the field, lower case.",
+    },
+    "at.table.rogue": {
+        text: "Integrated Strategies",
+        description: "A group of the game's tables in «Interface and other» of the translators' search: where a found text stands, in words.",
+    },
+    "at.table.events": {
+        text: "Events",
+        description: "A group of the game's tables in «Interface and other» of the translators' search: where a found text stands, in words.",
+    },
+    "at.table.base": {
+        text: "Base",
+        description: "A group of the game's tables in «Interface and other» of the translators' search: where a found text stands, in words.",
+    },
+    "at.table.medals": {
+        text: "Medals",
+        description: "A group of the game's tables in «Interface and other» of the translators' search: where a found text stands, in words.",
+    },
+    "at.table.sandbox": {
+        text: "Reclamation Algorithm",
+        description: "A group of the game's tables in «Interface and other» of the translators' search: where a found text stands, in words.",
+    },
+    "at.table.ui": {
+        text: "Interface labels",
+        description: "A group of the game's tables in «Interface and other» of the translators' search: where a found text stands, in words.",
+    },
+    "at.table.stages": {
+        text: "Stages (other)",
+        description: "A group of the game's tables in «Interface and other» of the translators' search: where a found text stands, in words.",
+    },
+    "at.table.files": {
+        text: "Operator files (other)",
+        description: "A group of the game's tables in «Interface and other» of the translators' search: where a found text stands, in words.",
+    },
+    "at.table.operators": {
+        text: "Operators (other)",
+        description: "A group of the game's tables in «Interface and other» of the translators' search: where a found text stands, in words.",
+    },
+    "at.table.voice": {
+        text: "Operator voice lines (other)",
+        description: "A group of the game's tables in «Interface and other» of the translators' search: where a found text stands, in words.",
+    },
+    "at.table.display": {
+        text: "Profile decorations",
+        description: "A group of the game's tables in «Interface and other» of the translators' search: where a found text stands, in words.",
+    },
+    "at.table.review": {
+        text: "Story archive",
+        description: "A group of the game's tables in «Interface and other» of the translators' search: where a found text stands, in words.",
+    },
+    "at.table.shop": {
+        text: "Store",
+        description: "A group of the game's tables in «Interface and other» of the translators' search: where a found text stands, in words.",
+    },
+    "at.table.missions": {
+        text: "Missions",
+        description: "A group of the game's tables in «Interface and other» of the translators' search: where a found text stands, in words.",
+    },
+    "at.table.gacha": {
+        text: "Headhunting",
+        description: "A group of the game's tables in «Interface and other» of the translators' search: where a found text stands, in words.",
+    },
+    "at.table.tower": {
+        text: "Stationary Security Service",
+        description: "A group of the game's tables in «Interface and other» of the translators' search: where a found text stands, in words.",
+    },
+    "at.table.skins": {
+        text: "Outfits (other)",
+        description: "A group of the game's tables in «Interface and other» of the translators' search: where a found text stands, in words.",
+    },
+    "at.table.charms": {
+        text: "Charms",
+        description: "A group of the game's tables in «Interface and other» of the translators' search: where a found text stands, in words.",
+    },
+    "at.table.audio": {
+        text: "Music",
+        description: "A group of the game's tables in «Interface and other» of the translators' search: where a found text stands, in words.",
+    },
+    "at.table.crisis": {
+        text: "Contingency Contract",
+        description: "A group of the game's tables in «Interface and other» of the translators' search: where a found text stands, in words.",
+    },
+    "at.table.tips": {
+        text: "Loading tips",
+        description: "A group of the game's tables in «Interface and other» of the translators' search: where a found text stands, in words.",
+    },
+    "at.table.modules": {
+        text: "Modules (other)",
+        description: "A group of the game's tables in «Interface and other» of the translators' search: where a found text stands, in words.",
+    },
+    "at.table.enemies": {
+        text: "Enemies (other)",
+        description: "A group of the game's tables in «Interface and other» of the translators' search: where a found text stands, in words.",
+    },
+    "at.table.teams": {
+        text: "Factions",
+        description: "A group of the game's tables in «Interface and other» of the translators' search: where a found text stands, in words.",
+    },
+    "at.table.skills": {
+        text: "Skills (other)",
+        description: "A group of the game's tables in «Interface and other» of the translators' search: where a found text stands, in words.",
+    },
+    "at.table.clues": {
+        text: "Clues",
+        description: "A group of the game's tables in «Interface and other» of the translators' search: where a found text stands, in words.",
+    },
+    "at.table.campaign": {
+        text: "Annihilation",
+        description: "A group of the game's tables in «Interface and other» of the translators' search: where a found text stands, in words.",
+    },
+    "at.table.items": {
+        text: "Items (other)",
+        description: "A group of the game's tables in «Interface and other» of the translators' search: where a found text stands, in words.",
+    },
+    "at.file.ui": {
+        text: "Interface dictionary",
+        description: "Where a found text tied to no place of the game data is kept, in words (translators' search); the file name shows on hover.",
+    },
+    "at.file.story": {
+        text: "Story dictionary",
+        description: "Where a found text tied to no place of the game data is kept, in words (translators' search); the file name shows on hover.",
+    },
+    "at.file.names": {
+        text: "Names dictionary",
+        description: "Where a found text tied to no place of the game data is kept, in words (translators' search); the file name shows on hover.",
+    },
+    "at.file.new": {
+        text: "New entries",
+        description: "Where a found text tied to no place of the game data is kept, in words (translators' search); the file name shows on hover.",
+    },
+    "at.file.auto": {
+        text: "Automatic translation",
+        description: "Where a found text tied to no place of the game data is kept, in words (translators' search); the file name shows on hover.",
+    },
+    "at.file.plugin": {
+        text: "Plugin catalog",
+        description: "Where a found text tied to no place of the game data is kept, in words (translators' search); the file name shows on hover.",
+    },
+    "search.fewer": {
+        text: "Collapse",
+        description: "Button that folds the list of a found text's places back to the first one (translators' search).",
     },
 } satisfies MessageMap;
 

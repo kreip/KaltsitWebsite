@@ -1,6 +1,6 @@
 {
     "generatedBy": "bun run i18n:extract",
-    "generatedAt": "2026-11-11T15:22:51.452Z",
+    "generatedAt": "2026-11-11T18:22:19.129Z",
     "entries": [
         {
             "key": "admin.home.access.everyList",
@@ -54262,6 +54262,48 @@
             "placeholders": []
         },
         {
+            "key": "translators.at.file.auto",
+            "namespace": "translators",
+            "source_text": "Automatic translation",
+            "description": "Where a found text tied to no place of the game data is kept, in words (translators' search); the file name shows on hover.",
+            "placeholders": []
+        },
+        {
+            "key": "translators.at.file.names",
+            "namespace": "translators",
+            "source_text": "Names dictionary",
+            "description": "Where a found text tied to no place of the game data is kept, in words (translators' search); the file name shows on hover.",
+            "placeholders": []
+        },
+        {
+            "key": "translators.at.file.new",
+            "namespace": "translators",
+            "source_text": "New entries",
+            "description": "Where a found text tied to no place of the game data is kept, in words (translators' search); the file name shows on hover.",
+            "placeholders": []
+        },
+        {
+            "key": "translators.at.file.plugin",
+            "namespace": "translators",
+            "source_text": "Plugin catalog",
+            "description": "Where a found text tied to no place of the game data is kept, in words (translators' search); the file name shows on hover.",
+            "placeholders": []
+        },
+        {
+            "key": "translators.at.file.story",
+            "namespace": "translators",
+            "source_text": "Story dictionary",
+            "description": "Where a found text tied to no place of the game data is kept, in words (translators' search); the file name shows on hover.",
+            "placeholders": []
+        },
+        {
+            "key": "translators.at.file.ui",
+            "namespace": "translators",
+            "source_text": "Interface dictionary",
+            "description": "Where a found text tied to no place of the game data is kept, in words (translators' search); the file name shows on hover.",
+            "placeholders": []
+        },
+        {
             "key": "translators.at.items",
             "namespace": "translators",
             "source_text": "Item",
@@ -54350,6 +54392,202 @@
             "namespace": "translators",
             "source_text": "Story",
             "description": "One part of where a text stands in the game data, as in «Operator › Amiya › Skill 2 › description»: the section, singular.",
+            "placeholders": []
+        },
+        {
+            "key": "translators.at.table.audio",
+            "namespace": "translators",
+            "source_text": "Music",
+            "description": "A group of the game's tables in «Interface and other» of the translators' search: where a found text stands, in words.",
+            "placeholders": []
+        },
+        {
+            "key": "translators.at.table.base",
+            "namespace": "translators",
+            "source_text": "Base",
+            "description": "A group of the game's tables in «Interface and other» of the translators' search: where a found text stands, in words.",
+            "placeholders": []
+        },
+        {
+            "key": "translators.at.table.campaign",
+            "namespace": "translators",
+            "source_text": "Annihilation",
+            "description": "A group of the game's tables in «Interface and other» of the translators' search: where a found text stands, in words.",
+            "placeholders": []
+        },
+        {
+            "key": "translators.at.table.charms",
+            "namespace": "translators",
+            "source_text": "Charms",
+            "description": "A group of the game's tables in «Interface and other» of the translators' search: where a found text stands, in words.",
+            "placeholders": []
+        },
+        {
+            "key": "translators.at.table.clues",
+            "namespace": "translators",
+            "source_text": "Clues",
+            "description": "A group of the game's tables in «Interface and other» of the translators' search: where a found text stands, in words.",
+            "placeholders": []
+        },
+        {
+            "key": "translators.at.table.crisis",
+            "namespace": "translators",
+            "source_text": "Contingency Contract",
+            "description": "A group of the game's tables in «Interface and other» of the translators' search: where a found text stands, in words.",
+            "placeholders": []
+        },
+        {
+            "key": "translators.at.table.display",
+            "namespace": "translators",
+            "source_text": "Profile decorations",
+            "description": "A group of the game's tables in «Interface and other» of the translators' search: where a found text stands, in words.",
+            "placeholders": []
+        },
+        {
+            "key": "translators.at.table.enemies",
+            "namespace": "translators",
+            "source_text": "Enemies (other)",
+            "description": "A group of the game's tables in «Interface and other» of the translators' search: where a found text stands, in words.",
+            "placeholders": []
+        },
+        {
+            "key": "translators.at.table.events",
+            "namespace": "translators",
+            "source_text": "Events",
+            "description": "A group of the game's tables in «Interface and other» of the translators' search: where a found text stands, in words.",
+            "placeholders": []
+        },
+        {
+            "key": "translators.at.table.files",
+            "namespace": "translators",
+            "source_text": "Operator files (other)",
+            "description": "A group of the game's tables in «Interface and other» of the translators' search: where a found text stands, in words.",
+            "placeholders": []
+        },
+        {
+            "key": "translators.at.table.gacha",
+            "namespace": "translators",
+            "source_text": "Headhunting",
+            "description": "A group of the game's tables in «Interface and other» of the translators' search: where a found text stands, in words.",
+            "placeholders": []
+        },
+        {
+            "key": "translators.at.table.items",
+            "namespace": "translators",
+            "source_text": "Items (other)",
+            "description": "A group of the game's tables in «Interface and other» of the translators' search: where a found text stands, in words.",
+            "placeholders": []
+        },
+        {
+            "key": "translators.at.table.medals",
+            "namespace": "translators",
+            "source_text": "Medals",
+            "description": "A group of the game's tables in «Interface and other» of the translators' search: where a found text stands, in words.",
+            "placeholders": []
+        },
+        {
+            "key": "translators.at.table.missions",
+            "namespace": "translators",
+            "source_text": "Missions",
+            "description": "A group of the game's tables in «Interface and other» of the translators' search: where a found text stands, in words.",
+            "placeholders": []
+        },
+        {
+            "key": "translators.at.table.modules",
+            "namespace": "translators",
+            "source_text": "Modules (other)",
+            "description": "A group of the game's tables in «Interface and other» of the translators' search: where a found text stands, in words.",
+            "placeholders": []
+        },
+        {
+            "key": "translators.at.table.operators",
+            "namespace": "translators",
+            "source_text": "Operators (other)",
+            "description": "A group of the game's tables in «Interface and other» of the translators' search: where a found text stands, in words.",
+            "placeholders": []
+        },
+        {
+            "key": "translators.at.table.review",
+            "namespace": "translators",
+            "source_text": "Story archive",
+            "description": "A group of the game's tables in «Interface and other» of the translators' search: where a found text stands, in words.",
+            "placeholders": []
+        },
+        {
+            "key": "translators.at.table.rogue",
+            "namespace": "translators",
+            "source_text": "Integrated Strategies",
+            "description": "A group of the game's tables in «Interface and other» of the translators' search: where a found text stands, in words.",
+            "placeholders": []
+        },
+        {
+            "key": "translators.at.table.sandbox",
+            "namespace": "translators",
+            "source_text": "Reclamation Algorithm",
+            "description": "A group of the game's tables in «Interface and other» of the translators' search: where a found text stands, in words.",
+            "placeholders": []
+        },
+        {
+            "key": "translators.at.table.shop",
+            "namespace": "translators",
+            "source_text": "Store",
+            "description": "A group of the game's tables in «Interface and other» of the translators' search: where a found text stands, in words.",
+            "placeholders": []
+        },
+        {
+            "key": "translators.at.table.skills",
+            "namespace": "translators",
+            "source_text": "Skills (other)",
+            "description": "A group of the game's tables in «Interface and other» of the translators' search: where a found text stands, in words.",
+            "placeholders": []
+        },
+        {
+            "key": "translators.at.table.skins",
+            "namespace": "translators",
+            "source_text": "Outfits (other)",
+            "description": "A group of the game's tables in «Interface and other» of the translators' search: where a found text stands, in words.",
+            "placeholders": []
+        },
+        {
+            "key": "translators.at.table.stages",
+            "namespace": "translators",
+            "source_text": "Stages (other)",
+            "description": "A group of the game's tables in «Interface and other» of the translators' search: where a found text stands, in words.",
+            "placeholders": []
+        },
+        {
+            "key": "translators.at.table.teams",
+            "namespace": "translators",
+            "source_text": "Factions",
+            "description": "A group of the game's tables in «Interface and other» of the translators' search: where a found text stands, in words.",
+            "placeholders": []
+        },
+        {
+            "key": "translators.at.table.tips",
+            "namespace": "translators",
+            "source_text": "Loading tips",
+            "description": "A group of the game's tables in «Interface and other» of the translators' search: where a found text stands, in words.",
+            "placeholders": []
+        },
+        {
+            "key": "translators.at.table.tower",
+            "namespace": "translators",
+            "source_text": "Stationary Security Service",
+            "description": "A group of the game's tables in «Interface and other» of the translators' search: where a found text stands, in words.",
+            "placeholders": []
+        },
+        {
+            "key": "translators.at.table.ui",
+            "namespace": "translators",
+            "source_text": "Interface labels",
+            "description": "A group of the game's tables in «Interface and other» of the translators' search: where a found text stands, in words.",
+            "placeholders": []
+        },
+        {
+            "key": "translators.at.table.voice",
+            "namespace": "translators",
+            "source_text": "Operator voice lines (other)",
+            "description": "A group of the game's tables in «Interface and other» of the translators' search: where a found text stands, in words.",
             "placeholders": []
         },
         {
@@ -56309,8 +56547,8 @@
         {
             "key": "translators.search.alsoIn",
             "namespace": "translators",
-            "source_text": "also in {count, plural, one {# place} other {# places}}",
-            "description": "Search tab of the translators' section: under the places shown, how many more hold the same text.",
+            "source_text": "{count} more",
+            "description": "Search tab of the translators' section: a button under the first place of a found text saying how many more places hold the same text; a click unfolds the list.",
             "placeholders": [
                 "count"
             ]
@@ -56320,6 +56558,13 @@
             "namespace": "translators",
             "source_text": "Clear",
             "description": "Search tab of the translators' section: button that clears the search box.",
+            "placeholders": []
+        },
+        {
+            "key": "translators.search.fewer",
+            "namespace": "translators",
+            "source_text": "Collapse",
+            "description": "Button that folds the list of a found text's places back to the first one (translators' search).",
             "placeholders": []
         },
         {
