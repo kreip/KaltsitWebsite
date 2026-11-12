@@ -11,6 +11,8 @@ import { env } from "#/env";
 import { parseError } from "#/lib/api/_shared";
 import { optionalSiteToken } from "#/lib/api/_shared.server";
 import { backendFetch } from "#/lib/fetch";
+import type { AccessRequest } from "#/types/generated/AccessRequest";
+import type { AdminStats } from "#/types/generated/AdminStats";
 import type { ApprovalBatchResult } from "#/types/generated/ApprovalBatchResult";
 import type { CharName } from "#/types/generated/CharName";
 import type { EditCreated } from "#/types/generated/EditCreated";
@@ -26,6 +28,7 @@ import type { GlossarySuggestion } from "#/types/generated/GlossarySuggestion";
 import type { KeyPlaces } from "#/types/generated/KeyPlaces";
 import type { LineHistory } from "#/types/generated/LineHistory";
 import type { LoginResponse } from "#/types/generated/LoginResponse";
+import type { MemberRow } from "#/types/generated/MemberRow";
 import type { NameRu } from "#/types/generated/NameRu";
 import type { ObjectLines } from "#/types/generated/ObjectLines";
 import type { ProposalVersion } from "#/types/generated/ProposalVersion";
@@ -460,3 +463,77 @@ export const getGameTagsFn = createServerFn({ method: "GET" }).handler(async ():
 export function gameTagsQueryOptions() {
     return queryOptions({ queryKey: [...TRANSLATORS_QUERY_ROOT, "tags"], queryFn: () => getGameTagsFn(), staleTime: 60 * 60_000 });
 }
+
+// ---- Access and the admin panel.
+
+/** "Request access": a signed-in user outside the team asks to join. */
+export const requestAccessFn = createServerFn({ method: "POST" })
+    .inputValidator((d: { note: string }) => d)
+    .handler(async ({ data }): Promise<null> => {
+        await send("/translators/access-request", "POST", { note: data.note || null });
+        return null;
+    });
+
+/** The admin panel's queries: one root, refreshed together after any change. */
+export const ADMIN_QUERY_ROOT = [...TRANSLATORS_QUERY_ROOT, "admin"] as const;
+
+export const getAccessRequestsFn = createServerFn({ method: "GET" }).handler(async (): Promise<AccessRequest[]> => {
+    const res = await send("/translators/admin/requests", "GET");
+    return (await res.json()) as AccessRequest[];
+});
+
+export function accessRequestsQueryOptions() {
+    return queryOptions({ queryKey: [...ADMIN_QUERY_ROOT, "requests"], queryFn: () => getAccessRequestsFn() });
+}
+
+/** Accept a request with a role, or decline it (an admin). */
+export const decideRequestFn = createServerFn({ method: "POST" })
+    .inputValidator((d: { userId: string; accept: boolean; role: string }) => d)
+    .handler(async ({ data }): Promise<null> => {
+        await send(`/translators/admin/requests/${encodeURIComponent(data.userId)}`, "POST", { accept: data.accept, role: data.role });
+        return null;
+    });
+
+export const getMembersFn = createServerFn({ method: "GET" }).handler(async (): Promise<MemberRow[]> => {
+    const res = await send("/translators/admin/members", "GET");
+    return (await res.json()) as MemberRow[];
+});
+
+export function membersQueryOptions() {
+    return queryOptions({ queryKey: [...ADMIN_QUERY_ROOT, "members"], queryFn: () => getMembersFn() });
+}
+
+/** Change a member's role (an admin). */
+export const setMemberRoleFn = createServerFn({ method: "POST" })
+    .inputValidator((d: { userId: string; role: string }) => d)
+    .handler(async ({ data }): Promise<null> => {
+        await send(`/translators/admin/members/${encodeURIComponent(data.userId)}`, "PUT", { role: data.role });
+        return null;
+    });
+
+/** Remove a member from the section (an admin); what they wrote stays. */
+export const removeMemberFn = createServerFn({ method: "POST" })
+    .inputValidator((d: { userId: string }) => d)
+    .handler(async ({ data }): Promise<null> => {
+        await send(`/translators/admin/members/${encodeURIComponent(data.userId)}`, "DELETE");
+        return null;
+    });
+
+export const getAdminStatsFn = createServerFn({ method: "GET" }).handler(async (): Promise<AdminStats> => {
+    const res = await send("/translators/admin/stats", "GET");
+    return (await res.json()) as AdminStats;
+});
+
+export function adminStatsQueryOptions() {
+    return queryOptions({ queryKey: [...ADMIN_QUERY_ROOT, "stats"], queryFn: () => getAdminStatsFn(), staleTime: 60_000 });
+}
+
+export type ProposalDecision = "approve" | "reject" | "withdraw" | "reopen";
+
+/** A translator's decision on proposals by id (one or many): approve, reject (with an optional reason its author sees), withdraw the approval, or reopen a rejected one. */
+export const decideProposalsFn = createServerFn({ method: "POST" })
+    .inputValidator((d: { ids: number[]; decision: ProposalDecision; reason: string }) => d)
+    .handler(async ({ data }): Promise<ApprovalBatchResult> => {
+        const res = await send("/translators/proposals/decisions", "POST", { ids: data.ids, decision: data.decision, reason: data.reason || null });
+        return (await res.json()) as ApprovalBatchResult;
+    });

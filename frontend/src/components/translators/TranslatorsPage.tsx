@@ -12,7 +12,7 @@
  * is the story library's own index; the lines come from the section's import
  * (`/api/translators`).
  */
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import { BookCheck, BookOpen, NotebookPen } from "lucide-react";
 import type React from "react";
@@ -27,17 +27,20 @@ import { Meter } from "#/components/ui/meter";
 import { PageHeader } from "#/components/ui/page-header";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "#/components/ui/select";
 import { Skeleton } from "#/components/ui/skeleton";
+import { Spinner } from "#/components/ui/spinner";
 import { Tabs, TabsList, TabsPanel, TabsTab } from "#/components/ui/tabs";
+import { toastManager } from "#/components/ui/toast";
 import { Toggle as KitToggle } from "#/components/ui/toggle";
 import { storyIndexQueryOptions, storyQueryOptions } from "#/lib/api/story";
 import { useFormatters, useLocale, useT } from "#/lib/i18n";
 import type { TypedT } from "#/lib/i18n/messages";
 import { storyLabel } from "#/lib/story/book/book";
-import { charactersQueryOptions, progressQueryOptions, setStoryReadFn, translatorLinesQueryOptions, translatorsMeQueryOptions } from "#/lib/translators/api";
+import { charactersQueryOptions, progressQueryOptions, requestAccessFn, setStoryReadFn, translatorLinesQueryOptions, translatorsMeQueryOptions } from "#/lib/translators/api";
 import type { StoryRead } from "#/types/generated/StoryRead";
 import type { TranslatorsMe } from "#/types/generated/TranslatorsMe";
+import { AdminTab } from "./AdminTab";
 import { GlossaryTab } from "./GlossaryTab";
-import { TONE, Toned, useEditMutation } from "./LineEdits";
+import { isAdmin, TONE, Toned, useEditMutation } from "./LineEdits";
 import { LinesTable } from "./LinesTable";
 import { MyEditsTab } from "./MyEditsTab";
 import { type SearchSection, type SearchStatus, SearchTab } from "./SearchTab";
@@ -53,7 +56,7 @@ import { useScrollToRow } from "./useScrollToRow";
 
 type T = TypedT<typeof messages>;
 
-export type TranslatorsTab = "story" | "search" | "sections" | "glossary" | "edits";
+export type TranslatorsTab = "story" | "search" | "sections" | "glossary" | "edits" | "admin";
 
 export interface ITranslatorsSearch {
     tab?: TranslatorsTab;
@@ -330,20 +333,34 @@ function StoryTab({ search, onSearch }: ISearchProps): React.ReactElement {
     );
 }
 
-/** "No access" for anyone outside the team, with the development sign-in when it is switched on. */
-export function NoAccess({ devLogin }: { devLogin: boolean }): React.ReactElement {
+/** "No access" for anyone outside the team: a signed-in user may request access; the development sign-in when it is switched on. */
+export function NoAccess({ me }: { me: TranslatorsMe }): React.ReactElement {
     const t: T = useT("translators");
+    const queryClient = useQueryClient();
+    const ask = useMutation({
+        mutationFn: () => requestAccessFn({ data: { note: "" } }),
+        onSuccess: () => queryClient.invalidateQueries({ queryKey: translatorsMeQueryOptions().queryKey }),
+        onError: () => toastManager.add({ title: t("access.requestFailed"), type: "error" }),
+    });
     return (
         <Empty>
             <EmptyHeader>
                 <EmptyTitle>{t("access.title")}</EmptyTitle>
-                <EmptyDescription>{t("access.description")}</EmptyDescription>
+                <EmptyDescription>{me.signedIn ? (me.accessRequested ? t("access.requested") : t("access.signedIn")) : t("access.description")}</EmptyDescription>
             </EmptyHeader>
-            {devLogin ? (
+            {(me.signedIn && !me.accessRequested) || me.devLogin ? (
                 <EmptyContent>
-                    <Button variant="outline" size="sm" render={<Link to="/translators/dev-login" />}>
-                        {t("devLogin.link")}
-                    </Button>
+                    {me.signedIn && !me.accessRequested ? (
+                        <Button size="sm" onClick={() => ask.mutate()} disabled={ask.isPending}>
+                            {ask.isPending ? <Spinner /> : null}
+                            {t("access.request")}
+                        </Button>
+                    ) : null}
+                    {me.devLogin ? (
+                        <Button variant="outline" size="sm" render={<Link to="/translators/dev-login" />}>
+                            {t("devLogin.link")}
+                        </Button>
+                    ) : null}
                 </EmptyContent>
             ) : null}
         </Empty>
@@ -356,7 +373,7 @@ export function MembersOnly({ children }: { children: React.ReactNode }): React.
     const me = useQuery(translatorsMeQueryOptions());
     if (me.isError) return <LoadFailed message={t("load.access")} onRetry={() => me.refetch()} />;
     if (!me.data) return <Skeleton className="h-64 w-full rounded-2xl" />;
-    if (!me.data.member) return <NoAccess devLogin={me.data.devLogin} />;
+    if (!me.data.member) return <NoAccess me={me.data} />;
     return <>{children}</>;
 }
 
@@ -370,38 +387,55 @@ export function TranslatorsPage(props: ISearchProps): React.ReactElement {
 
 function Page({ search, onSearch }: ISearchProps): React.ReactElement {
     const t: T = useT("translators");
-    const tab: TranslatorsTab = search.tab ?? "story";
     return (
         <div className="page-shell flex flex-col gap-6">
             <PageHeader title={t("page.title")} />
             <MembersOnly>
-                <Tabs value={tab} onValueChange={(v: string) => onSearch({ ...search, tab: v === "story" ? undefined : (v as TranslatorsTab) })}>
-                    <TabsList aria-label={t("tabs.label")}>
-                        <TabsTab value="story">{t("tabs.story")}</TabsTab>
-                        <TabsTab value="search">{t("tabs.search")}</TabsTab>
-                        <TabsTab value="sections">{t("tabs.sections")}</TabsTab>
-                        <TabsTab value="glossary">{t("tabs.glossary")}</TabsTab>
-                        <TabsTab value="edits">{t("tabs.edits")}</TabsTab>
-                    </TabsList>
-                    <TabsPanel value="story" className="flex flex-col gap-6 pt-4">
-                        <StoryTab search={search} onSearch={onSearch} />
-                    </TabsPanel>
-                    <TabsPanel value="search" className="flex flex-col gap-6 pt-4">
-                        <SearchTab search={search} onSearch={onSearch} />
-                    </TabsPanel>
-                    <TabsPanel value="sections" className="flex flex-col gap-6 pt-4">
-                        <SectionsTab search={search} onSearch={onSearch} />
-                    </TabsPanel>
-                    <TabsPanel value="glossary" className="flex flex-col gap-6 pt-4">
-                        <GlossaryTab query={search.gq ?? ""} onQuery={(gq) => onSearch({ ...search, gq: gq || undefined })} />
-                    </TabsPanel>
-                    <TabsPanel value="edits" className="flex flex-col gap-6 pt-4">
-                        <MyEditsTab />
-                    </TabsPanel>
-                </Tabs>
-                {/* A word selected in any table: find it everywhere, in the glossary, or suggest it for the glossary. The other tabs keep their place in the address. */}
-                <SelectionMenu onFind={(q) => onSearch({ ...search, tab: "search", q, whole: undefined, section: undefined, status: undefined })} onGlossary={(gq) => onSearch({ ...search, tab: "glossary", gq })} />
+                <MemberTabs search={search} onSearch={onSearch} />
             </MembersOnly>
         </div>
+    );
+}
+
+function MemberTabs({ search, onSearch }: ISearchProps): React.ReactElement {
+    const t: T = useT("translators");
+    const me = useQuery(translatorsMeQueryOptions());
+    const admin = me.data ? isAdmin(me.data) : false;
+    const tab: TranslatorsTab = search.tab === "admin" && !admin ? "story" : (search.tab ?? "story");
+    return (
+        <>
+            <Tabs value={tab} onValueChange={(v: string) => onSearch({ ...search, tab: v === "story" ? undefined : (v as TranslatorsTab) })}>
+                <TabsList aria-label={t("tabs.label")}>
+                    <TabsTab value="story">{t("tabs.story")}</TabsTab>
+                    <TabsTab value="search">{t("tabs.search")}</TabsTab>
+                    <TabsTab value="sections">{t("tabs.sections")}</TabsTab>
+                    <TabsTab value="glossary">{t("tabs.glossary")}</TabsTab>
+                    <TabsTab value="edits">{t("tabs.edits")}</TabsTab>
+                    {admin ? <TabsTab value="admin">{t("tabs.admin")}</TabsTab> : null}
+                </TabsList>
+                <TabsPanel value="story" className="flex flex-col gap-6 pt-4">
+                    <StoryTab search={search} onSearch={onSearch} />
+                </TabsPanel>
+                <TabsPanel value="search" className="flex flex-col gap-6 pt-4">
+                    <SearchTab search={search} onSearch={onSearch} />
+                </TabsPanel>
+                <TabsPanel value="sections" className="flex flex-col gap-6 pt-4">
+                    <SectionsTab search={search} onSearch={onSearch} />
+                </TabsPanel>
+                <TabsPanel value="glossary" className="flex flex-col gap-6 pt-4">
+                    <GlossaryTab query={search.gq ?? ""} onQuery={(gq) => onSearch({ ...search, gq: gq || undefined })} />
+                </TabsPanel>
+                <TabsPanel value="edits" className="flex flex-col gap-6 pt-4">
+                    <MyEditsTab />
+                </TabsPanel>
+                {admin && me.data ? (
+                    <TabsPanel value="admin" className="flex flex-col gap-6 pt-4">
+                        <AdminTab me={me.data} />
+                    </TabsPanel>
+                ) : null}
+            </Tabs>
+            {/* A word selected in any table: find it everywhere, in the glossary, or suggest it for the glossary. The other tabs keep their place in the address. */}
+            <SelectionMenu onFind={(q) => onSearch({ ...search, tab: "search", q, whole: undefined, section: undefined, status: undefined })} onGlossary={(gq) => onSearch({ ...search, tab: "glossary", gq })} />
+        </>
     );
 }

@@ -93,19 +93,24 @@ function hasRole(me: TranslatorsMe, role: string): boolean {
     return me.roles.includes(role) || me.roles.includes("admin");
 }
 
-/** The lead (editor): approves, sees everyone's edits, resolves any remark. */
+/** A translator (or an admin): approves and rejects, sees everyone's edits, resolves any remark. */
 export function isLead(me: TranslatorsMe): boolean {
-    return hasRole(me, "editor");
+    return hasRole(me, "translator");
 }
 
-/** Exports the approved entries for the game: the lead or the pack's maintainer. */
+/** Exports the approved entries for the game: a translator or an admin. */
 export function exportsForGame(me: TranslatorsMe): boolean {
-    return hasRole(me, "editor") || hasRole(me, "maintainer");
+    return hasRole(me, "translator");
 }
 
-/** Marks what went out in a pack version: the pack's maintainer. */
+/** Marks what went out in a pack version: an admin. */
 export function marksReleases(me: TranslatorsMe): boolean {
-    return hasRole(me, "maintainer");
+    return hasRole(me, "admin");
+}
+
+/** The admin panel: an admin. */
+export function isAdmin(me: TranslatorsMe): boolean {
+    return me.roles.includes("admin");
 }
 
 /** Run an edit, then refresh every story's lines and My edits; a failure is a toast in the section's words. */

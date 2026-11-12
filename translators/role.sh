@@ -1,28 +1,25 @@
 #!/bin/sh
-# Make a site user a member of the translators' section with their roles, or
-# set their roles anew. The user must have signed in to the site once.
+# Make a site user a member of the translators' section with a role, or
+# set their role anew. The user must have signed in to the site once.
 #
-#   ./translators/role.sh <uid> [editor] [maintainer] [admin]
+#   ./translators/role.sh <uid> [user|translator|admin]
 #
 # <uid> is the game uid the user signed in with (`dev-translator` for the
-# development sign-in). Every member is a `translator`; add any of:
-#   editor     — the lead: approves, exports for the game (Romanov);
-#   maintainer — builds the pack: exports for the game, marks "went out in
-#                pack <version>"; never approves (Kolooo);
-#   admin      — all of it.
-# The roles given replace the member's roles. Prints the member's row.
+# development sign-in). One role per member (`user` when none is given):
+#   user       — sees the section, proposes, agrees, remarks;
+#   translator — also approves and rejects, exports for the game;
+#   admin      — all of it, "went out in pack <version>", the admin panel.
+# The same is done on the site: the admin panel (Admin tab). Prints the member's row.
 set -eu
 cd "$(dirname "$0")/.."
-UID_ARG="${1:?usage: $0 <uid> [editor] [maintainer] [admin]}"
-shift
-ROLES="translator"
-for r in "$@"; do
-    case "$r" in
-    translator) ;;
-    editor | maintainer | admin) ROLES="$ROLES,$r" ;;
-    *) echo "role: editor, maintainer or admin" >&2; exit 2 ;;
-    esac
-done
+UID_ARG="${1:?usage: $0 <uid> [user|translator|admin]}"
+ROLE="${2:-user}"
+case "$ROLE" in
+user | translator | admin) ;;
+*) echo "role: user, translator or admin" >&2; exit 2 ;;
+esac
+[ $# -le 2 ] || { echo "one role: user, translator or admin" >&2; exit 2; }
+ROLES="$ROLE"
 OUT="$(docker compose exec -T postgres sh -c 'psql -v ON_ERROR_STOP=1 -q -U "$POSTGRES_USER" -d "$POSTGRES_DB" -v uid="$1" -v roles="$2"' sh "$UID_ARG" "$ROLES" <<'SQL'
 SELECT COUNT(*) AS found FROM users WHERE uid = :'uid' \gset
 \if :found

@@ -52,6 +52,10 @@ const MIGRATIONS: &[(&str, &str)] = &[
         "t017_only_here",
         include_str!("migrations/t017_only_here.sql"),
     ),
+    (
+        "t018_three_roles",
+        include_str!("migrations/t018_three_roles.sql"),
+    ),
 ];
 
 pub async fn migrate(pool: &PgPool) -> Result<(), sqlx::Error> {
@@ -86,8 +90,8 @@ pub async fn migrate(pool: &PgPool) -> Result<(), sqlx::Error> {
     Ok(())
 }
 
-/// The member's roles (`translator`, `editor`, `maintainer`, `admin`; several
-/// at once) and game nickname, or `None` for a non-member.
+/// The member's role (`user`, `translator` or `admin`, as a one-item list)
+/// and game nickname, or `None` for a non-member.
 pub async fn member_role(
     pool: &PgPool,
     user_id: Uuid,

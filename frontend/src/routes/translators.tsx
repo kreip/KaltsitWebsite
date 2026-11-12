@@ -13,7 +13,7 @@ export const Route = createFileRoute("/translators")({
     validateSearch: (search: Record<string, unknown>): ITranslatorsSearch => {
         const out: ITranslatorsSearch = {};
         const on = (v: unknown) => v === true || v === 1 || v === "1" || v === "true";
-        if (search.tab === "search" || search.tab === "sections" || search.tab === "glossary" || search.tab === "edits") out.tab = search.tab;
+        if (search.tab === "search" || search.tab === "sections" || search.tab === "glossary" || search.tab === "edits" || search.tab === "admin") out.tab = search.tab;
         const sec = GAME_SECTIONS.find((s) => s === search.sec);
         if (sec && sec !== GAME_SECTIONS[0]) out.sec = sec;
         // An object's name may read as a number or a flag in the address («1», «true»).

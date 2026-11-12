@@ -1,7 +1,7 @@
 # Для переводчиков (translators' section)
 
 The ArknightsRU translation team's workplace at `/translators`: the story and the
-game's other texts as EN | RU | CN, proposals, the lead's approvals and the export for the pack. The Russian column is what the game shows now
+game's other texts as EN | RU | CN, proposals, the translators' approvals and the export for the pack. The Russian column is what the game shows now
 with the ArknightsRU pack (XUnity dictionaries `11_ui.txt`, `12_story.txt`,
 `13_names.txt` and the RichTextFix plugin's built-in catalog). Sova's and the
 AI's variants (from arktr) are shown to signed-in translators only.
@@ -59,19 +59,22 @@ are translated there.
 
 ## Members and roles
 
-Only members (`translators.members`) see the section. To add someone or set their
-roles (they must have signed in to the site once; the command replaces the roles):
+Only members (`translators.members`) see the section. One role per member:
 
-    ./translators/role.sh <uid> [editor] [maintainer] [admin]
+- `user` — sees the section, proposes, agrees, remarks;
+- `translator` — also approves and rejects proposals, exports the approved lines for the game;
+- `admin` — all of it, marks the approved lines as released in a pack version, and the
+  **Admin** tab: requests for access, the members with their roles, the statistics.
 
-- every member is a translator: proposes, agrees, comments;
-- `editor` is the lead: the one person who approves lines and exports the approved
-  lines for the game;
-- `maintainer` is the pack maintainer: exports the approved lines for the game and
-  marks them as released in a pack version; cannot approve;
-- `admin` can do everything.
+A signed-in user of the site who is not a member sees "Request access"; an admin accepts the
+request with a role (or declines it) on the Admin tab, changes a member's role or removes a
+member there (never their own: the section keeps an admin). From the command line (the user
+must have signed in to the site once; the command replaces the role):
 
-One person can hold several roles (`./translators/role.sh <uid> editor maintainer`).
+    ./translators/role.sh <uid> [user|translator|admin]
+
+Migration t018 turned the old roles into these: `maintainer` (or `admin`) → `admin`, `editor` →
+`translator`, every other member → `user`.
 
 ## Every text in one list
 
@@ -134,7 +137,7 @@ and stages whose name answers the query, each with a link to its card.
 A word or phrase selected in any table (a double click, a drag) opens a small menu: find it
 everywhere (the Search tab), find it in the glossary, or suggest it for the glossary. A
 suggestion (`translators.glossary_suggestions`; English, Russian, note, the line it was
-noticed in) shows in a list of its own on the Glossary tab, where the lead accepts or
+noticed in) shows in a list of its own on the Glossary tab, where a translator accepts or
 declines it. The team's sheet is never written from the site.
 
 ## The game's tags
@@ -157,7 +160,7 @@ original's tags a translation lacks or adds; the same test marks every variant.
 
 ## Export
 
-"My edits" → "Export…" prepares one archive (`.zip`) for the pack's maintainer:
+"Edits" → "Export…" prepares one archive (`.zip`) for the pack's maintainer:
 
 - corrected copies of `11_ui.txt` / `12_story.txt` / `13_names.txt`, only the changed
   ones: in a touched line only the value changes (a `//` comment after it is dropped),
@@ -171,11 +174,11 @@ original's tags a translation lacks or adds; the same test marks every variant.
   proposal made for one place of the game data ("a separate translation is needed here") is
   a request to the pack's maintainer: every live one, with its place
   (`Оператор › Amiya [char_002_amiya] › skill.description 2`), the English, the game's
-  Russian, the proposal, its author and the lead who approved it, if one did. Never written
+  Russian, the proposal, its author and the translator who approved it, if one did. Never written
   to the dictionaries;
 - `report.txt`: each changed line (file, line number, before → after, who approved).
 
-Two modes: approved (for the game; the lead and the maintainer) and every proposal
+Two modes: approved (for the game; translators and admins) and every proposal
 for review (`REVIEW_` in the names; any member). A second format writes one
 `00_translators.txt` to check at home: put it into `BepInEx\Translation\ru\Text`
 and press Alt+R in the game.
@@ -244,3 +247,12 @@ The translators whose variants the import brings are listed with their authors' 
 a proposal started from it and a comment show the author's name.
 Storage test against a throwaway database:
 `cargo test --test translators_edits_test -- --ignored`.
+
+## Deciding in the Edits list
+
+On the **Edits** tab a translator (or an admin) decides without opening the line: a click on a
+proposal's state offers Approve / Reject (a reason is optional; the author sees it), Withdraw for
+an approved one, Back to proposals for a rejected one. Tick boxes (Shift for a range, the header's
+for every waiting proposal) and the "Selected: N · Approve · Reject" bar decide many at once
+(`POST /api/translators/proposals/decisions`). A rejected proposal leaves the line and the
+progress; its author rewriting it makes it a proposal again.

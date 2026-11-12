@@ -8,6 +8,7 @@
 //! three hooks: `pub mod translators` (lib.rs), `.merge(translators::router())`
 //! (routes) and `translators::db::migrate` (database init).
 
+pub mod admin;
 pub mod db;
 pub mod dto;
 pub mod edits;
@@ -51,6 +52,12 @@ pub fn router() -> OpenApiRouter<AppState> {
         .routes(routes!(routes::export))
         .routes(routes!(routes::export_archive))
         .routes(routes!(routes::mark_release, routes::list_releases))
+        .routes(routes!(admin::request_access))
+        .routes(routes!(admin::list_requests))
+        .routes(routes!(admin::decide_request))
+        .routes(routes!(admin::list_members))
+        .routes(routes!(admin::set_role, admin::remove_member))
+        .routes(routes!(admin::stats))
         .merge(edits::router())
         .merge(texts::router())
 }

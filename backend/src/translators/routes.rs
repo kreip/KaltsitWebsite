@@ -30,7 +30,7 @@ const DEV_UID: &str = "dev-translator";
 /// A section member making a request.
 pub struct Member {
     pub id: Uuid,
-    /// `translator`, `editor`, `maintainer`, `admin`: one or several.
+    /// One of `user`, `translator`, `admin` (a one-item list).
     pub roles: Vec<String>,
     pub nickname: Option<String>,
 }
@@ -40,19 +40,25 @@ impl Member {
         self.roles.iter().any(|r| r == role || r == "admin")
     }
 
-    /// The lead: approves, sees everyone's edits, resolves any remark.
+    /// A translator (or an admin): approves and rejects, sees everyone's
+    /// edits, resolves any remark.
     pub fn leads(&self) -> bool {
-        self.has("editor")
+        self.has("translator")
     }
 
-    /// Exports the approved entries for the game: the lead or the pack's maintainer.
+    /// Exports the approved entries for the game: a translator or an admin.
     pub fn exports_for_game(&self) -> bool {
-        self.has("editor") || self.has("maintainer")
+        self.has("translator")
     }
 
-    /// Marks what went out in a pack version: the pack's maintainer.
+    /// Marks what went out in a pack version: an admin.
     pub fn releases(&self) -> bool {
-        self.has("maintainer")
+        self.has("admin")
+    }
+
+    /// The admin panel: requests, members, statistics.
+    pub fn administers(&self) -> bool {
+        self.has("admin")
     }
 }
 
@@ -92,6 +98,12 @@ pub async fn me(
         Some(_) => db::recommend_rule(&state.db).await?,
         None => "B".to_owned(),
     };
+    let signed_in = auth.0.is_some();
+    // A signed-in user outside the team: whether their request waits.
+    let access_requested = match (&member, auth.0.as_ref().and_then(|u| u.user_id.parse::<Uuid>().ok())) {
+        (None, Some(id)) => super::admin::request_open(&state.db, id).await?,
+        _ => false,
+    };
     Ok(Json(TranslatorsMe {
         member: member.is_some(),
         user_id: member.as_ref().map(|m| m.id.to_string()),
@@ -99,6 +111,8 @@ pub async fn me(
         roles: member.map(|m| m.roles).unwrap_or_default(),
         dev_login: dev_login_enabled(),
         recommend_rule,
+        signed_in,
+        access_requested,
     }))
 }
 

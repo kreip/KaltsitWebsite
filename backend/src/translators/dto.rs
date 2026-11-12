@@ -13,8 +13,10 @@ pub struct TranslatorsMe {
     pub member: bool,
     /// The member's user id, to tell their own proposals and votes.
     pub user_id: Option<String>,
-    /// `translator`, `editor` (the lead), `maintainer` (builds the pack), `admin`;
-    /// several at once; empty for a non-member.
+    /// The member's role as a one-item list: `user` (proposes, agrees,
+    /// remarks), `translator` (also approves, rejects, exports for the game)
+    /// or `admin` (all of it, the pack's releases, the admin panel); empty
+    /// for a non-member.
     pub roles: Vec<String>,
     /// The member's game nickname, shown for `{@nickname}`; null when unknown.
     pub nickname: Option<String>,
@@ -24,6 +26,10 @@ pub struct TranslatorsMe {
     /// whole team (the lead switches it): `B` (only when the game's text has a
     /// mark; the default) or `A` (the best variant of every line).
     pub recommend_rule: String,
+    /// Signed in to the site (a member or not).
+    pub signed_in: bool,
+    /// Signed in, not a member, and their request for access waits.
+    pub access_requested: bool,
 }
 
 /// The lead's choice of the "recommended" rule.

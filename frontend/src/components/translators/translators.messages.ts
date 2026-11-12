@@ -295,8 +295,8 @@ export const messages = {
         description: "Shown when the development sign-in request fails.",
     },
     "tabs.edits": {
-        text: "My edits",
-        description: "Tab of the translators' section: the member's own proposals (everyone's for the lead), with history.",
+        text: "Edits",
+        description: "Tab of the translators' section: proposals (mine, or everyone's), decisions in the list, the export.",
     },
     "status.unchecked": {
         text: "Not checked",
@@ -663,7 +663,7 @@ export const messages = {
         description: "Heading of the dialog when saving a proposal for a line whose English appears in several places.",
     },
     "save.proposalOnly": {
-        text: "This is a proposal. It reaches the game only after the lead approves it.",
+        text: "This is a proposal: it reaches the game only once a translator approves it.",
         description: "Shown under the editor and in the save dialog.",
     },
     "save.scope": {
@@ -1051,7 +1051,7 @@ export const messages = {
         description: "Export mode: the lead's approvals (the lead only).",
     },
     "export.mode.approvedHint": {
-        text: "Only the lead or the pack maintainer can export it.",
+        text: "Only translators and admins export this.",
         description: "Hint under the approved mode for other members.",
     },
     "export.mode.review": {
@@ -1879,7 +1879,7 @@ export const messages = {
         description: "Button that sends a glossary suggestion to the lead.",
     },
     "suggest.sent": {
-        text: "Sent to the lead.",
+        text: "Sent to the translators.",
         description: "Toast after a glossary suggestion was saved.",
     },
     "suggest.failed": {
@@ -1891,7 +1891,7 @@ export const messages = {
         description: "Button on the Glossary tab unfolding the list of terms members suggested; {waiting} of them have no decision yet.",
     },
     "suggest.listHint": {
-        text: "The lead accepts or declines; an accepted term is entered into the sheet by hand.",
+        text: "A translator decides; an accepted term is added to the sheet by hand.",
         description: "Line above the list of suggested glossary terms.",
     },
     "suggest.status.open": {
@@ -2053,6 +2053,294 @@ export const messages = {
     "export.onlyHere": {
         text: "Separate translation asked for one place outside the story (only_here.tsv): {count}",
         description: "Line of the export's summary: rows of only_here.tsv, for the pack's maintainer to decide.",
+    },
+    "tabs.admin": {
+        text: "Admin",
+        description: "Tab of the translators' section, admins only: requests for access, members and roles, statistics.",
+    },
+    "access.signedIn": {
+        text: "This section is for the Russian translation team. Request access and an admin will add you.",
+        description: "Line under No access for a signed-in user who is not a member.",
+    },
+    "access.requested": {
+        text: "Your request is sent: an admin will decide.",
+        description: "Line under No access once the signed-in user has requested access.",
+    },
+    "access.request": {
+        text: "Request access",
+        description: "Button under No access: ask the admins to join the translation team.",
+    },
+    "access.requestFailed": {
+        text: "Couldn't send the request.",
+        description: "Toast when requesting access failed.",
+    },
+    "role.user": {
+        text: "User",
+        description: "Role of a section member: sees the section, proposes, agrees, remarks.",
+    },
+    "role.userHint": {
+        text: "Proposes, agrees, remarks",
+        description: "Line under the role User in the role picker.",
+    },
+    "role.translator": {
+        text: "Translator",
+        description: "Role of a section member: also approves and rejects, exports.",
+    },
+    "role.translatorHint": {
+        text: "Also approves, rejects, exports",
+        description: "Line under the role Translator in the role picker.",
+    },
+    "role.admin": {
+        text: "Admin",
+        description: "Role of a section member: everything, pack releases and the admin panel.",
+    },
+    "role.adminHint": {
+        text: "Everything, pack releases, this panel",
+        description: "Line under the role Admin in the role picker.",
+    },
+    "admin.failed": {
+        text: "Couldn't save the change.",
+        description: "Toast when a change in the admin panel failed.",
+    },
+    "admin.load": {
+        text: "Couldn't load the admin panel.",
+        description: "Load failure of a block of the admin panel.",
+    },
+    "admin.uid": {
+        text: "uid {uid}",
+        description: "Small line under a person's name in the admin panel: the game uid they signed in with.",
+    },
+    "admin.requests": {
+        text: "Requests for access · waiting: {count}",
+        description: "Heading of the admin panel's list of access requests.",
+    },
+    "admin.requestsEmpty": {
+        text: "No requests yet.",
+        description: "Shown when nobody has requested access.",
+    },
+    "admin.col.who": {
+        text: "Who",
+        description: "Column of the admin tables: the person.",
+    },
+    "admin.col.note": {
+        text: "Note",
+        description: "Column of the requests table: the note left with the request.",
+    },
+    "admin.col.date": {
+        text: "Asked",
+        description: "Column of the requests table: when the request was made.",
+    },
+    "admin.col.decision": {
+        text: "Decision",
+        description: "Column of the requests table: accept with a role or decline.",
+    },
+    "admin.col.role": {
+        text: "Role",
+        description: "Column of the members table: the member's role.",
+    },
+    "admin.col.added": {
+        text: "Member since",
+        description: "Column of the members table: when they were added.",
+    },
+    "admin.accept": {
+        text: "Accept",
+        description: "Button of a request: make the person a member with the chosen role.",
+    },
+    "admin.decline": {
+        text: "Decline",
+        description: "Button of a request: decline it.",
+    },
+    "admin.accepted": {
+        text: "Accepted · {name}",
+        description: "Badge of a request that was accepted, with who accepted it.",
+    },
+    "admin.declined": {
+        text: "Declined · {name}",
+        description: "Badge of a request that was declined, with who declined it.",
+    },
+    "admin.members": {
+        text: "Members: {count}",
+        description: "Heading of the admin panel's list of members.",
+    },
+    "admin.you": {
+        text: "you",
+        description: "Next to one's own name in the members list (one's own role and membership cannot be changed here).",
+    },
+    "admin.remove": {
+        text: "Remove",
+        description: "Button of a member: remove them from the section.",
+    },
+    "admin.removeTitle": {
+        text: "Remove {name} from the section?",
+        description: "Title of the confirmation before removing a member.",
+    },
+    "admin.removeHint": {
+        text: "They lose access to the section. Their proposals, votes and remarks stay.",
+        description: "Line of the confirmation before removing a member.",
+    },
+    "admin.stats": {
+        text: "Statistics",
+        description: "Heading of the admin panel's statistics.",
+    },
+    "admin.statsHint": {
+        text: "The last 7 days / in all.",
+        description: "Line under the statistics heading: what the two numbers are.",
+    },
+    "admin.stat.proposed": {
+        text: "Proposed",
+        description: "Statistics: proposals made.",
+    },
+    "admin.stat.approved": {
+        text: "Approved",
+        description: "Statistics: proposals approved.",
+    },
+    "admin.stat.rejected": {
+        text: "Rejected",
+        description: "Statistics: proposals rejected.",
+    },
+    "admin.stat.lines": {
+        text: "Lines approved (any variant)",
+        description: "Statistics: approvals of any variant, the game's text included.",
+    },
+    "admin.stat.decisions": {
+        text: "Decisions made",
+        description: "Statistics column: approvals and rejections the person made.",
+    },
+    "admin.byPeople": {
+        text: "By person",
+        description: "Accessible name of the statistics table by person.",
+    },
+    "admin.bySections": {
+        text: "By section",
+        description: "Accessible name of the statistics table by section.",
+    },
+    "admin.notMember": {
+        text: "not a member",
+        description: "Role cell of a person in the statistics who is no longer a member.",
+    },
+    "admin.col.section": {
+        text: "Section",
+        description: "Column of the statistics by section.",
+    },
+    "admin.col.total": {
+        text: "Texts",
+        description: "Column of the statistics by section: how many texts.",
+    },
+    "admin.col.ru": {
+        text: "With Russian",
+        description: "Column of the statistics by section: texts the game shows in Russian.",
+    },
+    "admin.col.waiting": {
+        text: "Waiting",
+        description: "Column of the statistics by section: texts with proposals not decided.",
+    },
+    "admin.col.checked": {
+        text: "Checked",
+        description: "Column of the statistics by section: approved texts and their share.",
+    },
+    "admin.section.story": {
+        text: "Story (lines)",
+        description: "Statistics row: the story's lines.",
+    },
+    "admin.section.operators": {
+        text: "Operators",
+        description: "Statistics row: operators' texts.",
+    },
+    "admin.section.enemies": {
+        text: "Enemies",
+        description: "Statistics row: enemies' texts.",
+    },
+    "admin.section.stages": {
+        text: "Stages",
+        description: "Statistics row: stages' texts.",
+    },
+    "admin.section.items": {
+        text: "Items",
+        description: "Statistics row: items' texts.",
+    },
+    "admin.section.archives": {
+        text: "Archives",
+        description: "Statistics row: the archives' texts.",
+    },
+    "admin.section.other": {
+        text: "Interface and other",
+        description: "Statistics row: every other text.",
+    },
+    "state.rejected": {
+        text: "Rejected",
+        description: "State of a proposal in the Edits list: a translator rejected it.",
+    },
+    "decide.approve": {
+        text: "Approve",
+        description: "Action on a proposal (or the ticked ones) in the Edits list: approve it for the game.",
+    },
+    "decide.reject": {
+        text: "Reject",
+        description: "Action on a proposal (or the ticked ones): reject it, with an optional reason.",
+    },
+    "decide.reopen": {
+        text: "Back to proposals",
+        description: "Action on a rejected proposal: take the rejection back.",
+    },
+    "decide.menu": {
+        text: "Decide",
+        description: "Accessible name of the state button that opens the decision menu.",
+    },
+    "decide.failed": {
+        text: "Couldn't save the decision.",
+        description: "Toast when approving or rejecting from the list failed.",
+    },
+    "decide.skipped": {
+        text: "Done: {done}; skipped: {skipped} (outdated or decided already).",
+        description: "Toast after a decision on several proposals when some were skipped.",
+    },
+    "decide.rejectTitle": {
+        text: "{count, plural, one {Reject the proposal?} other {Reject # proposals?}}",
+        description: "Title of the reject dialog.",
+    },
+    "decide.rejectHint": {
+        text: "The author sees the rejection and the reason. A rejected proposal leaves the line; rewriting it makes it a proposal again.",
+        description: "Line of the reject dialog.",
+    },
+    "decide.reason": {
+        text: "Reason (optional)",
+        description: "Label of the reason box in the reject dialog.",
+    },
+    "decide.rejectedBy": {
+        text: "rejected by {name}",
+        description: "Line under the Rejected state: who rejected.",
+    },
+    "decide.reasonShown": {
+        text: "Reason: {reason}",
+        description: "Line under the Rejected state: the reason given.",
+    },
+    "decide.selected": {
+        text: "Selected: {count}",
+        description: "The selection bar over the Edits list.",
+    },
+    "decide.clear": {
+        text: "Clear",
+        description: "Button of the selection bar: untick every row.",
+    },
+    "decide.tick": {
+        text: "Select this proposal",
+        description: "Accessible name of a row's tick box in the Edits list.",
+    },
+    "decide.all": {
+        text: "Select all waiting",
+        description: "Accessible name of the header tick box: every proposal waiting for a decision.",
+    },
+    "decide.hint": {
+        text: "click a state to decide; Shift+click ticks a range",
+        description: "Hint after the count of the Edits list, for translators.",
+    },
+    "lineHistory.rejected": {
+        text: "{name} rejected the proposal",
+        description: "History event: a translator rejected a proposal (its reason below, if any).",
+    },
+    "lineHistory.reopened": {
+        text: "{name} took the rejection back",
+        description: "History event: a rejection taken back.",
     },
 } satisfies MessageMap;
 

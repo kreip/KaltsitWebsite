@@ -13,8 +13,10 @@ export type TranslatorsMe = {
      */
     userId: string | null;
     /**
-     * `translator`, `editor` (the lead), `maintainer` (builds the pack), `admin`;
-     * several at once; empty for a non-member.
+     * The member's role as a one-item list: `user` (proposes, agrees,
+     * remarks), `translator` (also approves, rejects, exports for the game)
+     * or `admin` (all of it, the pack's releases, the admin panel); empty
+     * for a non-member.
      */
     roles: Array<string>;
     /**
@@ -31,4 +33,12 @@ export type TranslatorsMe = {
      * mark; the default) or `A` (the best variant of every line).
      */
     recommendRule: string;
+    /**
+     * Signed in to the site (a member or not).
+     */
+    signedIn: boolean;
+    /**
+     * Signed in, not a member, and their request for access waits.
+     */
+    accessRequested: boolean;
 };
