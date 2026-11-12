@@ -7,7 +7,9 @@ import type { EditPerson } from "./EditPerson";
 export type HistoryEvent = {
     /**
      * `game` (an import brought a new Russian from the pack), `proposal` (a
-     * proposal written or rewritten), `approve` or `withdraw` (the lead).
+     * proposal written or rewritten), `approve` or `withdraw` (a translator),
+     * `reject` (a proposal rejected: `text` is the reason, if any) or
+     * `reopen` (the rejection taken back).
      */
     kind: string;
     /**

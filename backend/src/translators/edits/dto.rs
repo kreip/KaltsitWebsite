@@ -132,6 +132,12 @@ pub struct Proposal {
     pub approved_at: Option<i64>,
     /// A one-place proposal: the pack version its text went out in, if it has.
     pub released_in: Option<String>,
+    /// Rejected by a translator, with the reason its author sees. A rejected
+    /// proposal leaves the line; rewriting it clears the rejection.
+    pub rejected_by: Option<EditPerson>,
+    #[ts(type = "number | null")]
+    pub rejected_at: Option<i64>,
+    pub reject_reason: Option<String>,
 }
 
 /// One text a proposal has had.
@@ -154,7 +160,9 @@ pub struct ProposalVersion {
 #[ts(export)]
 pub struct HistoryEvent {
     /// `game` (an import brought a new Russian from the pack), `proposal` (a
-    /// proposal written or rewritten), `approve` or `withdraw` (the lead).
+    /// proposal written or rewritten), `approve` or `withdraw` (a translator),
+    /// `reject` (a proposal rejected: `text` is the reason, if any) or
+    /// `reopen` (the rejection taken back).
     pub kind: String,
     /// Unix seconds.
     #[ts(type = "number")]
@@ -396,7 +404,7 @@ pub struct EditRow {
     pub ru_game: Option<String>,
     /// The proposal's place's 0-based order in its story, when the line is still there.
     pub ord: Option<i32>,
-    /// `proposed`, `approved`, `otherApproved` or `outdated`.
+    /// `proposed`, `approved`, `otherApproved`, `outdated` or `rejected`.
     pub state: String,
     /// Places holding the entry.
     pub places: i32,
@@ -504,4 +512,17 @@ pub struct ApprovalBatchResult {
     pub approved: i32,
     /// Items skipped (a line with nothing to translate, a variant it lacks).
     pub skipped: i32,
+}
+
+/// A translator's decision on proposals by id, from the Edits list.
+#[derive(Debug, Deserialize, ToSchema)]
+#[serde(rename_all = "camelCase")]
+pub struct ProposalDecisions {
+    #[schema(value_type = Vec<i64>)]
+    pub ids: Vec<i64>,
+    /// `approve`, `reject`, `withdraw` (its approval) or `reopen` (a rejected one).
+    pub decision: String,
+    /// Why it is rejected; the author sees it.
+    #[serde(default)]
+    pub reason: Option<String>,
 }

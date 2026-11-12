@@ -207,6 +207,10 @@ struct ProposalRow {
     game_object_en: Option<String>,
     game_field: Option<String>,
     game_idx: Option<i16>,
+    rejected_by: Option<Uuid>,
+    rejected_at: Option<DateTime<Utc>>,
+    reject_reason: Option<String>,
+    rejecter_name: Option<String>,
 }
 
 const PROPOSAL_COLUMNS: &str = "p.id, p.edit_key, p.text, p.source, p.author_id, \
@@ -216,7 +220,9 @@ const PROPOSAL_COLUMNS: &str = "p.id, p.edit_key, p.text, p.source, p.author_id,
      (SELECT COUNT(*) FROM translators.proposal_versions v WHERE v.proposal_id = p.id) AS versions, \
      (SELECT v.text FROM translators.proposal_versions v WHERE v.proposal_id = p.id \
        ORDER BY v.id DESC OFFSET 1 LIMIT 1) AS previous_text, \
-     p.game_section, p.game_object, p.game_object_en, p.game_field, p.game_idx";
+     p.game_section, p.game_object, p.game_object_en, p.game_field, p.game_idx, \
+     p.rejected_by, p.rejected_at, p.reject_reason, \
+     (SELECT COALESCE(NULLIF(x.nickname, ''), x.uid) FROM users x WHERE x.id = p.rejected_by) AS rejecter_name";
 
 impl ProposalRow {
     fn into_proposal(self, agreements: Vec<EditPerson>) -> Proposal {
@@ -256,6 +262,11 @@ impl ProposalRow {
                 .map(|id| person(id, self.approver_name.unwrap_or_default())),
             approved_at: self.approved_at.map(|t| t.timestamp()),
             released_in: None,
+            rejected_by: self
+                .rejected_by
+                .map(|id| person(id, self.rejecter_name.unwrap_or_default())),
+            rejected_at: self.rejected_at.map(|t| t.timestamp()),
+            reject_reason: self.reject_reason,
         }
     }
 }
@@ -331,7 +342,7 @@ pub async fn key_edits(pool: &PgPool, keys: &[String]) -> Result<Vec<KeyEdits>, 
     let (mut votes, place_votes) = all_votes(pool, keys).await?;
     let proposals: Vec<ProposalRow> = sqlx::query_as(&format!(
         "SELECT {PROPOSAL_COLUMNS} FROM translators.proposals p JOIN users u ON u.id = p.author_id
-         WHERE p.deleted_at IS NULL AND p.edit_key = ANY($1) ORDER BY p.created_at"
+         WHERE p.deleted_at IS NULL AND p.rejected_at IS NULL AND p.edit_key = ANY($1) ORDER BY p.created_at"
     ))
     .bind(keys)
     .fetch_all(pool)
@@ -524,7 +535,7 @@ pub async fn outdated_in_story(
         sqlx::query_as(&format!(
             "SELECT 'proposal', p.line, p.part, p.edit_key, p.text, p.author_id, {NAME}, p.updated_at
              FROM translators.proposals p JOIN users u ON u.id = p.author_id
-             WHERE p.story_id = $1 AND p.deleted_at IS NULL AND p.outdated_at IS NOT NULL
+             WHERE p.story_id = $1 AND p.deleted_at IS NULL AND p.rejected_at IS NULL AND p.outdated_at IS NOT NULL
              UNION ALL
              SELECT 'approval', a.line, a.part, a.edit_key, a.text, a.approved_by, {NAME}, a.approved_at
              FROM translators.approvals a JOIN users u ON u.id = a.approved_by
@@ -641,6 +652,14 @@ pub async fn upsert_proposal(
     let mut tx = pool.begin().await?;
     let mine = my_proposal(&mut tx, key, author, context.then_some(place), here).await?;
     let id = if let Some((id, old_text, old_source)) = mine {
+        // Writing it again makes a rejected proposal a proposal again.
+        sqlx::query(
+            "UPDATE translators.proposals SET rejected_by = NULL, rejected_at = NULL, reject_reason = NULL
+             WHERE id = $1 AND rejected_at IS NOT NULL",
+        )
+        .bind(id)
+        .execute(&mut *tx)
+        .await?;
         if old_text != text || old_source != source {
             sqlx::query(
                 "UPDATE translators.proposals SET text = $2, source = $3, updated_at = NOW(),
@@ -708,7 +727,10 @@ pub async fn rewrite_proposal(
     author: Uuid,
 ) -> Result<(), sqlx::Error> {
     let mut tx = pool.begin().await?;
-    sqlx::query("UPDATE translators.proposals SET text = $2, updated_at = NOW() WHERE id = $1")
+    sqlx::query(
+        "UPDATE translators.proposals SET text = $2, updated_at = NOW(),
+             rejected_by = NULL, rejected_at = NULL, reject_reason = NULL WHERE id = $1",
+    )
         .bind(id)
         .bind(text)
         .execute(&mut *tx)
@@ -875,12 +897,10 @@ pub async fn history(
             continue;
         }
         events.push(HistoryEvent {
-            kind: if action == "withdraw" {
-                "withdraw"
-            } else {
-                "approve"
-            }
-            .to_owned(),
+            kind: match action.as_str() {
+                "withdraw" | "reject" | "reopen" => action.clone(),
+                _ => "approve".to_owned(),
+            },
             at: at.timestamp(),
             by: Some(person(user, name)),
             text,
@@ -1130,16 +1150,16 @@ pub async fn progress(pool: &PgPool) -> Result<Vec<StoryProgress>, sqlx::Error> 
     sqlx::query_as(
         "WITH keyed AS (
              SELECT DISTINCT edit_key FROM translators.proposals
-             WHERE deleted_at IS NULL AND NOT context AND outdated_at IS NULL),
+             WHERE deleted_at IS NULL AND rejected_at IS NULL AND NOT context AND outdated_at IS NULL),
          placed AS (
              SELECT DISTINCT story_id, line, part FROM translators.proposals
-             WHERE deleted_at IS NULL AND context AND outdated_at IS NULL),
+             WHERE deleted_at IS NULL AND rejected_at IS NULL AND context AND outdated_at IS NULL),
          placed_ok AS (
              SELECT DISTINCT story_id, line, part FROM translators.proposals
              WHERE deleted_at IS NULL AND context AND approved_at IS NOT NULL),
          stale AS (
              SELECT story_id, line, part FROM translators.proposals
-             WHERE deleted_at IS NULL AND outdated_at IS NOT NULL
+             WHERE deleted_at IS NULL AND rejected_at IS NULL AND outdated_at IS NOT NULL
              UNION
              SELECT story_id, line, part FROM translators.approvals WHERE outdated_at IS NOT NULL)
          SELECT s.story_id,
@@ -1287,6 +1307,7 @@ pub async fn edit_rows(pool: &PgPool, author: Option<Uuid>) -> Result<Vec<EditRo
         .map(|r| {
             let id = r.p.id;
             let outdated = r.p.outdated_at.is_some();
+            let rejected = r.p.rejected_at.is_some();
             // A one-place proposal is approved on its own; it never stands for the entry.
             let approved = if r.p.context {
                 r.p.approved_at.is_some().then_some(Some(id))
@@ -1302,7 +1323,12 @@ pub async fn edit_rows(pool: &PgPool, author: Option<Uuid>) -> Result<Vec<EditRo
                 en,
                 ru_game: r.ru_game,
                 ord: r.ord,
-                state: status::proposal_state(outdated, approved, id).to_owned(),
+                state: if rejected {
+                    "rejected"
+                } else {
+                    status::proposal_state(outdated, approved, id)
+                }
+                .to_owned(),
                 places: i32::try_from(r.places).unwrap_or(i32::MAX),
             }
         })
@@ -1350,4 +1376,72 @@ pub async fn names_ru(pool: &PgPool) -> Result<Vec<super::dto::NameRu>, sqlx::Er
     sqlx::query_as("SELECT en, ru FROM translators.names_ru ORDER BY en")
         .fetch_all(pool)
         .await
+}
+
+/// What a decision on one proposal needs: its entry, text, place and whether
+/// it is approved, rejected or outdated.
+#[derive(sqlx::FromRow)]
+pub struct DecisionTarget {
+    pub edit_key: String,
+    pub text: String,
+    pub story_id: String,
+    pub line: i32,
+    pub part: i16,
+    pub context: bool,
+    pub outdated: bool,
+    pub rejected: bool,
+    /// Approved: for its entry, or (one place) for its place.
+    pub approved: bool,
+}
+
+pub async fn decision_target(pool: &PgPool, id: i64) -> Result<Option<DecisionTarget>, sqlx::Error> {
+    sqlx::query_as(
+        "SELECT p.edit_key, p.text, p.story_id, p.line, p.part, p.context,
+                (p.outdated_at IS NOT NULL) AS outdated, (p.rejected_at IS NOT NULL) AS rejected,
+                CASE WHEN p.context THEN p.approved_at IS NOT NULL
+                     ELSE EXISTS (SELECT 1 FROM translators.approvals a
+                                  WHERE md5(a.edit_key) = md5(p.edit_key) AND a.edit_key = p.edit_key
+                                    AND a.proposal_id = p.id) END AS approved
+         FROM translators.proposals p WHERE p.id = $1 AND p.deleted_at IS NULL",
+    )
+    .bind(id)
+    .fetch_optional(pool)
+    .await
+}
+
+/// Reject a proposal (with a reason its author sees) or take the rejection
+/// back (`reason` ignored), and log it. The caller withdrew its approval.
+pub async fn set_rejected(
+    pool: &PgPool,
+    id: i64,
+    key: &str,
+    place: &EditPlace,
+    reject: bool,
+    reason: Option<&str>,
+    by: Uuid,
+) -> Result<(), sqlx::Error> {
+    let mut tx = pool.begin().await?;
+    sqlx::query(
+        "UPDATE translators.proposals SET rejected_by = $2,
+             rejected_at = CASE WHEN $2::uuid IS NULL THEN NULL ELSE NOW() END, reject_reason = $3
+         WHERE id = $1",
+    )
+    .bind(id)
+    .bind(reject.then_some(by))
+    .bind(reason.filter(|_| reject))
+    .execute(&mut *tx)
+    .await?;
+    let action = if reject { "reject" } else { "reopen" };
+    log_approval(
+        &mut tx,
+        key,
+        "proposal",
+        Some(id),
+        reason.filter(|_| reject),
+        action,
+        place,
+        by,
+    )
+    .await?;
+    tx.commit().await
 }

@@ -12778,6 +12778,308 @@
         ]
       }
     },
+    "/api/translators/access-request": {
+      "post": {
+        "tags": [
+          "translators"
+        ],
+        "summary": "Ask to join the section: a signed-in user who is not a member. Asking\nagain replaces the note (and reopens a declined request).",
+        "operationId": "request_access",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AccessRequestInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "The request waits for an admin."
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        },
+        "security": [
+          {
+            "bearer_auth": []
+          }
+        ]
+      }
+    },
+    "/api/translators/admin/members": {
+      "get": {
+        "tags": [
+          "translators"
+        ],
+        "summary": "Every member, admins first, then by name (admins only).",
+        "operationId": "list_members",
+        "responses": {
+          "200": {
+            "description": "The members.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/MemberRow"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        },
+        "security": [
+          {
+            "bearer_auth": []
+          }
+        ]
+      }
+    },
+    "/api/translators/admin/members/{user_id}": {
+      "put": {
+        "tags": [
+          "translators"
+        ],
+        "summary": "Change a member's role (admins only; never one's own, so the section keeps an admin).",
+        "operationId": "set_role",
+        "parameters": [
+          {
+            "name": "user_id",
+            "in": "path",
+            "description": "The member.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RoleInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "The role is set."
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        },
+        "security": [
+          {
+            "bearer_auth": []
+          }
+        ]
+      },
+      "delete": {
+        "tags": [
+          "translators"
+        ],
+        "summary": "Remove a member from the section (admins only; never oneself). Their\nproposals, votes and remarks stay.",
+        "operationId": "remove_member",
+        "parameters": [
+          {
+            "name": "user_id",
+            "in": "path",
+            "description": "The member.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Removed."
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        },
+        "security": [
+          {
+            "bearer_auth": []
+          }
+        ]
+      }
+    },
+    "/api/translators/admin/requests": {
+      "get": {
+        "tags": [
+          "translators"
+        ],
+        "summary": "The requests: the open ones first, then the latest decided (admins only).",
+        "operationId": "list_requests",
+        "responses": {
+          "200": {
+            "description": "The requests, open first, newest first.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/AccessRequest"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        },
+        "security": [
+          {
+            "bearer_auth": []
+          }
+        ]
+      }
+    },
+    "/api/translators/admin/requests/{user_id}": {
+      "post": {
+        "tags": [
+          "translators"
+        ],
+        "summary": "Accept a request (the user becomes a member with the role) or decline it (admins only).",
+        "operationId": "decide_request",
+        "parameters": [
+          {
+            "name": "user_id",
+            "in": "path",
+            "description": "The user who asked.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RequestDecision"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "Decided."
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        },
+        "security": [
+          {
+            "bearer_auth": []
+          }
+        ]
+      }
+    },
+    "/api/translators/admin/stats": {
+      "get": {
+        "tags": [
+          "translators"
+        ],
+        "summary": "Proposals and decisions this week and in all, by person, and each section's progress (admins only).",
+        "operationId": "stats",
+        "responses": {
+          "200": {
+            "description": "The statistics.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminStats"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        },
+        "security": [
+          {
+            "bearer_auth": []
+          }
+        ]
+      }
+    },
     "/api/translators/agreements": {
       "put": {
         "tags": [
@@ -14127,6 +14429,54 @@
           },
           "409": {
             "$ref": "#/components/responses/Conflict"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        },
+        "security": [
+          {
+            "bearer_auth": []
+          }
+        ]
+      }
+    },
+    "/api/translators/proposals/decisions": {
+      "post": {
+        "tags": [
+          "translators"
+        ],
+        "summary": "Decide proposals by id, from the Edits list (a translator or an admin):\n`approve` (for its entry, or a one-place proposal for its place),\n`reject` (its approval withdrawn first; the reason goes to its author),\n`withdraw` its approval, or `reopen` a rejected one. Ids with nothing to do\n(gone, outdated, decided already) are skipped and counted.",
+        "operationId": "decide_proposals",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProposalDecisions"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "How many were decided and skipped.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApprovalBatchResult"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
           },
           "500": {
             "$ref": "#/components/responses/InternalError"
@@ -18271,6 +18621,62 @@
   },
   "components": {
     "schemas": {
+      "AccessRequest": {
+        "type": "object",
+        "description": "A request for access.",
+        "required": [
+          "user",
+          "uid",
+          "createdAt",
+          "status"
+        ],
+        "properties": {
+          "createdAt": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Unix seconds."
+          },
+          "decidedBy": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/EditPerson"
+              }
+            ]
+          },
+          "note": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "status": {
+            "type": "string",
+            "description": "`open`, `accepted` or `declined`."
+          },
+          "uid": {
+            "type": "string",
+            "description": "The game uid they signed in with."
+          },
+          "user": {
+            "$ref": "#/components/schemas/EditPerson"
+          }
+        }
+      },
+      "AccessRequestInput": {
+        "type": "object",
+        "description": "\"Request access\" with an optional note.",
+        "properties": {
+          "note": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
+      },
       "AccountFactsReq": {
         "type": "object",
         "description": "Player-declared account state the sync cannot read (the \"account facts\"\nprompt). With no declaration the never-guess default stands: the dependent\nskills price 0.",
@@ -18324,6 +18730,36 @@
           "tier_id": {
             "type": "string",
             "format": "uuid"
+          }
+        }
+      },
+      "AdminStats": {
+        "type": "object",
+        "description": "The admin panel's statistics.",
+        "required": [
+          "week",
+          "total",
+          "people",
+          "sections"
+        ],
+        "properties": {
+          "people": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PersonStats"
+            }
+          },
+          "sections": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SectionStats"
+            }
+          },
+          "total": {
+            "$ref": "#/components/schemas/EditCounts"
+          },
+          "week": {
+            "$ref": "#/components/schemas/EditCounts"
           }
         }
       },
@@ -23853,6 +24289,35 @@
           }
         }
       },
+      "EditCounts": {
+        "type": "object",
+        "description": "Proposals made, approved and rejected.",
+        "required": [
+          "proposed",
+          "approved",
+          "rejected",
+          "linesApproved"
+        ],
+        "properties": {
+          "approved": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "linesApproved": {
+            "type": "integer",
+            "format": "int32",
+            "description": "Lines approved with any variant (the game's text, a translator's, the machine's, a proposal)."
+          },
+          "proposed": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "rejected": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
       "EditCreated": {
         "type": "object",
         "description": "The id of what was created.",
@@ -23952,7 +24417,7 @@
           },
           "state": {
             "type": "string",
-            "description": "`proposed`, `approved`, `otherApproved` or `outdated`."
+            "description": "`proposed`, `approved`, `otherApproved`, `outdated` or `rejected`."
           }
         }
       },
@@ -26660,7 +27125,7 @@
           },
           "kind": {
             "type": "string",
-            "description": "`game` (an import brought a new Russian from the pack), `proposal` (a\nproposal written or rewritten), `approve` or `withdraw` (the lead)."
+            "description": "`game` (an import brought a new Russian from the pack), `proposal` (a\nproposal written or rewritten), `approve` or `withdraw` (a translator),\n`reject` (a proposal rejected: `text` is the reason, if any) or\n`reopen` (the rejection taken back)."
           },
           "proposalId": {
             "type": [
@@ -28356,6 +28821,33 @@
           "target_level": {
             "type": "integer",
             "format": "int32"
+          }
+        }
+      },
+      "MemberRow": {
+        "type": "object",
+        "description": "A member of the section.",
+        "required": [
+          "user",
+          "uid",
+          "role",
+          "addedAt"
+        ],
+        "properties": {
+          "addedAt": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Unix seconds."
+          },
+          "role": {
+            "type": "string",
+            "description": "`user`, `translator` or `admin`."
+          },
+          "uid": {
+            "type": "string"
+          },
+          "user": {
+            "$ref": "#/components/schemas/EditPerson"
           }
         }
       },
@@ -30604,6 +31096,40 @@
           }
         }
       },
+      "PersonStats": {
+        "type": "object",
+        "description": "One person's share.",
+        "required": [
+          "person",
+          "week",
+          "total",
+          "decisions"
+        ],
+        "properties": {
+          "decisions": {
+            "type": "integer",
+            "format": "int32",
+            "description": "Approvals and rejections they made, in all."
+          },
+          "person": {
+            "$ref": "#/components/schemas/EditPerson"
+          },
+          "role": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The role, when a member."
+          },
+          "total": {
+            "$ref": "#/components/schemas/EditCounts"
+          },
+          "week": {
+            "$ref": "#/components/schemas/EditCounts",
+            "description": "Their proposals: the last 7 days and in all."
+          }
+        }
+      },
       "PlaceAgreement": {
         "type": "object",
         "description": "Who agrees with Sova's or the AI's variant at one place.",
@@ -31472,6 +31998,30 @@
             ],
             "description": "Its text before the last rewrite; null when never rewritten."
           },
+          "rejectReason": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "rejectedAt": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64"
+          },
+          "rejectedBy": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/EditPerson",
+                "description": "Rejected by a translator, with the reason its author sees. A rejected\nproposal leaves the line; rewriting it clears the rejection."
+              }
+            ]
+          },
           "releasedIn": {
             "type": [
               "string",
@@ -31490,6 +32040,34 @@
             "type": "integer",
             "format": "int32",
             "description": "Texts it has had, the current one included."
+          }
+        }
+      },
+      "ProposalDecisions": {
+        "type": "object",
+        "description": "A translator's decision on proposals by id, from the Edits list.",
+        "required": [
+          "ids",
+          "decision"
+        ],
+        "properties": {
+          "decision": {
+            "type": "string",
+            "description": "`approve`, `reject`, `withdraw` (its approval) or `reopen` (a rejected one)."
+          },
+          "ids": {
+            "type": "array",
+            "items": {
+              "type": "integer",
+              "format": "int64"
+            }
+          },
+          "reason": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Why it is rejected; the author sees it."
           }
         }
       },
@@ -32856,6 +33434,25 @@
           "v2"
         ]
       },
+      "RequestDecision": {
+        "type": "object",
+        "description": "An admin's answer to a request.",
+        "required": [
+          "accept"
+        ],
+        "properties": {
+          "accept": {
+            "type": "boolean"
+          },
+          "role": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The new member's role (`user` unless given)."
+          }
+        }
+      },
       "RequestSecondary": {
         "type": "object",
         "required": [
@@ -33491,6 +34088,18 @@
           }
         }
       },
+      "RoleInput": {
+        "type": "object",
+        "description": "A member's new role.",
+        "required": [
+          "role"
+        ],
+        "properties": {
+          "role": {
+            "type": "string"
+          }
+        }
+      },
       "RoomAssignmentDto": {
         "type": "object",
         "required": [
@@ -34045,6 +34654,39 @@
             }
           },
           "seat": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "SectionStats": {
+        "type": "object",
+        "description": "One section's progress: its texts, those with Russian, approved, waiting.",
+        "required": [
+          "section",
+          "total",
+          "ru",
+          "approved",
+          "waiting"
+        ],
+        "properties": {
+          "approved": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "ru": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "section": {
+            "type": "string",
+            "description": "`story`, `operators`, `enemies`, `stages`, `items`, `archives`, `other`."
+          },
+          "total": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "waiting": {
             "type": "integer",
             "format": "int32"
           }
@@ -39444,9 +40086,15 @@
           "member",
           "roles",
           "devLogin",
-          "recommendRule"
+          "recommendRule",
+          "signedIn",
+          "accessRequested"
         ],
         "properties": {
+          "accessRequested": {
+            "type": "boolean",
+            "description": "Signed in, not a member, and their request for access waits."
+          },
           "devLogin": {
             "type": "boolean",
             "description": "The development sign-in is switched on for this backend."
@@ -39471,7 +40119,11 @@
             "items": {
               "type": "string"
             },
-            "description": "`translator`, `editor` (the lead), `maintainer` (builds the pack), `admin`;\nseveral at once; empty for a non-member."
+            "description": "The member's role as a one-item list: `user` (proposes, agrees,\nremarks), `translator` (also approves, rejects, exports for the game)\nor `admin` (all of it, the pack's releases, the admin panel); empty\nfor a non-member."
+          },
+          "signedIn": {
+            "type": "boolean",
+            "description": "Signed in to the site (a member or not)."
           },
           "userId": {
             "type": [

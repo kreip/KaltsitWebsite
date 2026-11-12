@@ -155,7 +155,7 @@ fn whole_words(q: &str) -> String {
 }
 
 const APPROVED: &str = "EXISTS (SELECT 1 FROM translators.approvals a WHERE a.edit_key = t.edit_key AND a.outdated_at IS NULL)";
-const PROPOSED: &str = "EXISTS (SELECT 1 FROM translators.proposals p WHERE p.edit_key = t.edit_key AND p.deleted_at IS NULL AND p.outdated_at IS NULL)";
+const PROPOSED: &str = "EXISTS (SELECT 1 FROM translators.proposals p WHERE p.edit_key = t.edit_key AND p.deleted_at IS NULL AND p.rejected_at IS NULL AND p.outdated_at IS NULL)";
 
 /// The WHERE of a search, after `FROM translators.texts t`.
 fn conditions<'q>(
@@ -529,7 +529,7 @@ pub async fn objects(
     let rows: Vec<ObjectRow> = sqlx::query_as(&format!(
         "WITH keyed AS (
              SELECT DISTINCT edit_key FROM translators.proposals
-             WHERE deleted_at IS NULL AND NOT context AND outdated_at IS NULL)
+             WHERE deleted_at IS NULL AND rejected_at IS NULL AND NOT context AND outdated_at IS NULL)
          SELECT {key} AS id,
                 MIN(p.object_en) AS en,
                 {name_en} AS name_en,

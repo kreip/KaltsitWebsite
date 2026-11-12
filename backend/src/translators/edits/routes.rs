@@ -838,3 +838,123 @@ pub async fn approve_batch(
     }
     Ok(Json(super::dto::ApprovalBatchResult { approved, skipped }))
 }
+
+/// The longest reason of a rejection, in characters.
+const MAX_REASON: usize = 1_000;
+
+/// Decide proposals by id, from the Edits list (a translator or an admin):
+/// `approve` (for its entry, or a one-place proposal for its place),
+/// `reject` (its approval withdrawn first; the reason goes to its author),
+/// `withdraw` its approval, or `reopen` a rejected one. Ids with nothing to do
+/// (gone, outdated, decided already) are skipped and counted.
+#[utoipa::path(
+    post,
+    path = "/translators/proposals/decisions",
+    tag = "translators",
+    security(("bearer_auth" = [])),
+    request_body = super::dto::ProposalDecisions,
+    responses(
+        (status = 200, description = "How many were decided and skipped.", body = super::dto::ApprovalBatchResult),
+        (status = 400, response = crate::app::openapi::responses::BadRequest),
+        (status = 401, response = crate::app::openapi::responses::Unauthorized),
+        (status = 403, response = crate::app::openapi::responses::Forbidden),
+        (status = 500, response = crate::app::openapi::responses::InternalError)
+    )
+)]
+pub async fn decide_proposals(
+    State(state): State<AppState>,
+    auth: MaybeAuthUser,
+    Json(input): Json<super::dto::ProposalDecisions>,
+) -> Result<Json<super::dto::ApprovalBatchResult>, ApiError> {
+    let me = require_member(&state, &auth).await?;
+    if !me.leads() {
+        return Err(ApiError::Forbidden);
+    }
+    if input.ids.len() > 5_000 {
+        return Err(ApiError::BadRequest("at most 5000 proposals at once".into()));
+    }
+    let decision = input.decision.as_str();
+    if !matches!(decision, "approve" | "reject" | "withdraw" | "reopen") {
+        return Err(ApiError::BadRequest(
+            "decision: approve, reject, withdraw or reopen".into(),
+        ));
+    }
+    let reason = input
+        .reason
+        .as_deref()
+        .map(str::trim)
+        .filter(|r| !r.is_empty());
+    if reason.is_some_and(|r| r.chars().count() > MAX_REASON) {
+        return Err(ApiError::BadRequest(format!(
+            "the reason is longer than {MAX_REASON} characters"
+        )));
+    }
+    let (mut done, mut skipped) = (0, 0);
+    for &id in &input.ids {
+        let Some(p) = db::decision_target(&state.db, id).await? else {
+            skipped += 1;
+            continue;
+        };
+        let place = EditPlace {
+            story_id: p.story_id.clone(),
+            line: p.line,
+            part: p.part,
+            edit_key: None,
+        };
+        let withdraw = async |p: &db::DecisionTarget| -> Result<(), ApiError> {
+            if p.context {
+                db::approve_context(&state.db, &p.edit_key, id, &place, me.id, false).await?;
+            } else {
+                db::withdraw_key(&state.db, &p.edit_key, &place, me.id).await?;
+            }
+            Ok(())
+        };
+        let acted = match decision {
+            "approve" if !p.outdated && !p.approved => {
+                if p.rejected {
+                    db::set_rejected(&state.db, id, &p.edit_key, &place, false, None, me.id).await?;
+                }
+                if p.context {
+                    db::approve_context(&state.db, &p.edit_key, id, &place, me.id, true).await?;
+                } else {
+                    db::approve_key(
+                        &state.db,
+                        &p.edit_key,
+                        "proposal",
+                        Some(id),
+                        &p.text,
+                        &place,
+                        me.id,
+                    )
+                    .await?;
+                }
+                true
+            }
+            "reject" if !p.rejected => {
+                if p.approved {
+                    withdraw(&p).await?;
+                }
+                db::set_rejected(&state.db, id, &p.edit_key, &place, true, reason, me.id).await?;
+                true
+            }
+            "withdraw" if p.approved => {
+                withdraw(&p).await?;
+                true
+            }
+            "reopen" if p.rejected => {
+                db::set_rejected(&state.db, id, &p.edit_key, &place, false, None, me.id).await?;
+                true
+            }
+            _ => false,
+        };
+        if acted {
+            done += 1;
+        } else {
+            skipped += 1;
+        }
+    }
+    Ok(Json(super::dto::ApprovalBatchResult {
+        approved: done,
+        skipped,
+    }))
+}

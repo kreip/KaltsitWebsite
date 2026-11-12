@@ -1,26 +1,34 @@
 /**
- * The My edits tab: my proposals (everyone's for the lead) as was (the
+ * The Edits tab: my proposals (everyone's for a translator) as was (the
  * game's Russian now) / now (the proposal) / where, with its state, and
- * rewrite, delete and the history of its texts. Export to the XUnity
- * dictionaries: the Export… dialog.
+ * rewrite, delete and the history of its texts. A translator decides right
+ * in the list: a click on the state approves or rejects (with a reason the
+ * author sees), and the rows ticked (Shift for a range) are decided at once
+ * from the "N selected" bar. Export to the XUnity dictionaries: the Export…
+ * dialog.
  */
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
-import { History, PenLine, Trash2 } from "lucide-react";
+import { Check, ChevronDown, History, PenLine, RotateCcw, Trash2, Undo2, X } from "lucide-react";
 import type React from "react";
-import { useId, useState } from "react";
+import { useId, useMemo, useRef, useState } from "react";
+import { AlertDialog, AlertDialogClose, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogPopup, AlertDialogTitle } from "#/components/ui/alert-dialog";
 import { Badge } from "#/components/ui/badge";
 import { Button } from "#/components/ui/button";
+import { Checkbox } from "#/components/ui/checkbox";
 import { Collapsible, CollapsiblePanel, CollapsibleTrigger } from "#/components/ui/collapsible";
 import { Empty, EmptyDescription, EmptyHeader, EmptyTitle } from "#/components/ui/empty";
 import { LoadFailed } from "#/components/ui/load-failed";
+import { Menu, MenuItem, MenuPopup, MenuTrigger } from "#/components/ui/menu";
 import { Skeleton } from "#/components/ui/skeleton";
 import { Spinner } from "#/components/ui/spinner";
 import { Switch } from "#/components/ui/switch";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "#/components/ui/table";
+import { Textarea } from "#/components/ui/textarea";
+import { toastManager } from "#/components/ui/toast";
 import { useFormatters, useLocale, useT } from "#/lib/i18n";
 import type { TypedT } from "#/lib/i18n/messages";
-import { deleteProposalFn, editsQueryOptions, proposalVersionsQueryOptions, rewriteProposalFn, translatorsMeQueryOptions } from "#/lib/translators/api";
+import { decideProposalsFn, deleteProposalFn, editsQueryOptions, type ProposalDecision, proposalVersionsQueryOptions, rewriteProposalFn, translatorsMeQueryOptions } from "#/lib/translators/api";
 import type { EditRow } from "#/types/generated/EditRow";
 import type { TranslatorsMe } from "#/types/generated/TranslatorsMe";
 import { ExportDialog } from "./ExportDialog";
@@ -42,7 +50,141 @@ const STATE_VARIANT = {
     approved: "success",
     otherApproved: "secondary",
     outdated: "warning",
+    rejected: "error",
 } as const;
+
+/** A decision on proposals by id; the toast says how many were skipped (outdated, already decided). */
+function useDecide(t: T) {
+    return useEditMutation(async (v: { ids: number[]; decision: ProposalDecision; reason: string }) => {
+        const r = await decideProposalsFn({ data: v });
+        if (r.skipped > 0) toastManager.add({ title: t("decide.skipped", { done: r.approved, skipped: r.skipped }), type: "info" });
+        return r;
+    }, t("decide.failed"));
+}
+
+/** "Reject" with an optional reason its author sees: for one proposal or the ones ticked. */
+function RejectDialog({ open, onOpenChange, count, pending, onReject, t }: { open: boolean; onOpenChange: (open: boolean) => void; count: number; pending: boolean; onReject: (reason: string) => void; t: T }): React.ReactElement {
+    const id = useId();
+    const [reason, setReason] = useState("");
+    return (
+        <AlertDialog open={open} onOpenChange={onOpenChange}>
+            <AlertDialogPopup>
+                <AlertDialogHeader>
+                    <AlertDialogTitle>{t("decide.rejectTitle", { count })}</AlertDialogTitle>
+                    <AlertDialogDescription>{t("decide.rejectHint")}</AlertDialogDescription>
+                    <label htmlFor={id} className="pt-2 text-subtle-foreground text-xs">
+                        {t("decide.reason")}
+                    </label>
+                    <Textarea id={id} size="sm" value={reason} onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setReason(e.target.value)} autoFocus />
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                    <AlertDialogClose render={<Button variant="ghost" />}>{t("editor.cancel")}</AlertDialogClose>
+                    <Button variant="destructive" onClick={() => onReject(reason.trim())} disabled={pending}>
+                        {pending ? <Spinner /> : <X aria-hidden="true" />}
+                        {t("decide.reject")}
+                    </Button>
+                </AlertDialogFooter>
+            </AlertDialogPopup>
+        </AlertDialog>
+    );
+}
+
+/** The state of a row; for a translator a menu: approve / reject a proposal, withdraw an approval, reopen a rejected one. */
+function StateCell({ row, lead, t }: { row: EditRow; lead: boolean; t: T }): React.ReactElement {
+    const [rejecting, setRejecting] = useState(false);
+    const decide = useDecide(t);
+    const p = row.proposal;
+    const state = row.state as keyof typeof STATE_VARIANT;
+    const badge = (
+        <Badge variant={STATE_VARIANT[state] ?? "secondary"} size="sm">
+            {t(`state.${state}` as "state.proposed")}
+        </Badge>
+    );
+    const actions: { key: string; icon: React.ReactNode; label: string; run: () => void; destructive?: boolean }[] = [];
+    const run = (decision: ProposalDecision) => () => decide.mutate({ ids: [p.id], decision, reason: "" });
+    if (state === "proposed" || state === "otherApproved") {
+        actions.push({ key: "approve", icon: <Check aria-hidden="true" />, label: t("decide.approve"), run: run("approve") });
+        actions.push({ key: "reject", icon: <X aria-hidden="true" />, label: t("decide.reject"), run: () => setRejecting(true), destructive: true });
+    } else if (state === "approved") {
+        actions.push({ key: "withdraw", icon: <Undo2 aria-hidden="true" />, label: t("approve.withdraw"), run: run("withdraw") });
+    } else if (state === "rejected") {
+        actions.push({ key: "reopen", icon: <RotateCcw aria-hidden="true" />, label: t("decide.reopen"), run: run("reopen") });
+    }
+    return (
+        <span className="flex flex-col items-start gap-0.5">
+            {lead && actions.length > 0 ? (
+                <Menu>
+                    <MenuTrigger render={<Button variant="ghost" size="xs" className="h-auto gap-0.5 px-0.5 py-0.5" />} aria-label={t("decide.menu")} disabled={decide.isPending}>
+                        {badge}
+                        <ChevronDown className="size-3" aria-hidden="true" />
+                    </MenuTrigger>
+                    <MenuPopup align="start">
+                        {actions.map((a) => (
+                            <MenuItem key={a.key} onClick={a.run} variant={a.destructive ? "destructive" : "default"}>
+                                {a.icon}
+                                {a.label}
+                            </MenuItem>
+                        ))}
+                    </MenuPopup>
+                </Menu>
+            ) : (
+                badge
+            )}
+            {p.rejectedBy ? <span className="text-subtle-foreground text-xs">{t("decide.rejectedBy", { name: p.rejectedBy.name })}</span> : null}
+            {p.rejectReason ? <span className="text-xs">{t("decide.reasonShown", { reason: p.rejectReason })}</span> : null}
+            {p.agreements.length > 0 ? <span className="text-subtle-foreground text-xs">{t("proposal.agreed", { count: p.agreements.length })}</span> : null}
+            {rejecting ? <RejectDialog open={rejecting} onOpenChange={setRejecting} count={1} pending={decide.isPending} onReject={(reason) => decide.mutate({ ids: [p.id], decision: "reject", reason }, { onSuccess: () => setRejecting(false) })} t={t} /> : null}
+        </span>
+    );
+}
+
+/** A proposal a translator may decide in the list: waiting for a decision. */
+function decidable(row: EditRow): boolean {
+    return row.state === "proposed" || row.state === "otherApproved";
+}
+
+/** The bar over the table while rows are ticked: "N selected · Approve · Reject". */
+function SelectionBar({ ids, onDone, t }: { ids: number[]; onDone: () => void; t: T }): React.ReactElement | null {
+    const [rejecting, setRejecting] = useState(false);
+    const decide = useDecide(t);
+    if (ids.length === 0) return null;
+    return (
+        <div className="sticky top-(--site-header-height) z-20 flex flex-wrap items-center gap-2 rounded-lg border bg-popover px-3 py-1.5 shadow-xs">
+            <span className="font-medium text-sm">{t("decide.selected", { count: ids.length })}</span>
+            <Button size="sm" onClick={() => decide.mutate({ ids, decision: "approve", reason: "" }, { onSuccess: onDone })} disabled={decide.isPending}>
+                {decide.isPending ? <Spinner /> : <Check aria-hidden="true" />}
+                {t("decide.approve")}
+            </Button>
+            <Button size="sm" variant="destructive-outline" onClick={() => setRejecting(true)} disabled={decide.isPending}>
+                <X aria-hidden="true" />
+                {t("decide.reject")}
+            </Button>
+            <Button size="sm" variant="ghost" onClick={onDone}>
+                {t("decide.clear")}
+            </Button>
+            {rejecting ? (
+                <RejectDialog
+                    open={rejecting}
+                    onOpenChange={setRejecting}
+                    count={ids.length}
+                    pending={decide.isPending}
+                    onReject={(reason) =>
+                        decide.mutate(
+                            { ids, decision: "reject", reason },
+                            {
+                                onSuccess: () => {
+                                    setRejecting(false);
+                                    onDone();
+                                },
+                            },
+                        )
+                    }
+                    t={t}
+                />
+            ) : null}
+        </div>
+    );
+}
 
 function Where({ row, t }: { row: EditRow; t: T }): React.ReactElement {
     const nameOf = useStoryNames();
@@ -141,15 +283,27 @@ function Rewrite({ row, nickname, onClose, t }: { row: EditRow; nickname: string
     );
 }
 
-function Row({ row, me, all, nickname, t }: { row: EditRow; me: TranslatorsMe; all: boolean; nickname: string; t: T }): React.ReactElement {
+interface IRowProps {
+    row: EditRow;
+    me: TranslatorsMe;
+    all: boolean;
+    nickname: string;
+    /** A translator: the tick box and the state's menu. */
+    lead: boolean;
+    selected: boolean;
+    onSelect: (shift: boolean) => void;
+    t: T;
+}
+
+function Row({ row, me, all, nickname, lead, selected, onSelect, t }: IRowProps): React.ReactElement {
     const f = useFormatters();
     const [rewriting, setRewriting] = useState(false);
     const remove = useEditMutation(() => deleteProposalFn({ data: { id: row.proposal.id } }), t("edit.failedDelete"));
     const p = row.proposal;
     const mine = p.author.id === me.userId;
-    const state = row.state as keyof typeof STATE_VARIANT;
     return (
-        <TableRow className="group/row">
+        <TableRow className="group/row" data-state={selected ? "selected" : undefined}>
+            {lead ? <TableCell className="py-1.5 align-top">{decidable(row) ? <Checkbox checked={selected} onCheckedChange={() => undefined} onClick={(e: React.MouseEvent) => onSelect(e.shiftKey)} aria-label={t("decide.tick")} /> : null}</TableCell> : null}
             <TableCell className={PROSE}>
                 <span className="flex flex-col gap-0.5">
                     {row.ruGame ? <StoryText text={row.ruGame} nickname={nickname} /> : <span className="text-subtle-foreground">{t("ru.missing")}</span>}
@@ -205,12 +359,7 @@ function Row({ row, me, all, nickname, t }: { row: EditRow; me: TranslatorsMe; a
                 <Where row={row} t={t} />
             </TableCell>
             <TableCell className={PROSE}>
-                <span className="flex flex-col items-start gap-0.5">
-                    <Badge variant={STATE_VARIANT[state] ?? "secondary"} size="sm">
-                        {t(`state.${state}` as "state.proposed")}
-                    </Badge>
-                    {p.agreements.length > 0 ? <span className="text-subtle-foreground text-xs">{t("proposal.agreed", { count: p.agreements.length })}</span> : null}
-                </span>
+                <StateCell row={row} lead={lead} t={t} />
             </TableCell>
             <TableCell className="py-1.5 align-top text-muted-foreground text-xs tabular-nums">{f.date((p.editedAt ?? p.createdAt) * 1000, { dateStyle: "medium", timeStyle: "short" })}</TableCell>
         </TableRow>
@@ -224,10 +373,30 @@ export function MyEditsTab(): React.ReactElement {
     const lead = me.data ? isLead(me.data) : false;
     const [all, setAll] = useState(false);
     const query = useQuery({ ...editsQueryOptions(all && lead), enabled: Boolean(me.data) });
+    const [selected, setSelected] = useState<ReadonlySet<number>>(new Set());
+    // The last row ticked or unticked: Shift extends from it.
+    const anchor = useRef<number | null>(null);
+    const rows = query.data?.rows ?? [];
+    const open = useMemo(() => rows.filter(decidable).map((r) => r.proposal.id), [rows]);
+    // Only what is still waiting stays ticked (after a decision or a reload).
+    const ticked = open.filter((id) => selected.has(id));
 
     if (me.isError || query.isError) return <LoadFailed message={t("edits.load")} onRetry={() => (me.isError ? me.refetch() : query.refetch())} />;
     if (!me.data || !query.data) return <Skeleton className="h-64 w-full rounded-2xl" />;
-    const rows = query.data.rows;
+
+    const select = (index: number, shift: boolean) => {
+        const id = rows[index].proposal.id;
+        const next = new Set(selected);
+        const on = !next.has(id);
+        if (shift && anchor.current !== null) {
+            const [from, to] = anchor.current < index ? [anchor.current, index] : [index, anchor.current];
+            for (const r of rows.slice(from, to + 1)) if (decidable(r)) on ? next.add(r.proposal.id) : next.delete(r.proposal.id);
+        } else if (on) next.add(id);
+        else next.delete(id);
+        anchor.current = index;
+        setSelected(next);
+    };
+    const allTicked = open.length > 0 && ticked.length === open.length;
 
     return (
         <div className="flex flex-col gap-4">
@@ -251,20 +420,25 @@ export function MyEditsTab(): React.ReactElement {
                 </Empty>
             ) : (
                 <>
-                    <p className="text-subtle-foreground text-xs">{t("edits.count", { count: rows.length })}</p>
+                    <p className="text-subtle-foreground text-xs">
+                        {t("edits.count", { count: rows.length })}
+                        {lead && open.length > 0 ? ` · ${t("decide.hint")}` : ""}
+                    </p>
+                    {lead ? <SelectionBar ids={ticked} onDone={() => setSelected(new Set())} t={t} /> : null}
                     <Table aria-label={t("edits.tableLabel")}>
                         <TableHeader>
                             <TableRow>
+                                {lead ? <TableHead className="w-8">{open.length > 0 ? <Checkbox checked={allTicked} indeterminate={ticked.length > 0 && !allTicked} onCheckedChange={() => setSelected(allTicked ? new Set() : new Set(open))} aria-label={t("decide.all")} /> : null}</TableHead> : null}
                                 <TableHead>{t("edits.col.was")}</TableHead>
                                 <TableHead>{t("edits.col.now")}</TableHead>
                                 <TableHead className="w-56">{t("edits.col.where")}</TableHead>
-                                <TableHead className="w-32">{t("edits.col.state")}</TableHead>
+                                <TableHead className="w-40">{t("edits.col.state")}</TableHead>
                                 <TableHead className="w-32">{t("edits.col.date")}</TableHead>
                             </TableRow>
                         </TableHeader>
                         <TableBody>
-                            {rows.map((row) => (
-                                <Row key={row.proposal.id} row={row} me={me.data} all={query.data.all} nickname={me.data.nickname ?? t("nickname.fallback")} t={t} />
+                            {rows.map((row, i) => (
+                                <Row key={row.proposal.id} row={row} me={me.data} all={query.data.all} nickname={me.data.nickname ?? t("nickname.fallback")} lead={lead} selected={selected.has(row.proposal.id)} onSelect={(shift) => select(i, shift)} t={t} />
                             ))}
                         </TableBody>
                     </Table>

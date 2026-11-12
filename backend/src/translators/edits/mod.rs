@@ -36,6 +36,7 @@ pub fn router() -> OpenApiRouter<AppState> {
         .routes(routes!(routes::story_progress))
         .routes(routes!(routes::set_approval))
         .routes(routes!(routes::approve_batch))
+        .routes(routes!(routes::decide_proposals))
 }
 
 /// Fill each line's places and status, and return the edits for the

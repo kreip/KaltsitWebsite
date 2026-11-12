@@ -233,7 +233,7 @@ pub async fn rows(pool: &PgPool, review: bool) -> Result<Vec<Row>, sqlx::Error> 
                  SELECT DISTINCT ON (p.edit_key) p.edit_key, p.text, p.author_id,
                         COUNT(*) OVER (PARTITION BY p.edit_key) AS alternatives
                  FROM translators.proposals p
-                 WHERE p.deleted_at IS NULL AND NOT p.context AND p.outdated_at IS NULL
+                 WHERE p.deleted_at IS NULL AND p.rejected_at IS NULL AND NOT p.context AND p.outdated_at IS NULL
                    AND NOT EXISTS (SELECT 1 FROM translators.approvals a
                                    WHERE a.edit_key = p.edit_key AND a.outdated_at IS NULL)
                  ORDER BY p.edit_key,
@@ -275,7 +275,7 @@ pub async fn context_rows(pool: &PgPool, review: bool) -> Result<Vec<ContextRow>
          LEFT JOIN users v ON v.id = p.approved_by
          LEFT JOIN translators.story_lines s
              ON s.server = $1 AND s.story_id = p.story_id AND s.line = p.line AND s.part = p.part
-         WHERE p.deleted_at IS NULL AND p.context AND p.outdated_at IS NULL
+         WHERE p.deleted_at IS NULL AND p.rejected_at IS NULL AND p.context AND p.outdated_at IS NULL
            AND p.game_section IS NULL
            AND (p.approved_at IS NOT NULL) = NOT $2
          ORDER BY p.story_id, s.ord",
@@ -317,7 +317,7 @@ pub async fn only_here_rows(pool: &PgPool) -> Result<Vec<OnlyHereRow>, sqlx::Err
          JOIN users u ON u.id = p.author_id
          LEFT JOIN users v ON v.id = p.approved_by AND p.approved_at IS NOT NULL
          LEFT JOIN translators.texts t ON t.server = $1 AND t.edit_key = p.edit_key
-         WHERE p.deleted_at IS NULL AND p.context AND p.outdated_at IS NULL
+         WHERE p.deleted_at IS NULL AND p.rejected_at IS NULL AND p.context AND p.outdated_at IS NULL
            AND p.game_section IS NOT NULL AND p.game_object IS NOT NULL AND p.game_field IS NOT NULL
          ORDER BY p.game_section, p.game_object, p.game_field, p.game_idx, p.created_at",
     )

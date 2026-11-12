@@ -19,7 +19,7 @@ export type EditRow = {
      */
     ord: number | null;
     /**
-     * `proposed`, `approved`, `otherApproved` or `outdated`.
+     * `proposed`, `approved`, `otherApproved`, `outdated` or `rejected`.
      */
     state: string;
     /**

@@ -58,4 +58,11 @@ export type Proposal = {
      * A one-place proposal: the pack version its text went out in, if it has.
      */
     releasedIn: string | null;
+    /**
+     * Rejected by a translator, with the reason its author sees. A rejected
+     * proposal leaves the line; rewriting it clears the rejection.
+     */
+    rejectedBy: EditPerson | null;
+    rejectedAt: number | null;
+    rejectReason: string | null;
 };

@@ -28,6 +28,8 @@ const EVENT_TONE: Record<string, string> = {
     proposal: TONE.proposal,
     approve: TONE.approved,
     withdraw: TONE.outdated,
+    reject: TONE.outdated,
+    reopen: TONE.proposal,
 };
 
 /** What happened, in words. `first`: the proposal's first text, not a rewrite. */
@@ -36,6 +38,8 @@ function eventLabel(e: HistoryEvent, first: boolean, t: T): string {
     if (e.kind === "game") return t("lineHistory.game");
     if (e.kind === "proposal") return first ? t("lineHistory.proposed", { name }) : t("lineHistory.rewrote", { name });
     if (e.kind === "withdraw") return t("lineHistory.withdrew", { name });
+    if (e.kind === "reject") return t("lineHistory.rejected", { name });
+    if (e.kind === "reopen") return t("lineHistory.reopened", { name });
     return e.source === "game" ? t("lineHistory.approvedGame", { name }) : t("lineHistory.approved", { name });
 }
 
@@ -83,7 +87,13 @@ function HistoryList({ place, nickname, t }: { place: EditPlace; nickname: strin
                                     </>
                                 }
                             >
-                                {e.text === null ? null : e.before !== null ? <TextDiff before={e.before} after={e.text} labels={labels} /> : <StoryText text={e.text} nickname={nickname} />}
+                                {e.kind === "reject" && e.text ? (
+                                    <span className="text-muted-foreground">{t("decide.reasonShown", { reason: e.text })}</span>
+                                ) : e.text === null || e.kind === "reopen" ? null : e.before !== null ? (
+                                    <TextDiff before={e.before} after={e.text} labels={labels} />
+                                ) : (
+                                    <StoryText text={e.text} nickname={nickname} />
+                                )}
                             </Toned>
                         </li>
                     ))}
