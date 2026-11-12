@@ -7,7 +7,8 @@
  * the AI's variants. Search tab: every text of the game (SearchTab.tsx).
  * Game sections tab: the texts outside the story, an object at a time
  * (SectionsTab.tsx).
- * Glossary tab: the team's whole glossary. The chapter list
+ * Glossary tab: the team's whole glossary and the terms suggested for it.
+ * A word selected in any table opens a small menu (SelectionMenu.tsx). The chapter list
  * is the story library's own index; the lines come from the section's import
  * (`/api/translators`).
  */
@@ -42,6 +43,7 @@ import { MyEditsTab } from "./MyEditsTab";
 import { type SearchSection, type SearchStatus, SearchTab } from "./SearchTab";
 import { SectionLocale } from "./SectionLocale";
 import { type GameSection, SectionsTab } from "./SectionsTab";
+import { SelectionMenu } from "./SelectionMenu";
 import { Toggle } from "./SwitchToggle";
 import { charBase } from "./service";
 import { entryLabel, groupLabel, useRename } from "./storyNames";
@@ -71,6 +73,8 @@ export interface ITranslatorsSearch {
     /** Game sections: the section and the object. */
     sec?: GameSection;
     obj?: string;
+    /** Glossary: the text looked for. */
+    gq?: string;
 }
 
 interface IGroupItem {
@@ -387,12 +391,14 @@ function Page({ search, onSearch }: ISearchProps): React.ReactElement {
                         <SectionsTab search={search} onSearch={onSearch} />
                     </TabsPanel>
                     <TabsPanel value="glossary" className="flex flex-col gap-6 pt-4">
-                        <GlossaryTab />
+                        <GlossaryTab query={search.gq ?? ""} onQuery={(gq) => onSearch({ ...search, gq: gq || undefined })} />
                     </TabsPanel>
                     <TabsPanel value="edits" className="flex flex-col gap-6 pt-4">
                         <MyEditsTab />
                     </TabsPanel>
                 </Tabs>
+                {/* A word selected in any table: find it everywhere, in the glossary, or suggest it for the glossary. The other tabs keep their place in the address. */}
+                <SelectionMenu onFind={(q) => onSearch({ ...search, tab: "search", q, whole: undefined, section: undefined, status: undefined })} onGlossary={(gq) => onSearch({ ...search, tab: "glossary", gq })} />
             </MembersOnly>
         </div>
     );

@@ -13402,6 +13402,187 @@
         ]
       }
     },
+    "/api/translators/glossary/suggestions": {
+      "get": {
+        "tags": [
+          "translators"
+        ],
+        "summary": "Every suggestion, the open ones first, then the newest.",
+        "operationId": "list_suggestions",
+        "responses": {
+          "200": {
+            "description": "The suggestions, open first, newest first.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/GlossarySuggestion"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        },
+        "security": [
+          {
+            "bearer_auth": []
+          }
+        ]
+      },
+      "post": {
+        "tags": [
+          "translators"
+        ],
+        "summary": "Suggest a term for the glossary: its English, the Russian proposed and,\nmaybe, a note and the line it was noticed in. Members only.",
+        "operationId": "create_suggestion",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SuggestionInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "The suggestion's id.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EditCreated"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        },
+        "security": [
+          {
+            "bearer_auth": []
+          }
+        ]
+      }
+    },
+    "/api/translators/glossary/suggestions/{id}": {
+      "put": {
+        "tags": [
+          "translators"
+        ],
+        "summary": "Decide on a suggestion — accepted (taken into the sheet), declined — or\nopen it again. The lead only.",
+        "operationId": "decide_suggestion",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "The suggestion.",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SuggestionDecision"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "Recorded."
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        },
+        "security": [
+          {
+            "bearer_auth": []
+          }
+        ]
+      },
+      "delete": {
+        "tags": [
+          "translators"
+        ],
+        "summary": "Delete one's own suggestion (the lead: anyone's).",
+        "operationId": "delete_suggestion",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "The suggestion.",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Deleted."
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        },
+        "security": [
+          {
+            "bearer_auth": []
+          }
+        ]
+      }
+    },
     "/api/translators/glossary/{id}/lines": {
       "get": {
         "tags": [
@@ -25542,6 +25723,80 @@
           }
         }
       },
+      "GlossarySuggestion": {
+        "type": "object",
+        "description": "A term suggested for the glossary.",
+        "required": [
+          "id",
+          "en",
+          "ru",
+          "author",
+          "createdAt",
+          "status"
+        ],
+        "properties": {
+          "author": {
+            "$ref": "#/components/schemas/EditPerson"
+          },
+          "createdAt": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Unix seconds."
+          },
+          "decidedBy": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/EditPerson",
+                "description": "The lead who decided."
+              }
+            ]
+          },
+          "en": {
+            "type": "string"
+          },
+          "id": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "note": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "ord": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int32"
+          },
+          "ru": {
+            "type": "string"
+          },
+          "sourceEn": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The English of the line it was noticed in (its start)."
+          },
+          "status": {
+            "type": "string",
+            "description": "`open`, `accepted` or `declined`."
+          },
+          "storyId": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The story line it was noticed in, when it was one: the story and the\nline's 0-based order in it (null once the import no longer has the line)."
+          }
+        }
+      },
       "GlossaryTerm": {
         "type": "object",
         "description": "One glossary entry for the Glossary tab.",
@@ -36903,6 +37158,69 @@
           "sort": {
             "type": "integer",
             "format": "int32"
+          }
+        }
+      },
+      "SuggestionDecision": {
+        "type": "object",
+        "description": "The lead's decision on a suggestion.",
+        "required": [
+          "status"
+        ],
+        "properties": {
+          "status": {
+            "type": "string",
+            "description": "`accepted`, `declined`, or `open` to take the decision back."
+          }
+        }
+      },
+      "SuggestionInput": {
+        "type": "object",
+        "description": "Suggest a term for the glossary.",
+        "required": [
+          "en",
+          "ru"
+        ],
+        "properties": {
+          "en": {
+            "type": "string"
+          },
+          "line": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int32"
+          },
+          "note": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "part": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int32"
+          },
+          "ru": {
+            "type": "string"
+          },
+          "sourceEn": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The English of the line it was noticed in."
+          },
+          "storyId": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The story line it was noticed in (`storyId`, `line`, `part`), if any."
           }
         }
       },

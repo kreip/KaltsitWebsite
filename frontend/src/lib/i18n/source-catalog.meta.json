@@ -1,6 +1,6 @@
 {
     "generatedBy": "bun run i18n:extract",
-    "generatedAt": "2026-11-12T01:11:35.362Z",
+    "generatedAt": "2026-11-12T01:21:40.709Z",
     "entries": [
         {
             "key": "admin.home.access.everyList",
@@ -57062,6 +57062,34 @@
             ]
         },
         {
+            "key": "translators.selection.find",
+            "namespace": "translators",
+            "source_text": "Find everywhere",
+            "description": "Button of the selected text's menu: opens the Search tab on the selected word or phrase.",
+            "placeholders": []
+        },
+        {
+            "key": "translators.selection.glossary",
+            "namespace": "translators",
+            "source_text": "Find in the glossary",
+            "description": "Button of the selected text's menu: opens the Glossary tab filtered by the selected word.",
+            "placeholders": []
+        },
+        {
+            "key": "translators.selection.label",
+            "namespace": "translators",
+            "source_text": "Selected text",
+            "description": "Accessible name of the small menu that appears at a word or phrase selected in a table of the translators' section.",
+            "placeholders": []
+        },
+        {
+            "key": "translators.selection.suggest",
+            "namespace": "translators",
+            "source_text": "Suggest for the glossary",
+            "description": "Button of the selected text's menu: opens the dialog that sends the selected term to the lead as a suggestion for the glossary.",
+            "placeholders": []
+        },
+        {
             "key": "translators.service.background",
             "namespace": "translators",
             "source_text": "Background: {name}",
@@ -57294,6 +57322,156 @@
             "namespace": "translators",
             "source_text": "Not checked",
             "description": "Status of a story line nobody has proposed or decided anything for.",
+            "placeholders": []
+        },
+        {
+            "key": "translators.suggest.accept",
+            "namespace": "translators",
+            "source_text": "Accept",
+            "description": "The lead's button on a suggested glossary term.",
+            "placeholders": []
+        },
+        {
+            "key": "translators.suggest.by",
+            "namespace": "translators",
+            "source_text": "{name}, {date}",
+            "description": "Who suggested a glossary term and when.",
+            "placeholders": [
+                "date",
+                "name"
+            ]
+        },
+        {
+            "key": "translators.suggest.decidedBy",
+            "namespace": "translators",
+            "source_text": "decided by {name}",
+            "description": "Who decided on a suggested glossary term.",
+            "placeholders": [
+                "name"
+            ]
+        },
+        {
+            "key": "translators.suggest.decline",
+            "namespace": "translators",
+            "source_text": "Decline",
+            "description": "The lead's button on a suggested glossary term.",
+            "placeholders": []
+        },
+        {
+            "key": "translators.suggest.delete",
+            "namespace": "translators",
+            "source_text": "Delete",
+            "description": "Button deleting a glossary suggestion (its author or the lead).",
+            "placeholders": []
+        },
+        {
+            "key": "translators.suggest.description",
+            "namespace": "translators",
+            "source_text": "The lead will see it in the Glossary tab. The team's sheet is not changed from here.",
+            "description": "Line under the title of the suggest-for-the-glossary dialog.",
+            "placeholders": []
+        },
+        {
+            "key": "translators.suggest.en",
+            "namespace": "translators",
+            "source_text": "English",
+            "description": "Label of the English term field in the suggest-for-the-glossary dialog.",
+            "placeholders": []
+        },
+        {
+            "key": "translators.suggest.failed",
+            "namespace": "translators",
+            "source_text": "Couldn't save the suggestion.",
+            "description": "Toast when saving, deciding or deleting a glossary suggestion failed.",
+            "placeholders": []
+        },
+        {
+            "key": "translators.suggest.from",
+            "namespace": "translators",
+            "source_text": "Noticed in: {en}",
+            "description": "Small line in the suggest dialog: the English of the line the term was selected in.",
+            "placeholders": [
+                "en"
+            ]
+        },
+        {
+            "key": "translators.suggest.list",
+            "namespace": "translators",
+            "source_text": "Suggested for the glossary: {count} · waiting {waiting}",
+            "description": "Button on the Glossary tab unfolding the list of terms members suggested; {waiting} of them have no decision yet.",
+            "placeholders": [
+                "count",
+                "waiting"
+            ]
+        },
+        {
+            "key": "translators.suggest.listHint",
+            "namespace": "translators",
+            "source_text": "The lead accepts or declines; an accepted term is entered into the sheet by hand.",
+            "description": "Line above the list of suggested glossary terms.",
+            "placeholders": []
+        },
+        {
+            "key": "translators.suggest.note",
+            "namespace": "translators",
+            "source_text": "Note (optional)",
+            "description": "Label of the free-text note in the suggest-for-the-glossary dialog.",
+            "placeholders": []
+        },
+        {
+            "key": "translators.suggest.reopen",
+            "namespace": "translators",
+            "source_text": "Reopen",
+            "description": "The lead's button on a decided glossary suggestion: back to waiting.",
+            "placeholders": []
+        },
+        {
+            "key": "translators.suggest.ru",
+            "namespace": "translators",
+            "source_text": "Russian",
+            "description": "Label of the Russian translation field in the suggest-for-the-glossary dialog.",
+            "placeholders": []
+        },
+        {
+            "key": "translators.suggest.send",
+            "namespace": "translators",
+            "source_text": "Send",
+            "description": "Button that sends a glossary suggestion to the lead.",
+            "placeholders": []
+        },
+        {
+            "key": "translators.suggest.sent",
+            "namespace": "translators",
+            "source_text": "Sent to the lead.",
+            "description": "Toast after a glossary suggestion was saved.",
+            "placeholders": []
+        },
+        {
+            "key": "translators.suggest.status.accepted",
+            "namespace": "translators",
+            "source_text": "accepted",
+            "description": "Badge on a suggested glossary term: the lead accepted it.",
+            "placeholders": []
+        },
+        {
+            "key": "translators.suggest.status.declined",
+            "namespace": "translators",
+            "source_text": "declined",
+            "description": "Badge on a suggested glossary term: the lead declined it.",
+            "placeholders": []
+        },
+        {
+            "key": "translators.suggest.status.open",
+            "namespace": "translators",
+            "source_text": "waiting",
+            "description": "Badge on a suggested glossary term: no decision yet.",
+            "placeholders": []
+        },
+        {
+            "key": "translators.suggest.title",
+            "namespace": "translators",
+            "source_text": "Suggest for the glossary",
+            "description": "Title of the dialog that suggests a term for the team's glossary.",
             "placeholders": []
         },
         {

@@ -1831,6 +1831,102 @@ export const messages = {
         text: "Open the card",
         description: "Link beside an object above the search results: opens the object's card on the Game sections tab.",
     },
+    "selection.label": {
+        text: "Selected text",
+        description: "Accessible name of the small menu that appears at a word or phrase selected in a table of the translators' section.",
+    },
+    "selection.find": {
+        text: "Find everywhere",
+        description: "Button of the selected text's menu: opens the Search tab on the selected word or phrase.",
+    },
+    "selection.glossary": {
+        text: "Find in the glossary",
+        description: "Button of the selected text's menu: opens the Glossary tab filtered by the selected word.",
+    },
+    "selection.suggest": {
+        text: "Suggest for the glossary",
+        description: "Button of the selected text's menu: opens the dialog that sends the selected term to the lead as a suggestion for the glossary.",
+    },
+    "suggest.title": {
+        text: "Suggest for the glossary",
+        description: "Title of the dialog that suggests a term for the team's glossary.",
+    },
+    "suggest.description": {
+        text: "The lead will see it in the Glossary tab. The team's sheet is not changed from here.",
+        description: "Line under the title of the suggest-for-the-glossary dialog.",
+    },
+    "suggest.en": {
+        text: "English",
+        description: "Label of the English term field in the suggest-for-the-glossary dialog.",
+    },
+    "suggest.ru": {
+        text: "Russian",
+        description: "Label of the Russian translation field in the suggest-for-the-glossary dialog.",
+    },
+    "suggest.note": {
+        text: "Note (optional)",
+        description: "Label of the free-text note in the suggest-for-the-glossary dialog.",
+    },
+    "suggest.from": {
+        text: "Noticed in: {en}",
+        description: "Small line in the suggest dialog: the English of the line the term was selected in.",
+    },
+    "suggest.send": {
+        text: "Send",
+        description: "Button that sends a glossary suggestion to the lead.",
+    },
+    "suggest.sent": {
+        text: "Sent to the lead.",
+        description: "Toast after a glossary suggestion was saved.",
+    },
+    "suggest.failed": {
+        text: "Couldn't save the suggestion.",
+        description: "Toast when saving, deciding or deleting a glossary suggestion failed.",
+    },
+    "suggest.list": {
+        text: "Suggested for the glossary: {count} · waiting {waiting}",
+        description: "Button on the Glossary tab unfolding the list of terms members suggested; {waiting} of them have no decision yet.",
+    },
+    "suggest.listHint": {
+        text: "The lead accepts or declines; an accepted term is entered into the sheet by hand.",
+        description: "Line above the list of suggested glossary terms.",
+    },
+    "suggest.status.open": {
+        text: "waiting",
+        description: "Badge on a suggested glossary term: no decision yet.",
+    },
+    "suggest.status.accepted": {
+        text: "accepted",
+        description: "Badge on a suggested glossary term: the lead accepted it.",
+    },
+    "suggest.status.declined": {
+        text: "declined",
+        description: "Badge on a suggested glossary term: the lead declined it.",
+    },
+    "suggest.by": {
+        text: "{name}, {date}",
+        description: "Who suggested a glossary term and when.",
+    },
+    "suggest.decidedBy": {
+        text: "decided by {name}",
+        description: "Who decided on a suggested glossary term.",
+    },
+    "suggest.accept": {
+        text: "Accept",
+        description: "The lead's button on a suggested glossary term.",
+    },
+    "suggest.decline": {
+        text: "Decline",
+        description: "The lead's button on a suggested glossary term.",
+    },
+    "suggest.reopen": {
+        text: "Reopen",
+        description: "The lead's button on a decided glossary suggestion: back to waiting.",
+    },
+    "suggest.delete": {
+        text: "Delete",
+        description: "Button deleting a glossary suggestion (its author or the lead).",
+    },
 } satisfies MessageMap;
 
 export const { keys } = defineMessages({ namespace, messages });

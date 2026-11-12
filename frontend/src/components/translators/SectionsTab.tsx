@@ -172,7 +172,7 @@ function Card({ section, item, me, showVariants, showDiff, t }: ICardProps): Rea
                         // An open editor needs the whole row.
                         const folded = long && !unfolded.has(id) && editing?.id !== id;
                         return (
-                            <TableRow key={id} id={`n-${i + 1}`} className="scroll-mt-(--site-header-height) target:bg-primary/10" data-field={r.field} data-status={r.line.status}>
+                            <TableRow key={id} id={`n-${i + 1}`} className="scroll-mt-(--site-header-height) target:bg-primary/10" data-field={r.field} data-status={r.line.status} data-place={`${r.place.storyId}|0|0`}>
                                 <TableCell className="py-1.5 align-top text-subtle-foreground text-xs tabular-nums leading-snug">
                                     <span className="flex items-center gap-1.5">
                                         {i + 1}
@@ -214,7 +214,7 @@ function Card({ section, item, me, showVariants, showDiff, t }: ICardProps): Rea
                                         />
                                     </Folded>
                                 </TableCell>
-                                <TableCell className={PROSE}>
+                                <TableCell className={PROSE} data-sel="en">
                                     <Folded folded={folded} onOpen={() => unfolded.toggle(id)}>
                                         <StoryText text={r.line.en} nickname={nickname} />
                                     </Folded>

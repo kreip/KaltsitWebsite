@@ -207,7 +207,7 @@ export function RuCell({ line, analysis, place, nickname, showVariants, showDiff
         </Button>
     );
     return (
-        <div className="group/cell flex flex-col gap-1">
+        <div className="group/cell flex flex-col gap-1" data-sel="ru">
             {history ? <LineHistoryDialog place={place} open={history} onOpenChange={setHistory} nickname={nickname} t={t} /> : null}
             <ApprovedVariant edits={edits} place={place} me={me} nickname={nickname} marks={marks("approved")} compareWith={showDiff ? line.ruGame : null} t={t} />
             {/* The actions hang over the game's text, under the approved variant: its line (who approved, Withdraw) stays in sight. */}
@@ -426,7 +426,7 @@ export function LinesTable({ storyId, lines, edits, outdated, me, label, showCn,
                         return (
                             <Fragment key={id}>
                                 {commands && filter === "all" ? <ServiceRow commands={commandsBetween(commands, previous, line.line)} columns={columns} nameOf={nameOf} t={t} /> : null}
-                                <TableRow id={`n-${i + 1}`} className={cn("scroll-mt-(--site-header-height) target:bg-primary/10", line.kind === "option" && "bg-primary/5")} data-line={line.line} data-kind={line.kind} data-status={line.status}>
+                                <TableRow id={`n-${i + 1}`} className={cn("scroll-mt-(--site-header-height) target:bg-primary/10", line.kind === "option" && "bg-primary/5")} data-line={line.line} data-kind={line.kind} data-status={line.status} data-place={`${storyId}|${line.line}|${line.part}`}>
                                     <TableCell className="py-1.5 align-top text-subtle-foreground text-xs tabular-nums leading-snug">
                                         <span className="flex items-center gap-1.5">
                                             {i + 1}
@@ -453,11 +453,11 @@ export function LinesTable({ storyId, lines, edits, outdated, me, label, showCn,
                                             t={t}
                                         />
                                     </TableCell>
-                                    <TableCell className={PROSE}>
+                                    <TableCell className={PROSE} data-sel="en">
                                         <StoryText text={line.en} nickname={nickname} quotes={quotesAt(lineEdits, placeOf(storyId, line))} />
                                     </TableCell>
                                     {showCn ? (
-                                        <TableCell className={PROSE}>
+                                        <TableCell className={PROSE} data-sel="cn">
                                             {line.speakerCn ? <span className="block text-muted-foreground text-xs">{line.speakerCn}</span> : null}
                                             {line.cn ? <span className="whitespace-pre-line">{line.cn.replaceAll("\\n", "\n")}</span> : null}
                                         </TableCell>

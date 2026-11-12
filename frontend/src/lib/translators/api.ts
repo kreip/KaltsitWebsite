@@ -20,6 +20,7 @@ import type { ExportResult } from "#/types/generated/ExportResult";
 import type { GameObject } from "#/types/generated/GameObject";
 import type { Glossary } from "#/types/generated/Glossary";
 import type { GlossaryLines } from "#/types/generated/GlossaryLines";
+import type { GlossarySuggestion } from "#/types/generated/GlossarySuggestion";
 import type { KeyPlaces } from "#/types/generated/KeyPlaces";
 import type { LineHistory } from "#/types/generated/LineHistory";
 import type { LoginResponse } from "#/types/generated/LoginResponse";
@@ -400,3 +401,48 @@ export const getObjectLinesFn = createServerFn({ method: "GET" })
 export function objectLinesQueryOptions(section: string, object: string) {
     return queryOptions({ queryKey: [...TRANSLATORS_QUERY_ROOT, "lines", "object", section, object], queryFn: () => getObjectLinesFn({ data: { section, object } }), staleTime: 5 * 60_000 });
 }
+
+// ---- "Suggest for the glossary": terms noticed while reading, for the lead.
+
+export const getSuggestionsFn = createServerFn({ method: "GET" }).handler(async (): Promise<GlossarySuggestion[]> => {
+    const res = await send("/translators/glossary/suggestions", "GET");
+    return (await res.json()) as GlossarySuggestion[];
+});
+
+/** The suggested terms, open first (under the glossary's key: a new one refreshes the list). */
+export function suggestionsQueryOptions() {
+    return queryOptions({ queryKey: [...TRANSLATORS_QUERY_ROOT, "glossary", "suggestions"], queryFn: () => getSuggestionsFn(), staleTime: 60_000 });
+}
+
+export interface ISuggestionInput {
+    en: string;
+    ru: string;
+    note: string | null;
+    /** The story line it was noticed in, if it was one, and that line's English. */
+    storyId: string | null;
+    line: number | null;
+    part: number | null;
+    sourceEn: string | null;
+}
+
+export const createSuggestionFn = createServerFn({ method: "POST" })
+    .inputValidator((d: ISuggestionInput) => d)
+    .handler(async ({ data }): Promise<EditCreated> => {
+        const res = await send("/translators/glossary/suggestions", "POST", data);
+        return (await res.json()) as EditCreated;
+    });
+
+/** The lead's decision: `accepted`, `declined`, or `open` to take it back. */
+export const decideSuggestionFn = createServerFn({ method: "POST" })
+    .inputValidator((d: { id: number; status: "open" | "accepted" | "declined" }) => d)
+    .handler(async ({ data }): Promise<null> => {
+        await send(`/translators/glossary/suggestions/${data.id}`, "PUT", { status: data.status });
+        return null;
+    });
+
+export const deleteSuggestionFn = createServerFn({ method: "POST" })
+    .inputValidator((d: { id: number }) => d)
+    .handler(async ({ data }): Promise<null> => {
+        await send(`/translators/glossary/suggestions/${data.id}`, "DELETE");
+        return null;
+    });

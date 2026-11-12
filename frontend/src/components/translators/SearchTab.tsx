@@ -169,7 +169,7 @@ function Results({ rows, edits, me, find, showVariants, showDiff, t }: IResultsP
                     const folded = long && !unfolded.has(String(id)) && editing?.id !== id;
                     const unfold = () => unfolded.toggle(String(id));
                     return (
-                        <TableRow key={id} data-status={r.line.status}>
+                        <TableRow key={id} data-status={r.line.status} data-place={`${r.place.storyId}|${r.place.line}|${r.place.part}`}>
                             <TableCell className="py-1.5 align-top text-subtle-foreground text-xs tabular-nums leading-snug">
                                 <span className="flex items-center gap-1.5">
                                     {i + 1}
@@ -208,7 +208,7 @@ function Results({ rows, edits, me, find, showVariants, showDiff, t }: IResultsP
                                     />
                                 </Folded>
                             </TableCell>
-                            <TableCell className={PROSE}>
+                            <TableCell className={PROSE} data-sel="en">
                                 <Folded folded={folded} onOpen={unfold}>
                                     <StoryText text={r.line.en} nickname={nickname} find={find} />
                                 </Folded>
@@ -293,11 +293,18 @@ export function SearchTab({ search, onSearch, only, lead }: ISearchTabProps): Re
         pushed.current = settled;
         if (settled !== (search.q ?? "")) onSearch({ ...search, q: settled || undefined });
     }, [settled, search, onSearch]);
+    // A query set from outside the box ("Find everywhere" on a selected word) fills the box.
+    const asked = search.q ?? "";
+    const shown = useRef(text);
+    shown.current = text;
+    useEffect(() => {
+        if (asked !== pushed.current && asked !== shown.current.trim()) setText(asked);
+    }, [asked]);
     const showVariants = search.variants !== false;
     const showDiff = search.diff === true;
     const q = search.q ?? "";
     const section = only ?? search.section;
-    const asked = q !== "" || section !== undefined || search.status !== undefined;
+    const filtered = q !== "" || section !== undefined || search.status !== undefined;
     return (
         <>
             <div className="flex flex-wrap items-end gap-4">
@@ -343,7 +350,7 @@ export function SearchTab({ search, onSearch, only, lead }: ISearchTabProps): Re
                 <Toggle id={ids.variants} checked={showVariants} onChange={(checked) => onSearch({ ...search, variants: checked ? undefined : false })} label={t("toggle.variants")} hint={t("toggle.variantsHint")} />
                 <Toggle id={ids.diff} checked={showDiff} onChange={(checked) => onSearch({ ...search, diff: checked || undefined })} label={t("toggle.diff")} hint={t("toggle.diffHint")} />
             </div>
-            {!asked ? (
+            {!filtered ? (
                 <Empty>
                     <EmptyHeader>
                         <EmptyTitle>{t("search.prompt")}</EmptyTitle>

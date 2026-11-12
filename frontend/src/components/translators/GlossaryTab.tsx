@@ -4,7 +4,9 @@
  * over the story (the sheet is never changed): how many lines hold the term,
  * the Russian the game uses for it, how consistent the lines are with the
  * glossary, its Chinese, and its lines on demand. Members can download it
- * again.
+ * again. Above the table: the terms members suggested for the glossary
+ * (SelectionMenu.tsx), for the lead to accept or decline; the sheet itself is
+ * never written from the site.
  *
  * Counting a term spelled the same as another (`Amiya`, `Amiya (Guard)`,
  * `Amiya (Medic)`): the story's English cannot tell them apart, so the lines
@@ -13,13 +15,14 @@
  */
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
-import { Check, ExternalLink, List, RefreshCw, X } from "lucide-react";
+import { Check, ExternalLink, List, RefreshCw, Trash2, Undo2, X } from "lucide-react";
 import type React from "react";
-import { useId, useMemo, useState } from "react";
+import { useEffect, useId, useMemo, useState } from "react";
 import { SearchField } from "#/components/SearchField";
 import { Alert, AlertDescription } from "#/components/ui/alert";
 import { Badge } from "#/components/ui/badge";
 import { Button } from "#/components/ui/button";
+import { Collapsible, CollapsiblePanel, CollapsibleTrigger } from "#/components/ui/collapsible";
 import { Dialog, DialogDescription, DialogHeader, DialogPanel, DialogPopup, DialogTitle, DialogTrigger } from "#/components/ui/dialog";
 import { Empty, EmptyHeader, EmptyTitle } from "#/components/ui/empty";
 import { Label } from "#/components/ui/label";
@@ -29,11 +32,15 @@ import { Skeleton } from "#/components/ui/skeleton";
 import { Spinner } from "#/components/ui/spinner";
 import { Switch } from "#/components/ui/switch";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "#/components/ui/table";
+import { toastManager } from "#/components/ui/toast";
 import { useFormatters, useT } from "#/lib/i18n";
 import type { TypedT } from "#/lib/i18n/messages";
-import { glossaryLinesQueryOptions, glossaryQueryOptions, refreshGlossaryFn, translatorsMeQueryOptions } from "#/lib/translators/api";
+import { decideSuggestionFn, deleteSuggestionFn, glossaryLinesQueryOptions, glossaryQueryOptions, refreshGlossaryFn, suggestionsQueryOptions, translatorsMeQueryOptions } from "#/lib/translators/api";
 import type { Glossary } from "#/types/generated/Glossary";
+import type { GlossarySuggestion } from "#/types/generated/GlossarySuggestion";
 import type { GlossaryTerm } from "#/types/generated/GlossaryTerm";
+import type { TranslatorsMe } from "#/types/generated/TranslatorsMe";
+import { isLead } from "./LineEdits";
 import { StoryText } from "./StoryText";
 import { useStoryNames } from "./storyNames";
 import type { messages } from "./translators.messages";
@@ -195,7 +202,107 @@ function TermLines({ term, t }: { term: GlossaryTerm; t: T }): React.ReactElemen
     );
 }
 
-export function GlossaryTab(): React.ReactElement {
+const STATUS_BADGE = { open: "info", accepted: "success", declined: "outline" } as const;
+
+/** One suggested term: what, by whom, where it was noticed, and the lead's decision. */
+function Suggestion({ s, me, t }: { s: GlossarySuggestion; me: TranslatorsMe; t: T }): React.ReactElement {
+    const f = useFormatters();
+    const queryClient = useQueryClient();
+    const nameOf = useStoryNames();
+    const done = { onSuccess: () => queryClient.invalidateQueries({ queryKey: suggestionsQueryOptions().queryKey }), onError: () => toastManager.add({ title: t("suggest.failed"), type: "error" }) };
+    const decide = useMutation({ mutationFn: (status: "open" | "accepted" | "declined") => decideSuggestionFn({ data: { id: s.id, status } }), ...done });
+    const remove = useMutation({ mutationFn: () => deleteSuggestionFn({ data: { id: s.id } }), ...done });
+    const story = s.storyId ? nameOf(s.storyId) : undefined;
+    const status = s.status === "accepted" || s.status === "declined" ? s.status : "open";
+    const busy = decide.isPending || remove.isPending;
+    return (
+        <li className="flex flex-col gap-0.5 border-s-2 ps-2 text-sm">
+            <span className="flex flex-wrap items-center gap-x-2">
+                <span className="font-medium">{s.en}</span>
+                <span className="text-subtle-foreground" aria-hidden="true">
+                    →
+                </span>
+                <span>{s.ru}</span>
+                <Badge variant={STATUS_BADGE[status]} size="sm">
+                    {t(`suggest.status.${status}` as "suggest.status.open")}
+                </Badge>
+            </span>
+            {s.note ? <span className="text-muted-foreground">{s.note}</span> : null}
+            <span className="text-subtle-foreground text-xs">
+                {t("suggest.by", { name: s.author.name, date: f.date(s.createdAt * 1000, { dateStyle: "medium" }) })}
+                {s.decidedBy ? ` · ${t("suggest.decidedBy", { name: s.decidedBy.name })}` : ""}
+            </span>
+            {s.sourceEn ? (
+                <span className="text-subtle-foreground text-xs">
+                    {story && s.storyId && s.ord !== null ? (
+                        <Link to="/translators" search={{ group: story.groupId, story: s.storyId }} hash={`n-${s.ord + 1}`} className="underline-offset-4 hover:underline">
+                            {t("places.item", { group: story.group, story: story.story, n: s.ord + 1 })}
+                        </Link>
+                    ) : null}
+                    {story && s.ord !== null ? ": " : ""}
+                    {s.sourceEn}
+                </span>
+            ) : null}
+            <span className="flex flex-wrap gap-1">
+                {isLead(me) && status === "open" ? (
+                    <>
+                        <Button variant="ghost" size="xs" onClick={() => decide.mutate("accepted")} disabled={busy}>
+                            <Check aria-hidden="true" />
+                            {t("suggest.accept")}
+                        </Button>
+                        <Button variant="ghost" size="xs" onClick={() => decide.mutate("declined")} disabled={busy}>
+                            <X aria-hidden="true" />
+                            {t("suggest.decline")}
+                        </Button>
+                    </>
+                ) : null}
+                {isLead(me) && status !== "open" ? (
+                    <Button variant="ghost" size="xs" onClick={() => decide.mutate("open")} disabled={busy}>
+                        <Undo2 aria-hidden="true" />
+                        {t("suggest.reopen")}
+                    </Button>
+                ) : null}
+                {s.author.id === me.userId || isLead(me) ? (
+                    <Button variant="ghost" size="xs" onClick={() => remove.mutate()} disabled={busy}>
+                        <Trash2 aria-hidden="true" />
+                        {t("suggest.delete")}
+                    </Button>
+                ) : null}
+            </span>
+        </li>
+    );
+}
+
+/** The terms suggested for the glossary, folded; open while any waits for the lead. */
+function Suggestions({ t }: { t: T }): React.ReactElement | null {
+    const query = useQuery(suggestionsQueryOptions());
+    const me = useQuery(translatorsMeQueryOptions());
+    const list = query.data ?? [];
+    const waiting = list.filter((s) => s.status === "open").length;
+    const [open, setOpen] = useState<boolean | null>(null);
+    if (!me.data || list.length === 0) return null;
+    return (
+        <Collapsible open={open ?? waiting > 0} onOpenChange={setOpen}>
+            <CollapsibleTrigger render={<Button variant="outline" size="sm" />}>{t("suggest.list", { count: list.length, waiting })}</CollapsibleTrigger>
+            <CollapsiblePanel className="flex flex-col gap-2 pt-3">
+                <p className="text-subtle-foreground text-xs">{t("suggest.listHint")}</p>
+                <ul className="flex flex-col gap-3">
+                    {list.map((s) => (
+                        <Suggestion key={s.id} s={s} me={me.data} t={t} />
+                    ))}
+                </ul>
+            </CollapsiblePanel>
+        </Collapsible>
+    );
+}
+
+export interface IGlossaryTabProps {
+    /** The text looked for, kept in the address ("Find in the glossary" on a selected word sets it). */
+    query: string;
+    onQuery: (query: string) => void;
+}
+
+export function GlossaryTab({ query: asked, onQuery }: IGlossaryTabProps): React.ReactElement {
     const t: T = useT("translators");
     const f = useFormatters();
     const ids = { sheet: useId(), sort: useId() };
@@ -205,7 +312,16 @@ export function GlossaryTab(): React.ReactElement {
         mutationFn: () => refreshGlossaryFn(),
         onSuccess: (data) => queryClient.setQueryData(glossaryQueryOptions().queryKey, data),
     });
-    const [search, setSearch] = useState("");
+    // The box filters at once; the address follows it, and a query set from outside fills the box.
+    const [search, setSearchText] = useState(asked);
+    const setSearch = (text: string) => {
+        setSearchText(text);
+        onQuery(text.trim());
+    };
+    // biome-ignore lint/correctness/useExhaustiveDependencies: only a change of the address moves the box
+    useEffect(() => {
+        if (asked !== search.trim()) setSearchText(asked);
+    }, [asked]);
     const [sheet, setSheet] = useState<string>(ALL);
     const [sort, setSort] = useState<SortKey>("sheet");
 
@@ -250,6 +366,8 @@ export function GlossaryTab(): React.ReactElement {
                     </Button>
                 </div>
             </div>
+
+            <Suggestions t={t} />
 
             <div className="flex flex-wrap items-end gap-4">
                 <SearchField className="w-full sm:w-80" value={search} onChange={setSearch} placeholder={t("glossary.search")} label={t("glossary.searchLabel")} clearLabel={t("glossary.clear")} />

@@ -40,6 +40,14 @@ pub fn router() -> OpenApiRouter<AppState> {
         .routes(routes!(routes::glossary))
         .routes(routes!(routes::glossary_lines))
         .routes(routes!(routes::refresh_glossary))
+        .routes(routes!(
+            glossary::suggest::list_suggestions,
+            glossary::suggest::create_suggestion
+        ))
+        .routes(routes!(
+            glossary::suggest::decide_suggestion,
+            glossary::suggest::delete_suggestion
+        ))
         .routes(routes!(routes::export))
         .routes(routes!(routes::export_archive))
         .routes(routes!(routes::mark_release, routes::list_releases))

@@ -27,6 +27,8 @@ export const Route = createFileRoute("/translators")({
         if (typeof search.q === "string" && search.q.trim()) out.q = search.q.trim();
         else if (typeof search.q === "number") out.q = String(search.q);
         if (on(search.whole)) out.whole = true;
+        if (typeof search.gq === "string" && search.gq.trim()) out.gq = search.gq.trim();
+        else if (typeof search.gq === "number") out.gq = String(search.gq);
         const section = SEARCH_SECTIONS.find((s) => s === search.section);
         if (section) out.section = section;
         const status = SEARCH_STATUSES.find((s) => s === search.status);

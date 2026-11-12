@@ -4,6 +4,7 @@
 
 pub mod matcher;
 pub mod parse;
+pub mod suggest;
 
 use std::sync::atomic::{AtomicBool, Ordering};
 
