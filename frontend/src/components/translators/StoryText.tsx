@@ -1,12 +1,20 @@
 /**
- * A story text in the translators' section: the story markup (italics,
- * colour, paragraphs) as the reader renders it, `{@nickname}` as a chip with
- * the signed-in member's nickname (the saved text keeps the token as it is),
- * the fragments quoted by comments highlighted, and what the search found.
+ * A text of the game in the translators' section, shown the way the game
+ * shows it, never with its tags spelled out: a game style in its ink, a term
+ * underlined with the game's explanation on hover, italics, bold, colour, a
+ * story's paragraphs; `{@nickname}` as a chip with the signed-in member's
+ * nickname (the saved text keeps the token as it is). The fragments quoted
+ * by comments and what the search found are highlighted.
  */
 import type React from "react";
 import { Badge } from "#/components/ui/badge";
-import { parseStoryText, type TextNode } from "#/lib/story/text";
+import { useLocale, useT } from "#/lib/i18n";
+import type { TypedT } from "#/lib/i18n/messages";
+import { type MarkNode, parseMarkup } from "./markup";
+import { type GameTags, spanLook, tagWords, termHint, useGameTags } from "./tags";
+import type { messages } from "./translators.messages";
+
+type T = TypedT<typeof messages>;
 
 /** A private-use character standing for `{@nickname}` while the markup is parsed. */
 const NICK = String.fromCharCode(0xe000);
@@ -93,20 +101,33 @@ function renderRun(value: string, nickname: string, quotes: readonly string[], k
     return out;
 }
 
-function renderNodes(nodes: TextNode[], nickname: string, quotes: readonly string[], prefix: string, find?: IFind | null): React.ReactNode[] {
+interface IRender {
+    nickname: string;
+    quotes: readonly string[];
+    find?: IFind | null;
+    tags: GameTags;
+    locale: string;
+    t: T;
+}
+
+function renderNodes(nodes: readonly MarkNode[], r: IRender, prefix: string): React.ReactNode[] {
     return nodes.map((n, i) => {
         const key = `${prefix}${i}`;
-        if (n.kind === "text") return <span key={key}>{renderRun(n.value, nickname, quotes, key, find)}</span>;
-        const children = renderNodes(n.children, nickname, quotes, `${key}.`, find);
-        if (n.kind === "inline") return n.tag === "i" ? <em key={key}>{children}</em> : n.tag === "b" ? <strong key={key}>{children}</strong> : <u key={key}>{children}</u>;
-        if (n.kind === "color")
+        if (n.kind === "text") return <span key={key}>{renderRun(n.value, r.nickname, r.quotes, key, r.find)}</span>;
+        // A substitution the game fills in (a number of a skill's level): as written.
+        if (n.kind === "token") return <span key={key}>{n.raw}</span>;
+        const children = renderNodes(n.children, r, `${key}.`);
+        if (n.type === "paragraph")
             return (
-                <span key={key} style={{ color: n.color }}>
+                <span key={key} className="block">
                     {children}
                 </span>
             );
+        const look = spanLook(n);
+        // A term carries what the game explains about it; any other span says what it is.
+        const title = n.type === "term" ? (termHint(n.name, r.tags, r.locale) ?? tagWords(n, r.tags, r.t, r.locale)) : n.type === "style" ? tagWords(n, r.tags, r.t, r.locale) : undefined;
         return (
-            <span key={key} className="block">
+            <span key={key} className={look.className} style={look.color ? { color: look.color } : undefined} title={title} data-tag={n.name}>
                 {children}
             </span>
         );
@@ -124,7 +145,10 @@ export interface IStoryTextProps {
 }
 
 export function StoryText({ text, nickname, quotes = [], find = null }: IStoryTextProps): React.ReactElement {
+    const t: T = useT("translators");
+    const tags = useGameTags();
+    const locale = useLocale();
     // A quote is the selected text, where the chip read as the nickname.
     const marks = quotes.map((q) => q.replaceAll(nickname, NICK));
-    return <span className="whitespace-pre-line">{renderNodes(parseStoryText(prepare(text)), nickname, marks, "t", find)}</span>;
+    return <span className="whitespace-pre-line">{renderNodes(parseMarkup(prepare(text)), { nickname, quotes: marks, find, tags, locale, t }, "t")}</span>;
 }

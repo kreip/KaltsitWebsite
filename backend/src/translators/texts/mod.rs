@@ -10,6 +10,7 @@ pub mod db;
 pub mod dto;
 pub mod gamedata;
 pub mod routes;
+pub mod tags;
 
 use std::collections::HashMap;
 use std::path::Path;
@@ -30,6 +31,7 @@ pub fn router() -> OpenApiRouter<AppState> {
         .routes(routes!(routes::search_lines))
         .routes(routes!(routes::objects))
         .routes(routes!(routes::object_lines))
+        .routes(routes!(routes::game_tags))
 }
 
 /// One entry of the list.
@@ -64,6 +66,8 @@ pub struct TextPlace {
 pub struct Texts {
     pub rows: Vec<TextRow>,
     pub places: Vec<TextPlace>,
+    /// The markup tags the texts use (see [`tags`]).
+    pub tags: Vec<tags::GameTag>,
 }
 
 /// What the search looks in: without tags, lower case, ё as е.
@@ -304,9 +308,11 @@ pub fn collect(
         });
         b.tag(i, OTHER);
     }
+    let tags = tags::collect(excel_dir, matcher, &b.rows);
     Texts {
         rows: b.rows,
         places: b.places,
+        tags,
     }
 }
 

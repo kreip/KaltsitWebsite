@@ -1927,6 +1927,110 @@ export const messages = {
         text: "Delete",
         description: "Button deleting a glossary suggestion (its author or the lead).",
     },
+    "tag.term": {
+        text: "{name}",
+        description: "A game term tag in words (the term's name as the game shows it, e.g. Stun), on a button of the editor and in a tooltip.",
+    },
+    "tag.termCode": {
+        text: "term {code}",
+        description: "A game term tag whose name is not known: by its code.",
+    },
+    "tag.style.vup": {
+        text: "value raised",
+        description: "A game style tag in words: marks a number that goes up (blue in the game).",
+    },
+    "tag.style.vdown": {
+        text: "value lowered",
+        description: "A game style tag in words: marks a number that goes down (red in the game).",
+    },
+    "tag.style.rem": {
+        text: "remark",
+        description: "A game style tag in words: a side remark in a description (orange in the game).",
+    },
+    "tag.style.kw": {
+        text: "keyword",
+        description: "A game style tag in words: a keyword.",
+    },
+    "tag.style.talpu": {
+        text: "potential bonus",
+        description: "A game style tag in words: the part of a talent a potential adds.",
+    },
+    "tag.style.item": {
+        text: "stage object",
+        description: "A game style tag in words: the name of a stage's object or device.",
+    },
+    "tag.style.condition": {
+        text: "stage condition",
+        description: "A game style tag in words: the heading of a stage's special conditions.",
+    },
+    "tag.style.get": {
+        text: "gained",
+        description: "A game style tag in words: something gained.",
+    },
+    "tag.style.lose": {
+        text: "lost",
+        description: "A game style tag in words: something lost.",
+    },
+    "tag.style.other": {
+        text: "highlight {code}",
+        description: "A game style tag with no name of its own: by its code.",
+    },
+    "tag.inline.i": {
+        text: "italic",
+        description: "Unity's <i> tag in words.",
+    },
+    "tag.inline.b": {
+        text: "bold",
+        description: "Unity's <b> tag in words.",
+    },
+    "tag.inline.u": {
+        text: "underlined",
+        description: "Unity's <u> tag in words.",
+    },
+    "tag.color": {
+        text: "colour {color}",
+        description: "Unity's <color=…> tag in words.",
+    },
+    "tag.size": {
+        text: "size",
+        description: "Unity's <size=…> tag in words.",
+    },
+    "tag.paragraph": {
+        text: "paragraph",
+        description: "A story's paragraph span in words.",
+    },
+    "tag.token.nickname": {
+        text: "the Doctor's name",
+        description: "The {@nickname} substitution in words.",
+    },
+    "tag.token.value": {
+        text: "value {name}",
+        description: "A substitution the game fills in, in words.",
+    },
+    "editor.wrap": {
+        text: "Wrap the selected text: {tag}",
+        description: "Tooltip of a tag's button under the editor.",
+    },
+    "editor.unwrap": {
+        text: "Remove the tag: {tag}",
+        description: "Button under the editor while the cursor is inside a wrapped span: removes both halves of the tag, the text stays.",
+    },
+    "editor.wrapHint": {
+        text: "Select a word and press a tag.",
+        description: "Hint beside the tags' buttons under the editor.",
+    },
+    "editor.tagsDiffer": {
+        text: "The tags are not the original's.",
+        description: "Warning under the editor when the translation's markup tags differ from the English's.",
+    },
+    "editor.tagsMissing": {
+        text: "Missing: {tags}.",
+        description: "Part of the tags warning under the editor: tags of the English the translation lacks.",
+    },
+    "editor.tagsExtra": {
+        text: "Extra: {tags}.",
+        description: "Part of the tags warning under the editor: tags the English does not have.",
+    },
 } satisfies MessageMap;
 
 export const { keys } = defineMessages({ namespace, messages });

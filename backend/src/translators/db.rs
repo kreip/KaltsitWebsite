@@ -47,6 +47,7 @@ const MIGRATIONS: &[(&str, &str)] = &[
         "t015_glossary_suggestions",
         include_str!("migrations/t015_glossary_suggestions.sql"),
     ),
+    ("t016_tags", include_str!("migrations/t016_tags.sql")),
 ];
 
 pub async fn migrate(pool: &PgPool) -> Result<(), sqlx::Error> {

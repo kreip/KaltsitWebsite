@@ -18,6 +18,7 @@ import type { EditPlace } from "#/types/generated/EditPlace";
 import type { EditRows } from "#/types/generated/EditRows";
 import type { ExportResult } from "#/types/generated/ExportResult";
 import type { GameObject } from "#/types/generated/GameObject";
+import type { GameTag } from "#/types/generated/GameTag";
 import type { Glossary } from "#/types/generated/Glossary";
 import type { GlossaryLines } from "#/types/generated/GlossaryLines";
 import type { GlossarySuggestion } from "#/types/generated/GlossarySuggestion";
@@ -446,3 +447,15 @@ export const deleteSuggestionFn = createServerFn({ method: "POST" })
         await send(`/translators/glossary/suggestions/${data.id}`, "DELETE");
         return null;
     });
+
+// ---- The game's markup tags (names, colours, a term's explanation).
+
+export const getGameTagsFn = createServerFn({ method: "GET" }).handler(async (): Promise<GameTag[]> => {
+    const res = await send("/translators/tags", "GET");
+    return (await res.json()) as GameTag[];
+});
+
+/** Every tag of the game's texts; changes only with an import. */
+export function gameTagsQueryOptions() {
+    return queryOptions({ queryKey: [...TRANSLATORS_QUERY_ROOT, "tags"], queryFn: () => getGameTagsFn(), staleTime: 60 * 60_000 });
+}

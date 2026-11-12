@@ -307,3 +307,29 @@ pub async fn search_lines(
         indexed,
     }))
 }
+
+/// The markup tags of the game's texts: the style spans with their colour in
+/// the game, the terms with the name and the explanation the game shows (in
+/// English and in the pack's Russian), each with how many texts use it; the
+/// most used first. Members only (and the internal service key).
+#[utoipa::path(
+    get,
+    path = "/translators/tags",
+    tag = "translators",
+    security(("bearer_auth" = [])),
+    responses(
+        (status = 200, description = "Every tag, the most used first.", body = Vec<super::tags::GameTag>),
+        (status = 401, response = crate::app::openapi::responses::Unauthorized),
+        (status = 403, response = crate::app::openapi::responses::Forbidden),
+        (status = 500, response = crate::app::openapi::responses::InternalError)
+    )
+)]
+pub async fn game_tags(
+    State(state): State<AppState>,
+    auth: MaybeAuthUser,
+) -> Result<Json<Vec<super::tags::GameTag>>, ApiError> {
+    if !auth.0.as_ref().is_some_and(|u| u.user_id == "service") {
+        require_member(&state, &auth).await?;
+    }
+    Ok(Json(db::tags(&state.db, SERVER).await?))
+}

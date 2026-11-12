@@ -23,7 +23,7 @@ import { Skeleton } from "#/components/ui/skeleton";
 import { Spinner } from "#/components/ui/spinner";
 import { Textarea } from "#/components/ui/textarea";
 import { toastManager } from "#/components/ui/toast";
-import { useFormatters } from "#/lib/i18n";
+import { useFormatters, useLocale } from "#/lib/i18n";
 import type { TypedT } from "#/lib/i18n/messages";
 import { type AgreeVariant, createCommentFn, createProposalFn, deleteCommentFn, deleteProposalFn, EDIT_QUERY_ROOTS, type ProposalSource, placesQueryOptions, resolveCommentFn, setAgreementFn, setApprovalFn } from "#/lib/translators/api";
 import { cn } from "#/lib/utils";
@@ -35,11 +35,13 @@ import type { OutdatedEdit } from "#/types/generated/OutdatedEdit";
 import type { Proposal } from "#/types/generated/Proposal";
 import type { TranslatorLine } from "#/types/generated/TranslatorLine";
 import type { TranslatorsMe } from "#/types/generated/TranslatorsMe";
+import { tagDiff, tagPairs, tokensIn } from "./markup";
 import { GamePlace } from "./PlaceWords";
 import { StoryText } from "./StoryText";
 import { useStoryNames } from "./storyNames";
 import { TextDiff } from "./TextDiff";
-import { type ITokenLabels, paletteOf, TokenEditor } from "./TokenEditor";
+import { type ITagButton, type ITokenLabels, type TagLookup, TokenEditor } from "./TokenEditor";
+import { spanLook, tagOf, tagWords, useGameTags } from "./tags";
 import type { messages } from "./translators.messages";
 
 type T = TypedT<typeof messages>;
@@ -695,7 +697,50 @@ function PlacesNote({ line, place, nickname, t }: { line: TranslatorLine; place:
 
 /** The token editor's words. */
 export function tokenLabels(t: T): ITokenLabels {
-    return { insertNickname: t("editor.insertNickname"), insertToken: (token) => t("editor.insertToken", { token }), remove: t("editor.removeToken") };
+    return {
+        insertNickname: t("editor.insertNickname"),
+        insertToken: (token) => t("editor.insertToken", { token }),
+        remove: t("editor.removeToken"),
+        wrap: (tag) => t("editor.wrap", { tag }),
+        unwrap: (tag) => t("editor.unwrap", { tag }),
+        wrapHint: t("editor.wrapHint"),
+    };
+}
+
+/** What the editor of a line offers and knows: the substitutions and the tags of the line's English, each tag in words and in its look. */
+export function useEditorTools(en: string, t: T): { palette: string[]; tags: ITagButton[]; lookup: TagLookup; labels: ITokenLabels; words: (name: string) => string } {
+    const game = useGameTags();
+    const locale = useLocale();
+    const lookup: TagLookup = (open) => {
+        const tag = tagOf(open);
+        return { look: spanLook(tag), label: tagWords(tag, game, t, locale) };
+    };
+    const pairs = tagPairs(en);
+    return {
+        palette: tokensIn(en),
+        tags: pairs.map((pair) => ({ open: pair.open, close: pair.close, ...lookup(pair.open) })),
+        lookup,
+        labels: tokenLabels(t),
+        // A tag of a diff (`@ba.vup`, `i`, `color`) in words.
+        words: (name) => {
+            const pair = pairs.find((x) => x.name === name);
+            return pair ? lookup(pair.open).label : name.startsWith("@") || name.startsWith("$") ? lookup(`<${name}>`).label : name === "color" || name === "size" ? lookup(`<${name}=>`).label : lookup(`<${name}>`).label;
+        },
+    };
+}
+
+/** "The tags are not the original's", under an editor: what is missing and what is extra, in words. Nothing when they agree. */
+export function TagsWarning({ en, text, words, t }: { en: string; text: string; words: (name: string) => string; t: T }): React.ReactElement | null {
+    const diff = tagDiff(en, text);
+    if (diff.missing.length + diff.extra.length === 0) return null;
+    const list = (names: readonly string[]) => [...new Set(names)].map(words).join(", ");
+    return (
+        <span className="text-warning-foreground text-xs">
+            {t("editor.tagsDiffer")}
+            {diff.missing.length > 0 ? ` ${t("editor.tagsMissing", { tags: list(diff.missing) })}` : ""}
+            {diff.extra.length > 0 ? ` ${t("editor.tagsExtra", { tags: list(diff.extra) })}` : ""}
+        </span>
+    );
 }
 
 interface IEditorProps {
@@ -710,12 +755,13 @@ interface IEditorProps {
     t: T;
 }
 
-/** The in-row editor of my proposal: Ctrl+Enter saves, Esc cancels; `{@nickname}` is one chip. */
+/** The in-row editor of my proposal: Ctrl+Enter saves, Esc cancels; a substitution is one chip, a tag a span as in the game (TokenEditor.tsx). */
 export function ProposalEditor({ line, place, initial, source, context, nickname, onClose, t }: IEditorProps): React.ReactElement {
     const id = useId();
     const hintId = useId();
     const [text, setText] = useState(initial);
     const [asking, setAsking] = useState(false);
+    const tools = useEditorTools(line.en, t);
     const save = useEditMutation((c: { context: boolean; confirmMany: boolean }) => createProposalFn({ data: { place, text, source, context: c.context, confirmMany: c.confirmMany } }), t("edit.failedSave"));
     const clean = cleanText(text);
     const sameAsGame = line.ruGame !== null && clean === cleanText(line.ruGame);
@@ -734,7 +780,8 @@ export function ProposalEditor({ line, place, initial, source, context, nickname
             <label htmlFor={id} className="text-subtle-foreground text-xs">
                 {source === "own" ? t("editor.label") : t(`editor.label.${source}` as "editor.label.sova")}
             </label>
-            <TokenEditor id={id} initial={initial} nickname={nickname} palette={paletteOf(line.en)} onChange={setText} onSubmit={submit} onCancel={onClose} labels={tokenLabels(t)} describedBy={hintId} />
+            <TokenEditor id={id} initial={initial} nickname={nickname} palette={tools.palette} tags={tools.tags} lookup={tools.lookup} onChange={setText} onSubmit={submit} onCancel={onClose} labels={tools.labels} describedBy={hintId} />
+            <TagsWarning en={line.en} text={text} words={tools.words} t={t} />
             <span id={hintId} className="text-subtle-foreground text-xs">
                 {t("save.proposalOnly")}
             </span>

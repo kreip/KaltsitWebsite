@@ -24,11 +24,11 @@ import { deleteProposalFn, editsQueryOptions, proposalVersionsQueryOptions, rewr
 import type { EditRow } from "#/types/generated/EditRow";
 import type { TranslatorsMe } from "#/types/generated/TranslatorsMe";
 import { ExportDialog } from "./ExportDialog";
-import { CONFIRM_PLACES, cleanText, exportsForGame, isLead, marksReleases, SaveDialog, tokenLabels, useEditMutation } from "./LineEdits";
+import { CONFIRM_PLACES, cleanText, exportsForGame, isLead, marksReleases, SaveDialog, TagsWarning, useEditMutation, useEditorTools } from "./LineEdits";
 import { StoryText } from "./StoryText";
 import { useStoryNames } from "./storyNames";
 import { TextDiff } from "./TextDiff";
-import { paletteOf, TokenEditor } from "./TokenEditor";
+import { TokenEditor } from "./TokenEditor";
 import type { messages } from "./translators.messages";
 import { plainText, TEXT_PLACE } from "./where";
 
@@ -103,6 +103,7 @@ function Rewrite({ row, nickname, onClose, t }: { row: EditRow; nickname: string
     const id = useId();
     const [text, setText] = useState(row.proposal.text);
     const [asking, setAsking] = useState(false);
+    const tools = useEditorTools(row.en, t);
     const save = useEditMutation((confirmMany: boolean) => rewriteProposalFn({ data: { id: row.proposal.id, text, confirmMany } }), t("edit.failedSave"));
     const clean = cleanText(text);
     const sameAsGame = row.ruGame !== null && clean === cleanText(row.ruGame);
@@ -118,7 +119,8 @@ function Rewrite({ row, nickname, onClose, t }: { row: EditRow; nickname: string
             <label htmlFor={id} className="text-subtle-foreground text-xs">
                 {t("editor.rewrite")}
             </label>
-            <TokenEditor id={id} initial={row.proposal.text} nickname={nickname} palette={paletteOf(row.en)} onChange={setText} onSubmit={submit} onCancel={onClose} labels={tokenLabels(t)} />
+            <TokenEditor id={id} initial={row.proposal.text} nickname={nickname} palette={tools.palette} tags={tools.tags} lookup={tools.lookup} onChange={setText} onSubmit={submit} onCancel={onClose} labels={tools.labels} />
+            <TagsWarning en={row.en} text={text} words={tools.words} t={t} />
             <span className="text-subtle-foreground text-xs">{t("save.proposalOnly")}</span>
             {sameAsGame ? <span className="text-subtle-foreground text-xs">{t("editor.sameAsGame")}</span> : null}
             {several ? <span className="text-warning-foreground text-xs">{t("places.note", { count: row.places - 1 })}</span> : null}

@@ -14610,6 +14610,44 @@
         ]
       }
     },
+    "/api/translators/tags": {
+      "get": {
+        "tags": [
+          "translators"
+        ],
+        "summary": "The markup tags of the game's texts: the style spans with their colour in\nthe game, the terms with the name and the explanation the game shows (in\nEnglish and in the pack's Russian), each with how many texts use it; the\nmost used first. Members only (and the internal service key).",
+        "operationId": "game_tags",
+        "responses": {
+          "200": {
+            "description": "Every tag, the most used first.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/GameTag"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        },
+        "security": [
+          {
+            "bearer_auth": []
+          }
+        ]
+      }
+    },
     "/api/translators/texts": {
       "get": {
         "tags": [
@@ -25512,6 +25550,63 @@
           "skill_index": {
             "type": "integer",
             "format": "int32"
+          }
+        }
+      },
+      "GameTag": {
+        "type": "object",
+        "description": "One tag of the game's markup.",
+        "required": [
+          "tag",
+          "kind",
+          "uses"
+        ],
+        "properties": {
+          "color": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "A style's colour in the game (`#0098DC`), when the game's table has it."
+          },
+          "descriptionEn": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "A term's explanation, and in the pack's Russian."
+          },
+          "descriptionRu": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "kind": {
+            "type": "string",
+            "description": "`style` or `term`."
+          },
+          "nameEn": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "A term's name as the game shows it, and in the pack's Russian."
+          },
+          "nameRu": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "tag": {
+            "type": "string",
+            "description": "With its sigil: `@ba.vup` (a style span), `$ba.stun` (a term)."
+          },
+          "uses": {
+            "type": "integer",
+            "format": "int32",
+            "description": "Texts whose English holds it."
           }
         }
       },

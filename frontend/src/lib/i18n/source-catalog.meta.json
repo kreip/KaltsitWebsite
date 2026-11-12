@@ -1,6 +1,6 @@
 {
     "generatedBy": "bun run i18n:extract",
-    "generatedAt": "2026-11-12T01:21:40.709Z",
+    "generatedAt": "2026-11-12T01:47:49.177Z",
     "entries": [
         {
             "key": "admin.home.access.everyList",
@@ -55203,10 +55203,60 @@
             "placeholders": []
         },
         {
+            "key": "translators.editor.tagsDiffer",
+            "namespace": "translators",
+            "source_text": "The tags are not the original's.",
+            "description": "Warning under the editor when the translation's markup tags differ from the English's.",
+            "placeholders": []
+        },
+        {
+            "key": "translators.editor.tagsExtra",
+            "namespace": "translators",
+            "source_text": "Extra: {tags}.",
+            "description": "Part of the tags warning under the editor: tags the English does not have.",
+            "placeholders": [
+                "tags"
+            ]
+        },
+        {
+            "key": "translators.editor.tagsMissing",
+            "namespace": "translators",
+            "source_text": "Missing: {tags}.",
+            "description": "Part of the tags warning under the editor: tags of the English the translation lacks.",
+            "placeholders": [
+                "tags"
+            ]
+        },
+        {
+            "key": "translators.editor.unwrap",
+            "namespace": "translators",
+            "source_text": "Remove the tag: {tag}",
+            "description": "Button under the editor while the cursor is inside a wrapped span: removes both halves of the tag, the text stays.",
+            "placeholders": [
+                "tag"
+            ]
+        },
+        {
             "key": "translators.editor.wholeEntry",
             "namespace": "translators",
             "source_text": "All its lines are saved together.",
             "description": "Under the editor of a multi-line story text.",
+            "placeholders": []
+        },
+        {
+            "key": "translators.editor.wrap",
+            "namespace": "translators",
+            "source_text": "Wrap the selected text: {tag}",
+            "description": "Tooltip of a tag's button under the editor.",
+            "placeholders": [
+                "tag"
+            ]
+        },
+        {
+            "key": "translators.editor.wrapHint",
+            "namespace": "translators",
+            "source_text": "Select a word and press a tag.",
+            "description": "Hint beside the tags' buttons under the editor.",
             "placeholders": []
         },
         {
@@ -57578,6 +57628,156 @@
             "source_text": "Story",
             "description": "Tab of the translators' section: chapter, story and its lines.",
             "placeholders": []
+        },
+        {
+            "key": "translators.tag.color",
+            "namespace": "translators",
+            "source_text": "colour {color}",
+            "description": "Unity's <color=…> tag in words.",
+            "placeholders": [
+                "color"
+            ]
+        },
+        {
+            "key": "translators.tag.inline.b",
+            "namespace": "translators",
+            "source_text": "bold",
+            "description": "Unity's <b> tag in words.",
+            "placeholders": []
+        },
+        {
+            "key": "translators.tag.inline.i",
+            "namespace": "translators",
+            "source_text": "italic",
+            "description": "Unity's <i> tag in words.",
+            "placeholders": []
+        },
+        {
+            "key": "translators.tag.inline.u",
+            "namespace": "translators",
+            "source_text": "underlined",
+            "description": "Unity's <u> tag in words.",
+            "placeholders": []
+        },
+        {
+            "key": "translators.tag.paragraph",
+            "namespace": "translators",
+            "source_text": "paragraph",
+            "description": "A story's paragraph span in words.",
+            "placeholders": []
+        },
+        {
+            "key": "translators.tag.size",
+            "namespace": "translators",
+            "source_text": "size",
+            "description": "Unity's <size=…> tag in words.",
+            "placeholders": []
+        },
+        {
+            "key": "translators.tag.style.condition",
+            "namespace": "translators",
+            "source_text": "stage condition",
+            "description": "A game style tag in words: the heading of a stage's special conditions.",
+            "placeholders": []
+        },
+        {
+            "key": "translators.tag.style.get",
+            "namespace": "translators",
+            "source_text": "gained",
+            "description": "A game style tag in words: something gained.",
+            "placeholders": []
+        },
+        {
+            "key": "translators.tag.style.item",
+            "namespace": "translators",
+            "source_text": "stage object",
+            "description": "A game style tag in words: the name of a stage's object or device.",
+            "placeholders": []
+        },
+        {
+            "key": "translators.tag.style.kw",
+            "namespace": "translators",
+            "source_text": "keyword",
+            "description": "A game style tag in words: a keyword.",
+            "placeholders": []
+        },
+        {
+            "key": "translators.tag.style.lose",
+            "namespace": "translators",
+            "source_text": "lost",
+            "description": "A game style tag in words: something lost.",
+            "placeholders": []
+        },
+        {
+            "key": "translators.tag.style.other",
+            "namespace": "translators",
+            "source_text": "highlight {code}",
+            "description": "A game style tag with no name of its own: by its code.",
+            "placeholders": [
+                "code"
+            ]
+        },
+        {
+            "key": "translators.tag.style.rem",
+            "namespace": "translators",
+            "source_text": "remark",
+            "description": "A game style tag in words: a side remark in a description (orange in the game).",
+            "placeholders": []
+        },
+        {
+            "key": "translators.tag.style.talpu",
+            "namespace": "translators",
+            "source_text": "potential bonus",
+            "description": "A game style tag in words: the part of a talent a potential adds.",
+            "placeholders": []
+        },
+        {
+            "key": "translators.tag.style.vdown",
+            "namespace": "translators",
+            "source_text": "value lowered",
+            "description": "A game style tag in words: marks a number that goes down (red in the game).",
+            "placeholders": []
+        },
+        {
+            "key": "translators.tag.style.vup",
+            "namespace": "translators",
+            "source_text": "value raised",
+            "description": "A game style tag in words: marks a number that goes up (blue in the game).",
+            "placeholders": []
+        },
+        {
+            "key": "translators.tag.term",
+            "namespace": "translators",
+            "source_text": "{name}",
+            "description": "A game term tag in words (the term's name as the game shows it, e.g. Stun), on a button of the editor and in a tooltip.",
+            "placeholders": [
+                "name"
+            ]
+        },
+        {
+            "key": "translators.tag.termCode",
+            "namespace": "translators",
+            "source_text": "term {code}",
+            "description": "A game term tag whose name is not known: by its code.",
+            "placeholders": [
+                "code"
+            ]
+        },
+        {
+            "key": "translators.tag.token.nickname",
+            "namespace": "translators",
+            "source_text": "the Doctor's name",
+            "description": "The {@nickname} substitution in words.",
+            "placeholders": []
+        },
+        {
+            "key": "translators.tag.token.value",
+            "namespace": "translators",
+            "source_text": "value {name}",
+            "description": "A substitution the game fills in, in words.",
+            "placeholders": [
+                "name"
+            ]
         },
         {
             "key": "translators.terms.found",

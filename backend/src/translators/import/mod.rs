@@ -514,6 +514,7 @@ pub async fn store(
         qb.build().execute(&mut *tx).await?;
     }
     crate::translators::texts::db::store(&mut tx, server, &texts.rows, &texts.places).await?;
+    crate::translators::texts::db::store_tags(&mut tx, server, &texts.tags).await?;
     sqlx::query(
         "INSERT INTO translators.imports (server, started_at, summary) VALUES ($1, $2, $3)",
     )

@@ -86,6 +86,47 @@ pub async fn store(
     Ok(())
 }
 
+/// Replace the server's list of markup tags inside the import's transaction.
+pub async fn store_tags(
+    tx: &mut Transaction<'_, Postgres>,
+    server: &str,
+    tags: &[super::tags::GameTag],
+) -> Result<(), sqlx::Error> {
+    sqlx::query("DELETE FROM translators.tags WHERE server = $1")
+        .bind(server)
+        .execute(&mut **tx)
+        .await?;
+    for chunk in tags.chunks(2_000) {
+        let mut qb: QueryBuilder<Postgres> = QueryBuilder::new(
+            "INSERT INTO translators.tags (server, tag, kind, color, name_en, name_ru, description_en, description_ru, uses) ",
+        );
+        qb.push_values(chunk, |mut b, t| {
+            b.push_bind(server)
+                .push_bind(&t.tag)
+                .push_bind(&t.kind)
+                .push_bind(&t.color)
+                .push_bind(&t.name_en)
+                .push_bind(&t.name_ru)
+                .push_bind(&t.description_en)
+                .push_bind(&t.description_ru)
+                .push_bind(t.uses);
+        });
+        qb.build().execute(&mut **tx).await?;
+    }
+    Ok(())
+}
+
+/// The game's markup tags, the most used first.
+pub async fn tags(pool: &PgPool, server: &str) -> Result<Vec<super::tags::GameTag>, sqlx::Error> {
+    sqlx::query_as(
+        "SELECT tag, kind, color, name_en, name_ru, description_en, description_ru, uses
+         FROM translators.tags WHERE server = $1 ORDER BY uses DESC, tag",
+    )
+    .bind(server)
+    .fetch_all(pool)
+    .await
+}
+
 /// `%`, `_` and `\` of a query taken literally by LIKE.
 fn like(q: &str) -> String {
     let mut out = String::with_capacity(q.len() + 2);

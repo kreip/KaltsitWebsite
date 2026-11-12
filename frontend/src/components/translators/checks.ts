@@ -6,6 +6,7 @@
  */
 import type { MissingTerm } from "#/types/generated/MissingTerm";
 import type { TranslatorLine } from "#/types/generated/TranslatorLine";
+import { sameTags, TOKEN_SOURCE } from "./markup";
 
 /** "Noticeably longer than in the game": both more than this share longer… */
 export const LONGER_SHARE = 0.15;
@@ -19,7 +20,7 @@ export type Address = "ты" | "вы";
 export interface IVariantCheck {
     /** Glossary terms whose form the text lacks. */
     glossary: readonly MissingTerm[];
-    /** The text's markup tags differ from the English's. */
+    /** The text's markup tags are not the English's: a span of some tag is missing or extra (`markup.ts`, `tagDiff`). */
     tags: boolean;
     /** Substitutions (`{0}`, `{@nickname}`) missing from the text or not in the English. */
     placeholders: string[];
@@ -40,24 +41,15 @@ function plainBreaks(s: string): string {
 function visible(s: string): string {
     return plainBreaks(s)
         .replace(/<[^<>]*>/g, "")
-        .replace(/\{@?[A-Za-z0-9_]+\}/g, "Доктор");
-}
-
-/** A tag's kind, so `<color=#fff>` and `<color=#000>` count alike: `i`, `/i`, `color`, `/color`, `@tu.kw`, `/`. */
-function tagKinds(s: string): string[] {
-    return [...s.matchAll(/<(\/?)([@A-Za-z][^=<>\s]*|)(?:=[^<>]*)?>/g)].map((m) => `${m[1]}${m[2].toLowerCase()}`).sort();
+        .replace(new RegExp(TOKEN_SOURCE, "g"), "Доктор");
 }
 
 function tokens(s: string): string[] {
-    return (s.match(/\{@?[A-Za-z0-9_]+\}/g) ?? []).map((t) => t.toLowerCase()).sort();
+    return (s.match(new RegExp(TOKEN_SOURCE, "g")) ?? []).map((t) => t.toLowerCase()).sort();
 }
 
 function breaks(s: string): number {
     return plainBreaks(s).split("\n").length - 1;
-}
-
-function sameList(a: readonly string[], b: readonly string[]): boolean {
-    return a.length === b.length && a.every((x, i) => x === b[i]);
 }
 
 /** Tokens in one list and not the other (each extra copy counts). */
@@ -123,7 +115,7 @@ export function checkVariant(text: string, variant: string, line: TranslatorLine
     const own = addressOf(text);
     return {
         glossary: line.variantGlossary.find((v) => v.variant === variant)?.missing ?? [],
-        tags: !sameList(tagKinds(line.en), tagKinds(text)),
+        tags: !sameTags(line.en, text),
         placeholders: [...difference(enTokens, ruTokens), ...difference(ruTokens, enTokens)],
         newlines: enBreaks === ruBreaks ? null : { en: enBreaks, ru: ruBreaks },
         longer,
