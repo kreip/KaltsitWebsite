@@ -232,7 +232,7 @@
     "checks.recommendedHint": "Лучший вариант без ошибок.",
     "checks.glossaryHint": "Нет формы глоссария: {terms}",
     "checks.tags": "теги",
-    "checks.tagsHint": "Курсив или цвет не как в английском.",
+    "checks.tagsHint": "Теги (цвет, термин, курсив) не как в английском.",
     "checks.placeholdersHint": "Подстановка ({0}, ник) не как в английском.",
     "checks.newlines": "переносы {ru} / {en}",
     "checks.newlinesHint": "Переносов строки: здесь {ru}, в английском {en}.",

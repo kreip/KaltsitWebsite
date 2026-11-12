@@ -864,7 +864,7 @@ export const messages = {
         description: "Short mark: the variant's markup tags (italics, colour) differ from the English.",
     },
     "checks.tagsHint": {
-        text: "Italics or colour differ from the English.",
+        text: "The tags (colour, term, italics) are not the English's.",
         description: "Tooltip of the tags mark.",
     },
     "checks.placeholdersHint": {

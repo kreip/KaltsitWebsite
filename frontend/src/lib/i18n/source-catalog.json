@@ -7388,7 +7388,7 @@
     "translators.checks.recommended": "recommended",
     "translators.checks.recommendedHint": "The best variant without errors.",
     "translators.checks.tags": "tags",
-    "translators.checks.tagsHint": "Italics or colour differ from the English.",
+    "translators.checks.tagsHint": "The tags (colour, term, italics) are not the English's.",
     "translators.comment.delete": "Delete",
     "translators.comment.dropQuote": "Whole line",
     "translators.comment.failed": "Couldn't save the comment.",

@@ -1,6 +1,6 @@
 {
     "generatedBy": "bun run i18n:extract",
-    "generatedAt": "2026-11-12T01:47:49.177Z",
+    "generatedAt": "2026-11-12T02:02:45.113Z",
     "entries": [
         {
             "key": "admin.home.access.everyList",
@@ -54957,7 +54957,7 @@
         {
             "key": "translators.checks.tagsHint",
             "namespace": "translators",
-            "source_text": "Italics or colour differ from the English.",
+            "source_text": "The tags (colour, term, italics) are not the English's.",
             "description": "Tooltip of the tags mark.",
             "placeholders": []
         },
