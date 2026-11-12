@@ -18,7 +18,8 @@
 4. Writes the texts of `translators/site-ru.json` (the site's header, menus,
    sign-in dialog and shared buttons: what stands around the section) the
    same way, but only where the key has no `ru` translation yet, so nothing
-   translated in the admin panel is ever overwritten.
+   translated in the admin panel is ever overwritten — except the keys that
+   name the section itself (OWN_SITE_KEYS: its menu item), written every time.
 
 The section shows Russian without this (it ships the same file); this puts
 the texts where the admin panel edits them, and an edit there wins over the
@@ -38,6 +39,9 @@ RU = ROOT / "frontend/src/components/translators/translators.ru.json"
 SITE_RU = ROOT / "translators/site-ru.json"
 META = ROOT / "frontend/src/lib/i18n/source-catalog.meta.json"
 SOURCE = ROOT / "frontend/src/lib/i18n/source-catalog.json"
+# Keys of site-ru.json that name the section itself (its menu item): written
+# every time, like the section's own texts, so a rename reaches the site.
+OWN_SITE_KEYS = {"nav.header.translators"}
 
 
 def arguments(text: str) -> list[str]:
@@ -151,7 +155,9 @@ WITH added AS (
     INSERT INTO ui_messages (key, locale, value, source_hash, source_text, updated_by, updated_at)
     SELECT k.key, 'ru', t.value, k.source_hash, k.source_text, NULL, now()
     FROM (VALUES {rows}) AS t(key, value) JOIN ui_message_keys k ON k.key = t.key
-    ON CONFLICT (key, locale) DO NOTHING
+    ON CONFLICT (key, locale) DO UPDATE SET value = EXCLUDED.value, source_hash = EXCLUDED.source_hash,
+        source_text = EXCLUDED.source_text, updated_at = now()
+    WHERE ui_messages.key IN ({", ".join(q(k) for k in sorted(OWN_SITE_KEYS)) or "''"})
     RETURNING 1
 ) SELECT count(*) FROM added;
 """

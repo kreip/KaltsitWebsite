@@ -181,7 +181,7 @@
     "nav.header.support": "Поддержать",
     "nav.header.tierLists": "Тир-листы",
     "nav.header.tools": "Инструменты",
-    "nav.header.translators": "Для переводчиков",
+    "nav.header.translators": "Русификатор",
     "nav.languageToggle.trigger": "Язык: {language}",
     "nav.languageToggle.triggerAria": "{label}. Выбрать язык.",
     "nav.mainNav.forAllCommands": "— все команды",

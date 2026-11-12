@@ -22,6 +22,7 @@ import { Route as GridsRouteImport } from './routes/grids'
 import { Route as HelpMeRouteImport } from './routes/help-me'
 import { Route as OperatorsRouteImport } from './routes/operators'
 import { Route as PrivacyRouteImport } from './routes/privacy'
+import { Route as RusifikatorRouteImport } from './routes/rusifikator'
 import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
 import { Route as StagesRouteImport } from './routes/stages'
@@ -138,6 +139,11 @@ const OperatorsRoute = OperatorsRouteImport.update({
 const PrivacyRoute = PrivacyRouteImport.update({
   id: '/privacy',
   path: '/privacy',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const RusifikatorRoute = RusifikatorRouteImport.update({
+  id: '/rusifikator',
+  path: '/rusifikator',
   getParentRoute: () => rootRouteImport,
 } as any)
 const SettingsRoute = SettingsRouteImport.update({
@@ -421,6 +427,7 @@ export interface FileRoutesByFullPath {
   '/help-me': typeof HelpMeRoute
   '/operators': typeof OperatorsRoute
   '/privacy': typeof PrivacyRoute
+  '/rusifikator': typeof RusifikatorRoute
   '/settings': typeof SettingsRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/stages': typeof StagesRoute
@@ -488,6 +495,7 @@ export interface FileRoutesByTo {
   '/help-me': typeof HelpMeRoute
   '/operators': typeof OperatorsRoute
   '/privacy': typeof PrivacyRoute
+  '/rusifikator': typeof RusifikatorRoute
   '/settings': typeof SettingsRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/stages': typeof StagesRoute
@@ -556,6 +564,7 @@ export interface FileRoutesById {
   '/help-me': typeof HelpMeRoute
   '/operators': typeof OperatorsRoute
   '/privacy': typeof PrivacyRoute
+  '/rusifikator': typeof RusifikatorRoute
   '/settings': typeof SettingsRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/stages': typeof StagesRoute
@@ -625,6 +634,7 @@ export interface FileRouteTypes {
     | '/help-me'
     | '/operators'
     | '/privacy'
+    | '/rusifikator'
     | '/settings'
     | '/sitemap.xml'
     | '/stages'
@@ -692,6 +702,7 @@ export interface FileRouteTypes {
     | '/help-me'
     | '/operators'
     | '/privacy'
+    | '/rusifikator'
     | '/settings'
     | '/sitemap.xml'
     | '/stages'
@@ -759,6 +770,7 @@ export interface FileRouteTypes {
     | '/help-me'
     | '/operators'
     | '/privacy'
+    | '/rusifikator'
     | '/settings'
     | '/sitemap.xml'
     | '/stages'
@@ -828,6 +840,7 @@ export interface RootRouteChildren {
   HelpMeRoute: typeof HelpMeRoute
   OperatorsRoute: typeof OperatorsRoute
   PrivacyRoute: typeof PrivacyRoute
+  RusifikatorRoute: typeof RusifikatorRoute
   SettingsRoute: typeof SettingsRoute
   SitemapDotxmlRoute: typeof SitemapDotxmlRoute
   StagesRoute: typeof StagesRoute
@@ -958,6 +971,13 @@ declare module '@tanstack/react-router' {
       path: '/privacy'
       fullPath: '/privacy'
       preLoaderRoute: typeof PrivacyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/rusifikator': {
+      id: '/rusifikator'
+      path: '/rusifikator'
+      fullPath: '/rusifikator'
+      preLoaderRoute: typeof RusifikatorRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/settings': {
@@ -1399,6 +1419,7 @@ const rootRouteChildren: RootRouteChildren = {
   HelpMeRoute: HelpMeRoute,
   OperatorsRoute: OperatorsRoute,
   PrivacyRoute: PrivacyRoute,
+  RusifikatorRoute: RusifikatorRoute,
   SettingsRoute: SettingsRoute,
   SitemapDotxmlRoute: SitemapDotxmlRoute,
   StagesRoute: StagesRoute,

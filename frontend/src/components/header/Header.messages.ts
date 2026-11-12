@@ -33,7 +33,7 @@ export const messages = {
         description: "Top-level nav link to the tier-list section, where operators are ranked into tiers.",
     },
     "header.translators": {
-        text: "For translators",
+        text: "Russifier",
         description: "Top-level nav link to the section for the Russian translation team (fork: translators' section).",
     },
     "header.players": {
