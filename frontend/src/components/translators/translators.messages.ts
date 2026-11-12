@@ -1823,6 +1823,14 @@ export const messages = {
         text: "Read in Story",
         description: "Link under an operator record's introduction in the archives card: opens the record's story in the Story tab.",
     },
+    "search.objects": {
+        text: "Objects of the game named so",
+        description: "Accessible name of the short list above the search results: the operators, enemies, items and stages whose name matches the query.",
+    },
+    "search.openCard": {
+        text: "Open the card",
+        description: "Link beside an object above the search results: opens the object's card on the Game sections tab.",
+    },
 } satisfies MessageMap;
 
 export const { keys } = defineMessages({ namespace, messages });

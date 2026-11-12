@@ -174,8 +174,43 @@ struct HitRow {
 /// How many places of a found text come with it.
 const PLACES_SHOWN: usize = 3;
 
-/// One page of the texts matching the query (shortest English first, so a
-/// name comes before the sentences that mention it) and how many match.
+/// A query's text as the start of a LIKE pattern, taken literally.
+fn like_start(q: &str) -> String {
+    let all = like(q);
+    all[1..].to_owned()
+}
+
+/// How well a row answers the query, as a sort key: 0 the whole English or
+/// the whole Russian is the query, 1 it holds the query as whole words, 2 the
+/// English or the Russian starts with it, 3 it holds it somewhere. The
+/// search text is the English, a line break, the Russian.
+fn push_rank<'q>(qb: &mut QueryBuilder<'q, Postgres>, folded: &'q str, whole: bool) {
+    let start = like_start(folded);
+    qb.push("CASE WHEN t.fold = ")
+        .push_bind(folded)
+        .push(" OR t.fold LIKE ")
+        .push_bind(format!("{}\n%", &start[..start.len() - 1]))
+        .push(" OR t.fold LIKE ")
+        .push_bind(format!("%\n{}", &start[..start.len() - 1]))
+        .push(" THEN 0");
+    // With "whole words only" every row is of this kind already.
+    if whole {
+        qb.push(" ELSE 1 END");
+        return;
+    }
+    qb.push(" WHEN t.fold ~ ")
+        .push_bind(whole_words(folded))
+        .push(" THEN 1 WHEN t.fold LIKE ")
+        .push_bind(start.clone())
+        .push(" OR t.fold LIKE ")
+        .push_bind(format!("%\n{start}"))
+        .push(" THEN 2 ELSE 3 END");
+}
+
+/// One page of the texts matching the query and how many match. The best
+/// answers first: the query exactly, then as whole words, then at the start,
+/// then anywhere; among equals the names and terms of the game before the
+/// story's lines, and the shorter English before the longer.
 pub async fn search(
     pool: &PgPool,
     server: &str,
@@ -193,15 +228,23 @@ pub async fn search(
     let mut page: QueryBuilder<Postgres> = QueryBuilder::new(format!(
         "SELECT t.*, CASE WHEN {APPROVED} THEN 'approved' WHEN {PROPOSED} THEN 'proposed' ELSE 'unchecked' END AS status
          FROM (SELECT t.id, t.edit_key, md5(t.edit_key) AS key_md5, t.en, t.ru, t.file, t.plugin_role,
-                      t.ru_plugin, t.sections, t.places
-               FROM translators.texts t"
+                      t.ru_plugin, t.sections, t.places, "
     ));
+    if folded.is_empty() {
+        page.push("0");
+    } else {
+        push_rank(&mut page, &folded, q.whole);
+    }
+    page.push(
+        " AS rank, (t.sections = ARRAY['story']::text[]) AS story_only
+               FROM translators.texts t",
+    );
     conditions(&mut page, server, q, &folded);
-    page.push(" ORDER BY length(t.en), t.id LIMIT ")
+    page.push(" ORDER BY rank, story_only, length(t.en), t.id LIMIT ")
         .push_bind(limit)
         .push(" OFFSET ")
         .push_bind(offset)
-        .push(") t ORDER BY length(t.en), t.id");
+        .push(") t ORDER BY t.rank, t.story_only, length(t.en), t.id");
     // Not kept prepared: a kept statement soon gets one plan for every query, and the right
     // plan depends on the words (the index for a rare word, the whole table for "the" or two letters).
     let (total, rows): (i64, Vec<HitRow>) = tokio::try_join!(
@@ -296,6 +339,93 @@ fn object_key(section: &str) -> &'static str {
     } else {
         "p.object_en"
     }
+}
+
+#[derive(sqlx::FromRow)]
+struct ObjectHitRow {
+    section: String,
+    id: String,
+    en: String,
+    name_en: Option<String>,
+    name_ru: Option<String>,
+}
+
+/// How many objects the search's block shows.
+const OBJECTS_SHOWN: i64 = 8;
+
+/// The objects whose name answers the query — operators, enemies, items,
+/// stages (also by code) — the exact name first, then names starting with
+/// it, then the rest; operators before their devices. `section`: only that one's.
+pub async fn object_hits(
+    pool: &PgPool,
+    server: &str,
+    query: &str,
+    section: Option<&str>,
+) -> Result<Vec<super::dto::ObjectHit>, sqlx::Error> {
+    const SECTIONS: [&str; 4] = ["operators", "enemies", "items", "stages"];
+    let folded = super::fold(query.trim());
+    if folded.chars().count() < 2 {
+        return Ok(Vec::new());
+    }
+    let sections: Vec<String> = SECTIONS
+        .iter()
+        .filter(|s| section.is_none_or(|only| only == **s))
+        .map(|s| (*s).to_owned())
+        .collect();
+    if sections.is_empty() {
+        return Ok(Vec::new());
+    }
+    let any = like(&folded);
+    let start = like_start(&folded);
+    let bare = &start[..start.len() - 1];
+    let rows: Vec<ObjectHitRow> = sqlx::query_as(
+        "SELECT p.section,
+                CASE WHEN p.section = 'operators' THEN p.object_id ELSE p.object_en END AS id,
+                MIN(p.object_en) AS en, MIN(t.en) AS name_en, MIN(t.ru) AS name_ru
+         FROM translators.text_places p
+         JOIN translators.texts t ON t.server = p.server AND t.edit_key = p.edit_key
+         WHERE p.server = $1 AND p.field = 'name' AND p.section = ANY($2)
+           AND (t.fold LIKE $3 OR lower(p.object_en) LIKE $3)
+         GROUP BY 1, 2
+         ORDER BY MIN(CASE WHEN t.fold = $4 OR t.fold LIKE $5 OR t.fold LIKE $6 OR lower(p.object_en) = $4 THEN 0
+                           WHEN t.fold LIKE $7 OR t.fold LIKE $8 OR lower(p.object_en) LIKE $7 THEN 1
+                           ELSE 2 END),
+                  array_position($2, p.section),
+                  MIN(CASE WHEN p.object_id LIKE 'char%' THEN 0 ELSE 1 END),
+                  length(MIN(p.object_en)), 2
+         LIMIT $9",
+    )
+    .bind(server)
+    .bind(&sections)
+    .bind(&any)
+    .bind(&folded)
+    .bind(format!("{bare}\n%"))
+    .bind(format!("%\n{bare}"))
+    .bind(&start)
+    .bind(format!("%\n{start}"))
+    .bind(OBJECTS_SHOWN)
+    .persistent(false)
+    .fetch_all(pool)
+    .await?;
+    Ok(rows
+        .into_iter()
+        .map(|r| {
+            // A stage's Russian name stands after its code, as its English one does.
+            let ru = match (r.name_ru, r.section.as_str()) {
+                (Some(ru), "stages") => Some(match stage_code(&r.en, r.name_en.as_deref()) {
+                    Some(code) => format!("{code} {ru}"),
+                    None => ru,
+                }),
+                (ru, _) => ru,
+            };
+            super::dto::ObjectHit {
+                section: r.section,
+                id: r.id,
+                en: r.en,
+                ru,
+            }
+        })
+        .collect())
 }
 
 /// A stage's code from its label and name (`0-1 Collapse`, `Collapse` ->
@@ -623,6 +753,7 @@ mod tests {
         assert_eq!(like("50%_a\\b"), "%50\\%\\_a\\\\b%");
         assert_eq!(whole_words("rhodes island"), "\\mrhodes island\\M");
         assert_eq!(whole_words("a.b (c)"), "\\ma\\.b \\(c\\)\\M");
+        assert_eq!(like_start("50%"), "50\\%%");
     }
 
     #[test]

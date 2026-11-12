@@ -1,7 +1,9 @@
 /**
  * The Search tab: every text of the game (the story, the game data by
  * section, the interface) found by a part of its English or Russian, any
- * case, ё = е. The results are the story table's rows with the same actions:
+ * case, ё = е. First the game's objects named so (an operator, an enemy, an
+ * item, a stage), each with a link to its card; then the texts, the best
+ * answers first. The results are the story table's rows with the same actions:
  * a text that stands in the story is shown and edited at its first story
  * line (Sova's and the AI's variants there), any other as the text itself,
  * whose edit holds everywhere. The query and the filters live in the
@@ -12,6 +14,7 @@ import { Link } from "@tanstack/react-router";
 import type React from "react";
 import { useEffect, useId, useMemo, useRef, useState } from "react";
 import { SearchField } from "#/components/SearchField";
+import { Badge } from "#/components/ui/badge";
 import { Button } from "#/components/ui/button";
 import { Checkbox } from "#/components/ui/checkbox";
 import { Collapsible, CollapsiblePanel, CollapsibleTrigger } from "#/components/ui/collapsible";
@@ -23,10 +26,11 @@ import { Skeleton } from "#/components/ui/skeleton";
 import { Spinner } from "#/components/ui/spinner";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "#/components/ui/table";
 import { useDebounce } from "#/hooks/use-debounce";
-import { useFormatters, useT } from "#/lib/i18n";
+import { useFormatters, useLocale, useT } from "#/lib/i18n";
 import type { TypedT } from "#/lib/i18n/messages";
 import { searchLinesQueryOptions, translatorsMeQueryOptions } from "#/lib/translators/api";
 import type { KeyEdits } from "#/types/generated/KeyEdits";
+import type { ObjectHit } from "#/types/generated/ObjectHit";
 import type { SearchLine } from "#/types/generated/SearchLine";
 import type { TextAt } from "#/types/generated/TextAt";
 import type { TranslatorsMe } from "#/types/generated/TranslatorsMe";
@@ -39,7 +43,7 @@ import { type IFind, StoryText } from "./StoryText";
 import { Toggle } from "./SwitchToggle";
 import { useStoryNames } from "./storyNames";
 import type { messages } from "./translators.messages";
-import { fileWord, sectionWord } from "./where";
+import { fileWord, isCardSection, sectionWord } from "./where";
 
 type T = TypedT<typeof messages>;
 
@@ -93,6 +97,35 @@ function Where({ row, nickname, t }: { row: SearchLine; nickname: string; t: T }
                 <PlacesList place={row.place} nickname={nickname} compact t={t} />
             </CollapsiblePanel>
         </Collapsible>
+    );
+}
+
+/** The game's objects named by the query, above the texts: what each is, its name, and a link to its card. */
+function Objects({ objects, t }: { objects: readonly ObjectHit[]; t: T }): React.ReactElement | null {
+    const locale = useLocale();
+    if (objects.length === 0) return null;
+    return (
+        <ul className="flex flex-col gap-1" aria-label={t("search.objects")}>
+            {objects.map((o) => {
+                const label = locale === "ru" ? (o.ru ?? o.en) : o.en;
+                // An operator's record that is a summon or a device says so.
+                const kind = o.section !== "operators" ? null : o.id.startsWith("token_") ? "token" : o.id.startsWith("trap_") ? "trap" : null;
+                return (
+                    <li key={`${o.section}/${o.id}`} className="flex flex-wrap items-baseline gap-x-2 text-sm">
+                        <Badge variant="tint" size="sm">
+                            {sectionWord(o.section, t)}
+                        </Badge>
+                        <span className="font-medium">{label}</span>
+                        {o.en !== label || kind ? <span className="text-muted-foreground text-xs">{[o.en !== label ? o.en : null, kind ? t(`sections.kind.${kind}` as "sections.kind.token") : null].filter(Boolean).join(" · ")}</span> : null}
+                        {isCardSection(o.section) ? (
+                            <Link to="/translators" search={{ tab: "sections", sec: o.section === "operators" ? undefined : o.section, obj: o.id }} className="text-xs underline underline-offset-4">
+                                {t("search.openCard")}
+                            </Link>
+                        ) : null}
+                    </li>
+                );
+            })}
+        </ul>
     );
 }
 
@@ -213,6 +246,7 @@ function Found({ query, me, showVariants, showDiff, t }: { query: { q: string; w
     const total = pages[pages.length - 1].total;
     return (
         <div className="flex flex-col gap-2">
+            <Objects objects={first.objects} t={t} />
             <p className="text-subtle-foreground text-xs">{t("search.found", { count: f.number(total), millis: f.number(first.millis) })}</p>
             {rows.length === 0 ? (
                 <Empty>

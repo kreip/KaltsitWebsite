@@ -10,6 +10,7 @@ use utoipa::{IntoParams, ToSchema};
 #[into_params(parameter_in = Query)]
 pub struct TextQuery {
     /// A part of the English or of the Russian: any case, ё = е. Empty lists everything the filters leave.
+    /// The best answers come first: the query exactly, as whole words, at the start, anywhere.
     #[serde(default)]
     pub q: String,
     /// Whole words only.
@@ -108,6 +109,22 @@ pub struct SearchLine {
     pub line: crate::translators::dto::TranslatorLine,
 }
 
+/// An object of the game whose name answers the search: it has a card on
+/// the Game sections tab.
+#[derive(Debug, Clone, Serialize, TS, ToSchema)]
+#[serde(rename_all = "camelCase")]
+#[ts(export)]
+pub struct ObjectHit {
+    /// `operators`, `enemies`, `items` or `stages`.
+    pub section: String,
+    /// What names it in the address, as `GameObject.id`.
+    pub id: String,
+    /// The English name (a stage's with its code).
+    pub en: String,
+    /// The name in the game's Russian, when the pack has one.
+    pub ru: Option<String>,
+}
+
 /// A page of the search screen.
 #[derive(Debug, Serialize, TS, ToSchema)]
 #[serde(rename_all = "camelCase")]
@@ -116,6 +133,9 @@ pub struct SearchLines {
     /// Every text that matches.
     #[ts(type = "number")]
     pub total: i64,
+    /// The objects whose name answers the query, the best first (up to 8);
+    /// on the first page only.
+    pub objects: Vec<ObjectHit>,
     pub rows: Vec<SearchLine>,
     /// What was proposed, approved and said for the rows' entries (by `editKey`).
     pub edits: Vec<crate::translators::edits::dto::KeyEdits>,

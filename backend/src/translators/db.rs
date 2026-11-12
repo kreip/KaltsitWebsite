@@ -39,6 +39,10 @@ const MIGRATIONS: &[(&str, &str)] = &[
         "t013_long_keys",
         include_str!("migrations/t013_long_keys.sql"),
     ),
+    (
+        "t014_place_names",
+        include_str!("migrations/t014_place_names.sql"),
+    ),
 ];
 
 pub async fn migrate(pool: &PgPool) -> Result<(), sqlx::Error> {

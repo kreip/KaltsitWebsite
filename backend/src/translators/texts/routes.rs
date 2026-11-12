@@ -37,7 +37,8 @@ const STATUSES: &[&str] = &[
 /// Search every text of the game — the story, the game data by section
 /// (operators, enemies, stages, items, archives) and the rest of the pack's
 /// dictionaries — by a part of its English or Russian (any case, ё = е),
-/// with filters by section and state. Shortest English first. Members only
+/// with filters by section and state. The best answers first (the query
+/// exactly, as whole words, at the start, anywhere), then the shorter English. Members only
 /// (and the internal service key, for measuring).
 #[utoipa::path(
     get,
@@ -226,7 +227,8 @@ fn text_line(hit: &TextHit) -> TranslatorLine {
     }
 }
 
-/// The search screen: the same search, each found text as a line of the
+/// The search screen: the objects whose name answers the query (operators,
+/// enemies, items, stages), then the same search, each found text as a line of the
 /// story's table — at its first story line (with Sova's and the AI's
 /// variants there), else as the text itself, whose edit holds everywhere —
 /// with the edits of their entries. Members only.
@@ -283,6 +285,13 @@ pub async fn search_lines(
     }
     let edits = edits::attach_at(&state.db, &places, &mut lines, |_| false).await?;
     crate::translators::routes::mark_glossary(&state, &mut lines, &places, &edits).await?;
+    // The objects named by the query stand above the first page.
+    let objects = if query.offset.unwrap_or(0) == 0 {
+        let section = query.section.as_deref().filter(|s| !s.is_empty());
+        db::object_hits(&state.db, SERVER, &query.q, section).await?
+    } else {
+        Vec::new()
+    };
     let rows = hits
         .into_iter()
         .zip(places)
@@ -291,6 +300,7 @@ pub async fn search_lines(
         .collect();
     Ok(Json(SearchLines {
         total,
+        objects,
         rows,
         edits,
         millis,

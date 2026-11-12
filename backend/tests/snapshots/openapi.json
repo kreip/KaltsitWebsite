@@ -14200,13 +14200,13 @@
         "tags": [
           "translators"
         ],
-        "summary": "The search screen: the same search, each found text as a line of the\nstory's table — at its first story line (with Sova's and the AI's\nvariants there), else as the text itself, whose edit holds everywhere —\nwith the edits of their entries. Members only.",
+        "summary": "The search screen: the objects whose name answers the query (operators,\nenemies, items, stages), then the same search, each found text as a line of the\nstory's table — at its first story line (with Sova's and the AI's\nvariants there), else as the text itself, whose edit holds everywhere —\nwith the edits of their entries. Members only.",
         "operationId": "search_lines",
         "parameters": [
           {
             "name": "q",
             "in": "query",
-            "description": "A part of the English or of the Russian: any case, ё = е. Empty lists everything the filters leave.",
+            "description": "A part of the English or of the Russian: any case, ё = е. Empty lists everything the filters leave.\nThe best answers come first: the query exactly, as whole words, at the start, anywhere.",
             "required": false,
             "schema": {
               "type": "string"
@@ -14434,13 +14434,13 @@
         "tags": [
           "translators"
         ],
-        "summary": "Search every text of the game — the story, the game data by section\n(operators, enemies, stages, items, archives) and the rest of the pack's\ndictionaries — by a part of its English or Russian (any case, ё = е),\nwith filters by section and state. Shortest English first. Members only\n(and the internal service key, for measuring).",
+        "summary": "Search every text of the game — the story, the game data by section\n(operators, enemies, stages, items, archives) and the rest of the pack's\ndictionaries — by a part of its English or Russian (any case, ё = е),\nwith filters by section and state. The best answers first (the query\nexactly, as whole words, at the start, anywhere), then the shorter English. Members only\n(and the internal service key, for measuring).",
         "operationId": "search_texts",
         "parameters": [
           {
             "name": "q",
             "in": "query",
-            "description": "A part of the English or of the Russian: any case, ё = е. Empty lists everything the filters leave.",
+            "description": "A part of the English or of the Russian: any case, ё = е. Empty lists everything the filters leave.\nThe best answers come first: the query exactly, as whole words, at the start, anywhere.",
             "required": false,
             "schema": {
               "type": "string"
@@ -28945,6 +28945,36 @@
           "respawn"
         ]
       },
+      "ObjectHit": {
+        "type": "object",
+        "description": "An object of the game whose name answers the search: it has a card on\nthe Game sections tab.",
+        "required": [
+          "section",
+          "id",
+          "en"
+        ],
+        "properties": {
+          "en": {
+            "type": "string",
+            "description": "The English name (a stage's with its code)."
+          },
+          "id": {
+            "type": "string",
+            "description": "What names it in the address, as `GameObject.id`."
+          },
+          "ru": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The name in the game's Russian, when the pack has one."
+          },
+          "section": {
+            "type": "string",
+            "description": "`operators`, `enemies`, `items` or `stages`."
+          }
+        }
+      },
       "ObjectLine": {
         "type": "object",
         "description": "One text of an object: what of the object it is, and the text as a line\nof the table, edited as the text itself (one translation everywhere).",
@@ -33502,6 +33532,7 @@
         "description": "A page of the search screen.",
         "required": [
           "total",
+          "objects",
           "rows",
           "edits",
           "millis",
@@ -33525,6 +33556,13 @@
             "format": "int32",
             "description": "How long the search took in the database, in milliseconds.",
             "minimum": 0
+          },
+          "objects": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ObjectHit"
+            },
+            "description": "The objects whose name answers the query, the best first (up to 8);\non the first page only."
           },
           "rows": {
             "type": "array",

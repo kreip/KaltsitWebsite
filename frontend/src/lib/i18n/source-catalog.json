@@ -7627,6 +7627,8 @@
     "translators.search.load": "Couldn't search.",
     "translators.search.more": "Show more",
     "translators.search.none": "Nothing found.",
+    "translators.search.objects": "Objects of the game named so",
+    "translators.search.openCard": "Open the card",
     "translators.search.placeholder": "English or Russian…",
     "translators.search.prompt": "Type a word, or choose a section or a state.",
     "translators.search.section": "Section",

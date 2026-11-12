@@ -705,18 +705,54 @@ async fn texts_are_stored_and_searched() {
         q: s.to_owned(),
         ..TextQuery::default()
     };
-    // By the English, any case, shortest first; tags do not get in the way.
+    // By the English, any case; tags do not get in the way. The exact text
+    // first, then whole words (the game's names before the story's lines),
+    // then the rest.
     assert_eq!(
         find(q("URSUS")).await,
         (
             4,
             vec![
                 "Ursus".to_owned(),
-                "Excursus".into(),
                 "Ursus Slug".into(),
-                "You bunch... aren't from Ursus...".into()
+                "You bunch... aren't from Ursus...".into(),
+                "Excursus".into()
             ]
         )
+    );
+    // A text that starts with the query comes before one that only holds it.
+    assert_eq!(
+        find(q("urs")).await.1,
+        vec![
+            "Ursus".to_owned(),
+            "Ursus Slug".into(),
+            "Excursus".into(),
+            "You bunch... aren't from Ursus...".into()
+        ]
+    );
+    // The objects named by the query: by the English or the Russian name.
+    for query in ["urs", "Урсус"] {
+        let objects = texts::db::object_hits(&pool, "en", query, None)
+            .await
+            .unwrap();
+        assert_eq!(objects.len(), 1, "{query}");
+        assert_eq!(
+            (objects[0].section.as_str(), objects[0].id.as_str()),
+            ("operators", "char_1")
+        );
+        assert_eq!(objects[0].ru.as_deref(), Some("Урсус"));
+    }
+    assert!(
+        texts::db::object_hits(&pool, "en", "urs", Some("enemies"))
+            .await
+            .unwrap()
+            .is_empty()
+    );
+    assert!(
+        texts::db::object_hits(&pool, "en", "u", None)
+            .await
+            .unwrap()
+            .is_empty()
     );
     // By the Russian; ё = е; `%` and `_` are ordinary characters.
     assert_eq!(find(q("урсусский")).await.1, vec!["Ursus Slug".to_owned()]);
@@ -842,7 +878,16 @@ async fn texts_are_stored_and_searched() {
         ..q("ursus")
     })
     .await;
-    assert_eq!(page, (4, vec!["Excursus".to_owned(), "Ursus Slug".into()]));
+    assert_eq!(
+        page,
+        (
+            4,
+            vec![
+                "Ursus Slug".to_owned(),
+                "You bunch... aren't from Ursus...".into()
+            ]
+        )
+    );
 
     // A text outside the story is edited as the text itself: one translation everywhere.
     let slug = EditPlace::text("Ursus Slug");

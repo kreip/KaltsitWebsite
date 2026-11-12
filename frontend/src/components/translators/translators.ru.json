@@ -471,5 +471,7 @@
     "at.note.voiceSet": "набор реплик {n}",
     "long.show": "Показать полностью",
     "long.hide": "Свернуть",
-    "sections.readStory": "Читать в «Сюжете»"
+    "sections.readStory": "Читать в «Сюжете»",
+    "search.objects": "Объекты игры с таким названием",
+    "search.openCard": "Открыть карточку"
 }
