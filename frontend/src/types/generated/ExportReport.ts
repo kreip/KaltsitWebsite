@@ -36,6 +36,11 @@ export type ExportReport = {
     storyRows: number;
     contextRows: number;
     /**
+     * Rows of `only_here.tsv`: a separate translation asked for one place
+     * of the game data, for the pack's maintainer to decide.
+     */
+    onlyHereRows: number;
+    /**
      * `file` format: the files the game loads after ours, which win on the same key.
      */
     loadedAfter: Array<string>;

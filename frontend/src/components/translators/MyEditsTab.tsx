@@ -160,7 +160,14 @@ function Row({ row, me, all, nickname, t }: { row: EditRow; me: TranslatorsMe; a
                 <div className="flex flex-col gap-1">
                     {all ? <span className="text-subtle-foreground text-xs">{mine ? t("proposal.mine") : p.author.name}</span> : null}
                     {rewriting ? <Rewrite row={row} nickname={nickname} onClose={() => setRewriting(false)} t={t} /> : <StoryText text={p.text} nickname={nickname} />}
-                    {p.context ? (
+                    {p.here ? (
+                        <span>
+                            <Badge variant="warning" size="sm">
+                                {t("proposal.onlyHere")}
+                            </Badge>
+                        </span>
+                    ) : null}
+                    {p.context && !p.here ? (
                         <span>
                             <Badge variant="info" size="sm">
                                 {t("proposal.contextBadge")}

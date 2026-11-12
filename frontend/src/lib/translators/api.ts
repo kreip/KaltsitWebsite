@@ -17,6 +17,7 @@ import type { EditCreated } from "#/types/generated/EditCreated";
 import type { EditPlace } from "#/types/generated/EditPlace";
 import type { EditRows } from "#/types/generated/EditRows";
 import type { ExportResult } from "#/types/generated/ExportResult";
+import type { GameHere } from "#/types/generated/GameHere";
 import type { GameObject } from "#/types/generated/GameObject";
 import type { GameTag } from "#/types/generated/GameTag";
 import type { Glossary } from "#/types/generated/Glossary";
@@ -115,11 +116,11 @@ async function send(path: string, method: string, body?: unknown): Promise<Respo
 
 export type ProposalSource = "own" | "sova" | "ai";
 
-/** Write my proposal for the line's entry (for every place, or for this place only with `context`), or rewrite the one I have; `confirmMany` once the list of places was confirmed. */
+/** Write my proposal for the line's entry (for every place, or for this place only with `context` — outside the story `here` names the place of the game data), or rewrite the one I have; `confirmMany` once the list of places was confirmed. */
 export const createProposalFn = createServerFn({ method: "POST" })
-    .inputValidator((d: { place: EditPlace; text: string; source: ProposalSource; context: boolean; confirmMany: boolean }) => d)
+    .inputValidator((d: { place: EditPlace; text: string; source: ProposalSource; context: boolean; here: GameHere | null; confirmMany: boolean }) => d)
     .handler(async ({ data }): Promise<EditCreated> => {
-        const res = await send("/translators/proposals", "POST", { ...data.place, text: data.text, source: data.source, context: data.context, confirmMany: data.confirmMany });
+        const res = await send("/translators/proposals", "POST", { ...data.place, text: data.text, source: data.source, context: data.context, here: data.context ? data.here : null, confirmMany: data.confirmMany });
         return (await res.json()) as EditCreated;
     });
 

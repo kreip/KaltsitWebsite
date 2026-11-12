@@ -1,6 +1,6 @@
 {
     "generatedBy": "bun run i18n:extract",
-    "generatedAt": "2026-11-12T02:02:45.113Z",
+    "generatedAt": "2026-11-12T06:18:13.034Z",
     "entries": [
         {
             "key": "admin.home.access.everyList",
@@ -55175,6 +55175,13 @@
             "placeholders": []
         },
         {
+            "key": "translators.editor.onlyHere",
+            "namespace": "translators",
+            "source_text": "This proposal asks for a separate translation at this one place; the pack's maintainer decides.",
+            "description": "Line under the editor while a one-place proposal outside the story is edited.",
+            "placeholders": []
+        },
+        {
             "key": "translators.editor.removeToken",
             "namespace": "translators",
             "source_text": "Remove",
@@ -55481,6 +55488,15 @@
             "source_text": "All proposals — for checking (REVIEW)",
             "description": "Export mode: every proposal not approved, marked REVIEW, not for the game.",
             "placeholders": []
+        },
+        {
+            "key": "translators.export.onlyHere",
+            "namespace": "translators",
+            "source_text": "Separate translation asked for one place outside the story (only_here.tsv): {count}",
+            "description": "Line of the export's summary: rows of only_here.tsv, for the pack's maintainer to decide.",
+            "placeholders": [
+                "count"
+            ]
         },
         {
             "key": "translators.export.open",
@@ -56475,6 +56491,13 @@
             "placeholders": []
         },
         {
+            "key": "translators.proposal.onlyHere",
+            "namespace": "translators",
+            "source_text": "only here — needs the pack maintainer's decision",
+            "description": "Prominent badge on a proposal made for one place of the game data outside the story: the game shows one translation for an English text everywhere, so only the pack's maintainer can make this place differ.",
+            "placeholders": []
+        },
+        {
             "key": "translators.proposal.rewrite",
             "namespace": "translators",
             "source_text": "Rewrite",
@@ -56696,6 +56719,20 @@
             "placeholders": [
                 "count"
             ]
+        },
+        {
+            "key": "translators.save.onlyHere",
+            "namespace": "translators",
+            "source_text": "A separate translation is needed here",
+            "description": "Option of the save dialog for a text outside the story that stands in several places: ask for a translation of its own at this one place.",
+            "placeholders": []
+        },
+        {
+            "key": "translators.save.onlyHereHint",
+            "namespace": "translators",
+            "source_text": "The game shows one translation for this English everywhere. A separate one here is a request to the pack's maintainer: it does not go to the dictionaries, only to only_here.tsv of the export.",
+            "description": "Line under the 'separate translation is needed here' option of the save dialog.",
+            "placeholders": []
         },
         {
             "key": "translators.save.proposalOnly",

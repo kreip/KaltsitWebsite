@@ -704,6 +704,7 @@ async fn run_export(
     let sources = Sources::from_env().map_err(ApiError::BadRequest)?;
     let rows = export::rows(&state.db, review).await?;
     let context = export::context_rows(&state.db, review).await?;
+    let only_here = export::only_here_rows(&state.db).await?;
     let keys: Vec<String> = rows.iter().map(|r| r.edit_key.clone()).collect();
     let places = export::places(&state.db, &keys).await?;
     // Each story's script file, as the bundles name it.
@@ -733,6 +734,7 @@ async fn run_export(
         export::build(
             &rows,
             &context,
+            &only_here,
             &places,
             &story_files,
             review,
@@ -748,8 +750,8 @@ async fn run_export(
 }
 
 /// The whole export as one ZIP: the changed dictionaries (or
-/// 00_translators.txt), story_lines.tsv and plugin_strings.tsv when there
-/// are rows, report.txt. Same rights as the export.
+/// 00_translators.txt), story_lines.tsv, plugin_strings.tsv and
+/// only_here.tsv when there are rows, report.txt. Same rights as the export.
 #[utoipa::path(
     get,
     path = "/translators/export/archive",

@@ -142,6 +142,9 @@ pub struct ExportReport {
     /// Rows of `story_lines.tsv`, and of them proposals for one place.
     pub story_rows: i32,
     pub context_rows: i32,
+    /// Rows of `only_here.tsv`: a separate translation asked for one place
+    /// of the game data, for the pack's maintainer to decide.
+    pub only_here_rows: i32,
     /// `file` format: the files the game loads after ours, which win on the same key.
     pub loaded_after: Vec<String>,
     /// Of those, the ones holding exported keys, and how many.
@@ -259,7 +262,7 @@ pub async fn rows(pool: &PgPool, review: bool) -> Result<Vec<Row>, sqlx::Error> 
     }
 }
 
-/// Proposals for one place: approved ones (`approved` mode, with the
+/// Proposals for one story line: approved ones (`approved` mode, with the
 /// approver) or the others (`review`, with the author).
 pub async fn context_rows(pool: &PgPool, review: bool) -> Result<Vec<ContextRow>, sqlx::Error> {
     sqlx::query_as(
@@ -273,6 +276,7 @@ pub async fn context_rows(pool: &PgPool, review: bool) -> Result<Vec<ContextRow>
          LEFT JOIN translators.story_lines s
              ON s.server = $1 AND s.story_id = p.story_id AND s.line = p.line AND s.part = p.part
          WHERE p.deleted_at IS NULL AND p.context AND p.outdated_at IS NULL
+           AND p.game_section IS NULL
            AND (p.approved_at IS NOT NULL) = NOT $2
          ORDER BY p.story_id, s.ord",
     )
@@ -280,6 +284,70 @@ pub async fn context_rows(pool: &PgPool, review: bool) -> Result<Vec<ContextRow>
     .bind(review)
     .fetch_all(pool)
     .await
+}
+
+/// A proposal for one place of the game data ("a separate translation is
+/// needed here"): a request to the pack's maintainer.
+#[derive(Debug, Clone, sqlx::FromRow)]
+pub struct OnlyHereRow {
+    pub edit_key: String,
+    pub section: String,
+    pub object_id: String,
+    pub object_en: Option<String>,
+    pub field: String,
+    pub idx: i16,
+    pub en: Option<String>,
+    pub ru_game: Option<String>,
+    pub text: String,
+    pub author: String,
+    /// The lead who approved it, when one did.
+    pub approved_by: Option<String>,
+}
+
+/// Every live proposal for one place of the game data, whatever the mode:
+/// the maintainer decides on them all, approved by the lead or not.
+pub async fn only_here_rows(pool: &PgPool) -> Result<Vec<OnlyHereRow>, sqlx::Error> {
+    sqlx::query_as(
+        "SELECT p.edit_key, p.game_section AS section, p.game_object AS object_id,
+                p.game_object_en AS object_en, p.game_field AS field, COALESCE(p.game_idx, 0)::smallint AS idx,
+                t.en, t.ru AS ru_game, p.text,
+                COALESCE(NULLIF(u.nickname, ''), u.uid) AS author,
+                COALESCE(NULLIF(v.nickname, ''), v.uid) AS approved_by
+         FROM translators.proposals p
+         JOIN users u ON u.id = p.author_id
+         LEFT JOIN users v ON v.id = p.approved_by AND p.approved_at IS NOT NULL
+         LEFT JOIN translators.texts t ON t.server = $1 AND t.edit_key = p.edit_key
+         WHERE p.deleted_at IS NULL AND p.context AND p.outdated_at IS NULL
+           AND p.game_section IS NOT NULL AND p.game_object IS NOT NULL AND p.game_field IS NOT NULL
+         ORDER BY p.game_section, p.game_object, p.game_field, p.game_idx, p.created_at",
+    )
+    .bind(SERVER)
+    .fetch_all(pool)
+    .await
+}
+
+/// A place of the game data as the maintainer reads it:
+/// `Оператор › Amiya [char_002_amiya] › skill.description 2`.
+pub fn only_here_place(r: &OnlyHereRow) -> String {
+    let section = match r.section.as_str() {
+        "operators" => "Оператор",
+        "enemies" => "Враг",
+        "stages" => "Этап",
+        "items" => "Предмет",
+        "archives" => "Архивы",
+        "other" => "Интерфейс и прочее",
+        other => other,
+    };
+    let object = match r.object_en.as_deref().filter(|n| *n != r.object_id) {
+        Some(name) => format!("{name} [{}]", r.object_id),
+        None => r.object_id.clone(),
+    };
+    let field = if r.idx > 0 {
+        format!("{} {}", r.field, r.idx)
+    } else {
+        r.field.clone()
+    };
+    format!("{section} › {object} › {field}")
 }
 
 /// Every story line holding one of the keys.
@@ -388,6 +456,7 @@ pub fn patch_file(
 pub fn build(
     rows: &[Row],
     context: &[ContextRow],
+    only_here: &[OnlyHereRow],
     places: &[Place],
     story_files: &HashMap<String, String>,
     review: bool,
@@ -618,6 +687,38 @@ pub fn build(
             ),
         ));
     }
+    // only_here.tsv: a separate translation asked for one place of the game data. Never in
+    // the dictionaries (one English has one translation there): the maintainer decides.
+    report.only_here_rows = i32::try_from(only_here.len()).unwrap_or(i32::MAX);
+    if !only_here.is_empty() {
+        let rows: Vec<Vec<String>> = only_here
+            .iter()
+            .map(|r| {
+                vec![
+                    only_here_place(r),
+                    r.en.clone().unwrap_or_else(|| r.edit_key.clone()),
+                    r.ru_game.clone().unwrap_or_default(),
+                    r.text.clone(),
+                    r.author.clone(),
+                    r.approved_by.clone().unwrap_or_default(),
+                ]
+            })
+            .collect();
+        files.push(ExportFile::new(
+            format!("{tag}only_here.tsv"),
+            tsv(
+                &[
+                    "место",
+                    "английский",
+                    "было",
+                    "предлагают",
+                    "кто",
+                    "утвердил ведущий",
+                ],
+                &rows,
+            ),
+        ));
+    }
     report.plugin_rows = i32::try_from(plugin.len()).unwrap_or(i32::MAX);
     if !plugin.is_empty() {
         files.push(ExportFile::new(
@@ -689,6 +790,12 @@ fn report_text(r: &ExportReport, ours: &str) -> String {
         "Строки сюжета для бандлов (story_lines.tsv): {} (из них «только для этого места»: {})\n",
         r.story_rows, r.context_rows
     ));
+    if r.only_here_rows > 0 {
+        out.push_str(&format!(
+            "Нужен отдельный перевод в одном месте вне сюжета (only_here.tsv) — нужно решение сборщика пака: {}\n",
+            r.only_here_rows
+        ));
+    }
     out.push_str(&format!(
         "Не записано (XUnity не прочтёт): {}\n",
         r.skipped.len()
@@ -840,9 +947,23 @@ mod tests {
             "main_0_x".to_owned(),
             "obt/main/level_main_00-01_end".to_owned(),
         )]);
+        let here = vec![OnlyHereRow {
+            edit_key: "Guard".into(),
+            section: "operators".into(),
+            object_id: "char_1".into(),
+            object_en: Some("Amiya".into()),
+            field: "skill.name".into(),
+            idx: 2,
+            en: Some("Guard".into()),
+            ru_game: Some("Страж".into()),
+            text: "Защита".into(),
+            author: "anna".into(),
+            approved_by: None,
+        }];
         let out = build(
             &rows,
             &ctx,
+            &here,
             &places,
             &files_map,
             false,
@@ -859,9 +980,19 @@ mod tests {
                 "12_story.txt",
                 "14_new.txt",
                 "story_lines.tsv",
+                "only_here.tsv",
                 "plugin_strings.tsv",
                 "report.txt"
             ]
+        );
+        // A separate translation asked for one place of the game data: its own file, never a dictionary.
+        assert_eq!(
+            out.files[3].content,
+            "место\tанглийский\tбыло\tпредлагают\tкто\tутвердил ведущий\nОператор › Amiya [char_1] › skill.name 2\tGuard\tСтраж\tЗащита\tanna\t\n"
+        );
+        assert_eq!(out.report.only_here_rows, 1);
+        assert!(
+            !out.files[0].content.contains("Защита") && !out.files[1].content.contains("Защита")
         );
         let story = &out.files[0].content;
         assert_eq!(story, "// h\r\nHi=Здравствуй\r\nBye=Пока\r\n");
@@ -871,7 +1002,7 @@ mod tests {
         assert_eq!(new.lines().count(), 2);
         assert_eq!(out.report.appended, 1);
         assert!(
-            out.files[4]
+            out.files[5]
                 .content
                 .contains("14_new.txt:2 — (новая запись) → Новое")
         );
@@ -880,13 +1011,14 @@ mod tests {
             tsv_story,
             "файл сюжета\tстрока\tанглийский\tбыло\tстало\nobt/main/level_main_00-01_end\t12\tHi\tПривет\tЗдравствуй\nobt/main/level_main_00-01_end\t20.2\tBye\tПока\tДо встречи\n"
         );
-        let tsv_plugin = &out.files[3].content;
+        let tsv_plugin = &out.files[4].content;
         assert_eq!(
             tsv_plugin,
             "английский\tбыло\tстало\tроль\nPlugin\\tline\tСтарое\tНовое\\nдва\tstory\n"
         );
-        let report = &out.files[4].content;
+        let report = &out.files[5].content;
         assert!(report.contains("12_story.txt:2 — Привет → Здравствуй — lead"));
+        assert!(report.contains("only_here.tsv"));
         assert!(
             !out.files.iter().any(|f| f.name == "11_ui.txt"),
             "untouched copies stay out"
@@ -903,6 +1035,7 @@ mod tests {
         ];
         let out = build(
             &rows,
+            &[],
             &[],
             &[],
             &HashMap::new(),

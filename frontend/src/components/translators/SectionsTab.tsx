@@ -210,6 +210,7 @@ function Card({ section, item, me, showVariants, showDiff, t }: ICardProps): Rea
                                             me={me}
                                             editor={editing?.id === id ? editing.state : null}
                                             onEditor={(state) => setEditing(state ? { id, state } : null)}
+                                            here={{ section, objectId: r.objectId, objectEn: item.en, field: r.field, idx: r.idx }}
                                             t={t}
                                         />
                                     </Folded>

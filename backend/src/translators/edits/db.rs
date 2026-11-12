@@ -7,8 +7,8 @@ use sqlx::{PgPool, Postgres, Transaction};
 use uuid::Uuid;
 
 use super::dto::{
-    Approval, EditComment, EditPerson, EditPlace, EditRow, HistoryEvent, KeyEdits, KeyPlace,
-    OutdatedEdit, PlaceAgreement, Proposal, ProposalVersion, StoryProgress, StoryRead,
+    Approval, EditComment, EditPerson, EditPlace, EditRow, GameHere, HistoryEvent, KeyEdits,
+    KeyPlace, OutdatedEdit, PlaceAgreement, Proposal, ProposalVersion, StoryProgress, StoryRead,
 };
 use super::status;
 use crate::translators::SERVER;
@@ -202,6 +202,11 @@ struct ProposalRow {
     approver_name: Option<String>,
     versions: i64,
     previous_text: Option<String>,
+    game_section: Option<String>,
+    game_object: Option<String>,
+    game_object_en: Option<String>,
+    game_field: Option<String>,
+    game_idx: Option<i16>,
 }
 
 const PROPOSAL_COLUMNS: &str = "p.id, p.edit_key, p.text, p.source, p.author_id, \
@@ -210,7 +215,8 @@ const PROPOSAL_COLUMNS: &str = "p.id, p.edit_key, p.text, p.source, p.author_id,
      (SELECT COALESCE(NULLIF(x.nickname, ''), x.uid) FROM users x WHERE x.id = p.approved_by) AS approver_name, \
      (SELECT COUNT(*) FROM translators.proposal_versions v WHERE v.proposal_id = p.id) AS versions, \
      (SELECT v.text FROM translators.proposal_versions v WHERE v.proposal_id = p.id \
-       ORDER BY v.id DESC OFFSET 1 LIMIT 1) AS previous_text";
+       ORDER BY v.id DESC OFFSET 1 LIMIT 1) AS previous_text, \
+     p.game_section, p.game_object, p.game_object_en, p.game_field, p.game_idx";
 
 impl ProposalRow {
     fn into_proposal(self, agreements: Vec<EditPerson>) -> Proposal {
@@ -234,6 +240,16 @@ impl ProposalRow {
                 edit_key: None,
             },
             context: self.context,
+            here: match (self.game_section, self.game_object, self.game_field) {
+                (Some(section), Some(object_id), Some(field)) => Some(GameHere {
+                    section,
+                    object_id,
+                    object_en: self.game_object_en,
+                    field,
+                    idx: self.game_idx.unwrap_or(0),
+                }),
+                _ => None,
+            },
             outdated: self.outdated_at.is_some(),
             approved_by: self
                 .approved_by
@@ -534,18 +550,22 @@ pub async fn outdated_in_story(
 }
 
 /// The caller's live proposal for a key in a scope (every place, or this
-/// place only), if any: `(id, text, source)`.
+/// place only — a story line, or with `here` a field of a game object), if
+/// any: `(id, text, source)`.
 async fn my_proposal(
     tx: &mut Transaction<'_, Postgres>,
     key: &str,
     author: Uuid,
     context: Option<&EditPlace>,
+    here: Option<&GameHere>,
 ) -> Result<Option<(i64, String, String)>, sqlx::Error> {
     sqlx::query_as(
         "SELECT id, text, source FROM translators.proposals
-         WHERE edit_key = $1 AND author_id = $2 AND deleted_at IS NULL
+         WHERE md5(edit_key) = md5($1) AND edit_key = $1 AND author_id = $2 AND deleted_at IS NULL
            AND context = $3
-           AND (NOT $3 OR (story_id = $4 AND line = $5 AND part = $6))
+           AND (NOT $3 OR (story_id = $4 AND line = $5 AND part = $6
+                AND game_section IS NOT DISTINCT FROM $7 AND game_object IS NOT DISTINCT FROM $8
+                AND game_field IS NOT DISTINCT FROM $9 AND COALESCE(game_idx, 0) = $10))
          FOR UPDATE",
     )
     .bind(key)
@@ -554,6 +574,10 @@ async fn my_proposal(
     .bind(context.map(|p| p.story_id.as_str()))
     .bind(context.map(|p| p.line))
     .bind(context.map(|p| p.part))
+    .bind(here.map(|h| h.section.as_str()))
+    .bind(here.map(|h| h.object_id.as_str()))
+    .bind(here.map(|h| h.field.as_str()))
+    .bind(here.map_or(0, |h| h.idx))
     .fetch_optional(&mut **tx)
     .await
 }
@@ -577,9 +601,31 @@ async fn add_version(
     Ok(())
 }
 
+/// Whether the game data shows the entry at a place.
+pub async fn game_place_exists(
+    pool: &PgPool,
+    key: &str,
+    here: &GameHere,
+) -> Result<bool, sqlx::Error> {
+    sqlx::query_scalar(
+        "SELECT EXISTS (SELECT 1 FROM translators.text_places
+                        WHERE server = $1 AND edit_key = $2 AND section = $3 AND object_id = $4
+                          AND field = $5 AND idx = $6)",
+    )
+    .bind(SERVER)
+    .bind(key)
+    .bind(&here.section)
+    .bind(&here.object_id)
+    .bind(&here.field)
+    .bind(here.idx)
+    .fetch_one(pool)
+    .await
+}
+
 /// Write the caller's proposal for the key (for every place, or for this
-/// place only when `context`), or rewrite the one they have in that scope (a
-/// new version; the place moves to where it was rewritten). Returns its id.
+/// place only when `context` — outside the story with `here`, the place of
+/// the game data), or rewrite the one they have in that scope (a new
+/// version; the place moves to where it was rewritten). Returns its id.
 #[allow(clippy::too_many_arguments)]
 pub async fn upsert_proposal(
     pool: &PgPool,
@@ -588,10 +634,12 @@ pub async fn upsert_proposal(
     text: &str,
     source: &str,
     context: bool,
+    here: Option<&GameHere>,
     author: Uuid,
 ) -> Result<i64, sqlx::Error> {
+    let here = here.filter(|_| context);
     let mut tx = pool.begin().await?;
-    let mine = my_proposal(&mut tx, key, author, context.then_some(place)).await?;
+    let mine = my_proposal(&mut tx, key, author, context.then_some(place), here).await?;
     let id = if let Some((id, old_text, old_source)) = mine {
         if old_text != text || old_source != source {
             sqlx::query(
@@ -612,8 +660,9 @@ pub async fn upsert_proposal(
         id
     } else {
         let id: i64 = sqlx::query_scalar(
-            "INSERT INTO translators.proposals (edit_key, text, source, author_id, story_id, line, part, context)
-             VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING id",
+            "INSERT INTO translators.proposals (edit_key, text, source, author_id, story_id, line, part, context,
+                                                game_section, game_object, game_object_en, game_field, game_idx)
+             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13) RETURNING id",
         )
         .bind(key)
         .bind(text)
@@ -623,6 +672,11 @@ pub async fn upsert_proposal(
         .bind(place.line)
         .bind(place.part)
         .bind(context)
+        .bind(here.map(|h| h.section.as_str()))
+        .bind(here.map(|h| h.object_id.as_str()))
+        .bind(here.and_then(|h| h.object_en.as_deref()))
+        .bind(here.map(|h| h.field.as_str()))
+        .bind(here.map(|h| h.idx))
         .fetch_one(&mut *tx)
         .await?;
         add_version(&mut tx, id, text, source, author).await?;

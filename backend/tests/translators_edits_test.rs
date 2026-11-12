@@ -124,9 +124,18 @@ async fn proposals_votes_comments_and_outdated() {
     );
 
     // Anna writes, then takes Sova's: one proposal, two versions.
-    let p1 = db::upsert_proposal(&pool, &key, &place("s1", 5), "Здравствуй.", "own", false, a)
-        .await
-        .unwrap();
+    let p1 = db::upsert_proposal(
+        &pool,
+        &key,
+        &place("s1", 5),
+        "Здравствуй.",
+        "own",
+        false,
+        None,
+        a,
+    )
+    .await
+    .unwrap();
     let again = db::upsert_proposal(
         &pool,
         &key,
@@ -134,6 +143,7 @@ async fn proposals_votes_comments_and_outdated() {
         "Здравствуйте.",
         "sova",
         false,
+        None,
         a,
     )
     .await
@@ -147,7 +157,7 @@ async fn proposals_votes_comments_and_outdated() {
         versions.iter().map(|v| v.text.as_str()).collect::<Vec<_>>(),
         vec!["Добрый день.", "Здравствуйте.", "Здравствуй."]
     );
-    let p2 = db::upsert_proposal(&pool, &key, &place("s1", 5), "Хай.", "own", false, b)
+    let p2 = db::upsert_proposal(&pool, &key, &place("s1", 5), "Хай.", "own", false, None, b)
         .await
         .unwrap();
     assert_ne!(p1, p2);
@@ -238,6 +248,7 @@ async fn proposals_votes_comments_and_outdated() {
         "Привет-привет.",
         "own",
         true,
+        None,
         b,
     )
     .await
@@ -363,9 +374,18 @@ async fn approvals_progress_and_export_rows() {
     let at = |l| place("s1", l);
 
     // A proposal approved for its entry, the game's Russian checked, a one-place proposal approved there.
-    let p = db::upsert_proposal(&pool, "Hello.", &at(1), "Здравствуй.", "own", false, a)
-        .await
-        .unwrap();
+    let p = db::upsert_proposal(
+        &pool,
+        "Hello.",
+        &at(1),
+        "Здравствуй.",
+        "own",
+        false,
+        None,
+        a,
+    )
+    .await
+    .unwrap();
     db::approve_key(
         &pool,
         "Hello.",
@@ -380,7 +400,7 @@ async fn approvals_progress_and_export_rows() {
     db::approve_key(&pool, "Bye.", "game", None, "Пока.", &at(2), lead)
         .await
         .unwrap();
-    let c = db::upsert_proposal(&pool, "Yes.", &at(3), "Ага.", "own", true, a)
+    let c = db::upsert_proposal(&pool, "Yes.", &at(3), "Ага.", "own", true, None, a)
         .await
         .unwrap();
     db::approve_context(&pool, "Yes.", c, &at(3), lead, true)
@@ -533,9 +553,18 @@ async fn history_of_a_line() {
 
     // Anna proposes, rewrites; the lead approves.
     let here = place("s1", 1);
-    let p = db::upsert_proposal(&pool, "Hello.", &here, "Добрый день.", "own", false, a)
-        .await
-        .unwrap();
+    let p = db::upsert_proposal(
+        &pool,
+        "Hello.",
+        &here,
+        "Добрый день.",
+        "own",
+        false,
+        None,
+        a,
+    )
+    .await
+    .unwrap();
     let got = db::key_edits(&pool, &keys[..1]).await.unwrap();
     assert_eq!(got[0].proposals[0].previous_text, None, "never rewritten");
     db::rewrite_proposal(&pool, p, "Добрый вечер.", "own", a)
@@ -559,9 +588,18 @@ async fn history_of_a_line() {
     .unwrap();
     // A proposal for another place only stays out of this place's history.
     line(&pool, "s2", 9, 0, "Hello.", "Здравствуй.").await;
-    db::upsert_proposal(&pool, "Hello.", &place("s2", 9), "Салют.", "own", true, a)
-        .await
-        .unwrap();
+    db::upsert_proposal(
+        &pool,
+        "Hello.",
+        &place("s2", 9),
+        "Салют.",
+        "own",
+        true,
+        None,
+        a,
+    )
+    .await
+    .unwrap();
 
     let events = db::history(&pool, "Hello.", &here, Some("Здравствуй."))
         .await
@@ -802,6 +840,7 @@ async fn texts_are_stored_and_searched() {
         "Вы не из Урсуса?",
         "own",
         false,
+        None,
         a,
     )
     .await
@@ -910,6 +949,7 @@ async fn texts_are_stored_and_searched() {
         "Урсусская слизь",
         "own",
         false,
+        None,
         a,
     )
     .await
@@ -1053,11 +1093,11 @@ async fn a_long_text_is_edited() {
 
     let ru = "Перевод. ".repeat(700);
     let ru = ru.trim();
-    let id = db::upsert_proposal(&pool, &long, &here, ru, "own", false, a)
+    let id = db::upsert_proposal(&pool, &long, &here, ru, "own", false, None, a)
         .await
         .unwrap();
     // Written again: the same proposal (one per author and entry).
-    let again = db::upsert_proposal(&pool, &long, &here, "Короче.", "own", false, a)
+    let again = db::upsert_proposal(&pool, &long, &here, "Короче.", "own", false, None, a)
         .await
         .unwrap();
     assert_eq!(id, again);
@@ -1121,6 +1161,103 @@ async fn a_long_text_is_edited() {
     assert_eq!(n, 1);
     let objects = texts::db::objects(&pool, "en", "archives").await.unwrap();
     assert_eq!(objects[0].approved, 1);
+
+    // "A separate translation is needed here": a proposal for one place of the game data.
+    use backend::translators::edits::dto::GameHere;
+    let amiya = EditPlace::text("Amiya");
+    let its_name = GameHere {
+        section: "operators".to_owned(),
+        object_id: "char_1".to_owned(),
+        object_en: Some("Amiya".to_owned()),
+        field: "name".to_owned(),
+        idx: 0,
+    };
+    assert!(
+        db::game_place_exists(&pool, "Amiya", &its_name)
+            .await
+            .unwrap()
+    );
+    let elsewhere = GameHere {
+        object_id: "char_2".to_owned(),
+        ..its_name.clone()
+    };
+    assert!(
+        !db::game_place_exists(&pool, "Amiya", &elsewhere)
+            .await
+            .unwrap()
+    );
+    let only = db::upsert_proposal(
+        &pool,
+        "Amiya",
+        &amiya,
+        "Амия-тян",
+        "own",
+        true,
+        Some(&its_name),
+        a,
+    )
+    .await
+    .unwrap();
+    // The same author may still propose for every place; both live side by side.
+    let all = db::upsert_proposal(&pool, "Amiya", &amiya, "Эмия", "own", false, None, a)
+        .await
+        .unwrap();
+    assert_ne!(only, all);
+    // Written again for the same place: the same proposal.
+    let again = db::upsert_proposal(
+        &pool,
+        "Amiya",
+        &amiya,
+        "Амия!",
+        "own",
+        true,
+        Some(&its_name),
+        a,
+    )
+    .await
+    .unwrap();
+    assert_eq!(only, again);
+    let e = db::key_edits(&pool, &["Amiya".to_owned()]).await.unwrap();
+    let p = e[0].proposals.iter().find(|p| p.id == only).unwrap();
+    assert!(p.context);
+    assert_eq!(p.here.as_ref(), Some(&its_name));
+    assert!(
+        e[0].proposals
+            .iter()
+            .find(|p| p.id == all)
+            .unwrap()
+            .here
+            .is_none()
+    );
+    // It goes to only_here.tsv, never to the dictionaries or the story's lines.
+    let asked = backend::translators::export::only_here_rows(&pool)
+        .await
+        .unwrap();
+    assert_eq!(asked.len(), 1);
+    assert_eq!(asked[0].text, "Амия!");
+    assert_eq!(asked[0].ru_game.as_deref(), Some("Амия"));
+    assert_eq!(
+        backend::translators::export::only_here_place(&asked[0]),
+        "Оператор › Amiya [char_1] › name"
+    );
+    for review in [false, true] {
+        assert!(
+            backend::translators::export::context_rows(&pool, review)
+                .await
+                .unwrap()
+                .is_empty()
+        );
+    }
+    let review = backend::translators::export::rows(&pool, true)
+        .await
+        .unwrap();
+    assert!(review.iter().all(|r| r.text != "Амия!"));
+    // The object's progress counts proposals for every place only.
+    let ops = texts::db::objects(&pool, "en", "operators").await.unwrap();
+    assert_eq!(ops[0].waiting, 1);
+    db::delete_proposal(&pool, all).await.unwrap();
+    let ops = texts::db::objects(&pool, "en", "operators").await.unwrap();
+    assert_eq!(ops[0].waiting, 0);
     db::mark_outdated(&pool).await.unwrap();
     db::withdraw_key(&pool, &long, &here, lead).await.unwrap();
     assert!(

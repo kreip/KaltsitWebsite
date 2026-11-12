@@ -2031,6 +2031,26 @@ export const messages = {
         text: "Extra: {tags}.",
         description: "Part of the tags warning under the editor: tags the English does not have.",
     },
+    "proposal.onlyHere": {
+        text: "only here — needs the pack maintainer's decision",
+        description: "Prominent badge on a proposal made for one place of the game data outside the story: the game shows one translation for an English text everywhere, so only the pack's maintainer can make this place differ.",
+    },
+    "save.onlyHere": {
+        text: "A separate translation is needed here",
+        description: "Option of the save dialog for a text outside the story that stands in several places: ask for a translation of its own at this one place.",
+    },
+    "save.onlyHereHint": {
+        text: "The game shows one translation for this English everywhere. A separate one here is a request to the pack's maintainer: it does not go to the dictionaries, only to only_here.tsv of the export.",
+        description: "Line under the 'separate translation is needed here' option of the save dialog.",
+    },
+    "editor.onlyHere": {
+        text: "This proposal asks for a separate translation at this one place; the pack's maintainer decides.",
+        description: "Line under the editor while a one-place proposal outside the story is edited.",
+    },
+    "export.onlyHere": {
+        text: "Separate translation asked for one place outside the story (only_here.tsv): {count}",
+        description: "Line of the export's summary: rows of only_here.tsv, for the pack's maintainer to decide.",
+    },
 } satisfies MessageMap;
 
 export const { keys } = defineMessages({ namespace, messages });

@@ -166,6 +166,7 @@ pub async fn object_lines(
         .zip(places)
         .zip(lines)
         .map(|((text, place), line)| ObjectLine {
+            object_id: text.object_id,
             field: text.field,
             idx: text.idx,
             note: text.note,

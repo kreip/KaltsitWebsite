@@ -75,6 +75,25 @@ impl EditPlace {
     }
 }
 
+/// A place of the game data: a field of an object (this operator's second
+/// skill's description). A proposal "only here" outside the story names it.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, TS, ToSchema)]
+#[serde(rename_all = "camelCase")]
+#[ts(export)]
+pub struct GameHere {
+    /// `operators`, `enemies`, `stages`, `items`, `archives` or `other`.
+    pub section: String,
+    /// The object's id in the game data (a table's name for `other`).
+    pub object_id: String,
+    /// The object's English name.
+    #[serde(default)]
+    pub object_en: Option<String>,
+    /// `name`, `skill.description`, `module.effect`, ...
+    pub field: String,
+    /// Which one of several (skill 2), from 1; 0 when there is one.
+    pub idx: i16,
+}
+
 /// A translator's proposed Russian for one dictionary entry.
 #[derive(Debug, Clone, Serialize, TS, ToSchema)]
 #[serde(rename_all = "camelCase")]
@@ -102,6 +121,9 @@ pub struct Proposal {
     pub place: EditPlace,
     /// For this place only: never exported to the dictionaries.
     pub context: bool,
+    /// A one-place proposal outside the story: the place of the game data
+    /// it asks a separate translation for (the pack's maintainer decides).
+    pub here: Option<GameHere>,
     /// Its English is gone from the story since an import.
     pub outdated: bool,
     /// A proposal for one place approved by the lead (for that place only).
@@ -257,6 +279,10 @@ pub struct ProposalInput {
     /// For this place only (a context translation), not for every place of the entry.
     #[serde(default)]
     pub context: bool,
+    /// With `context`, for a text outside the story: the place of the game
+    /// data a separate translation is asked for.
+    #[serde(default)]
+    pub here: Option<GameHere>,
     /// Required for a proposal for every place when the entry stands in more than one.
     #[serde(default)]
     pub confirm_many: bool,

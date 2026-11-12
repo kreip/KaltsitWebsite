@@ -706,6 +706,8 @@ fn twins(
 
 /// One text of an object: what of the object it is, and its entry.
 pub struct ObjectText {
+    /// The record of the game data holding it (the first, when several of the object do).
+    pub object_id: String,
     pub field: String,
     pub idx: i16,
     /// What tells it from the object's other texts at this field (`GamePlace::note`).
@@ -715,6 +717,7 @@ pub struct ObjectText {
 
 #[derive(sqlx::FromRow)]
 struct ObjectTextRow {
+    object_id: String,
     field: String,
     idx: i16,
     note: String,
@@ -734,7 +737,7 @@ pub async fn object_texts(
 ) -> Result<Vec<ObjectText>, sqlx::Error> {
     let key = object_key(section);
     let rows: Vec<ObjectTextRow> = sqlx::query_as(&format!(
-        "SELECT x.field, x.idx, x.note, t.id, t.edit_key, md5(t.edit_key) AS key_md5, t.en, t.ru, t.file,
+        "SELECT x.object_id, x.field, x.idx, x.note, t.id, t.edit_key, md5(t.edit_key) AS key_md5, t.en, t.ru, t.file,
                 t.plugin_role, t.ru_plugin, t.sections, t.places, '' AS status
          FROM (SELECT p.field, p.idx, p.edit_key, MIN(p.ord) AS ord, MIN(p.object_id) AS object_id,
                       COALESCE(string_agg(DISTINCT NULLIF(p.note, ''), ','), '') AS note
@@ -752,6 +755,7 @@ pub async fn object_texts(
     Ok(rows
         .into_iter()
         .map(|r| ObjectText {
+            object_id: r.object_id,
             field: r.field,
             idx: r.idx,
             note: r.note,

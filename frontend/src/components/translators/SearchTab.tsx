@@ -29,6 +29,7 @@ import { useDebounce } from "#/hooks/use-debounce";
 import { useFormatters, useLocale, useT } from "#/lib/i18n";
 import type { TypedT } from "#/lib/i18n/messages";
 import { searchLinesQueryOptions, translatorsMeQueryOptions } from "#/lib/translators/api";
+import type { GameHere } from "#/types/generated/GameHere";
 import type { KeyEdits } from "#/types/generated/KeyEdits";
 import type { ObjectHit } from "#/types/generated/ObjectHit";
 import type { SearchLine } from "#/types/generated/SearchLine";
@@ -129,6 +130,13 @@ function Objects({ objects, t }: { objects: readonly ObjectHit[]; t: T }): React
     );
 }
 
+/** The place of the game data a found text is shown at (its first), when it is one: a proposal may ask a separate translation there. */
+function gameHere(row: SearchLine): GameHere | null {
+    const at = row.hit.at.at(0);
+    if (row.line.kind !== "text" || !at || at.storyId !== null || !at.objectId || !at.field || at.section === "other") return null;
+    return { section: at.section, objectId: at.objectId, objectEn: at.objectEn, field: at.field, idx: at.idx ?? 0 };
+}
+
 interface IResultsProps {
     rows: readonly SearchLine[];
     edits: readonly KeyEdits[];
@@ -204,6 +212,7 @@ function Results({ rows, edits, me, find, showVariants, showDiff, t }: IResultsP
                                         editor={editing?.id === id ? editing.state : null}
                                         onEditor={(state) => setEditing(state ? { id, state } : null)}
                                         find={find}
+                                        here={gameHere(r)}
                                         t={t}
                                     />
                                 </Folded>

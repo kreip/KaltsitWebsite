@@ -523,5 +523,10 @@
     "editor.wrapHint": "Выделите слово и нажмите тег.",
     "editor.tagsDiffer": "Теги не как в оригинале.",
     "editor.tagsMissing": "Не хватает: {tags}.",
-    "editor.tagsExtra": "Лишние: {tags}."
+    "editor.tagsExtra": "Лишние: {tags}.",
+    "proposal.onlyHere": "только здесь — нужно решение Kolooo",
+    "save.onlyHere": "Нужен отдельный перевод здесь",
+    "save.onlyHereHint": "В игре у этого английского текста один перевод на все места. Отдельный перевод здесь — запрос к Kolooo: в словари он не идёт, а попадает в файл only_here.tsv выгрузки.",
+    "editor.onlyHere": "Это предложение — отдельный перевод только для этого места; решает Kolooo.",
+    "export.onlyHere": "Нужен отдельный перевод в одном месте вне сюжета (only_here.tsv): {count}"
 }

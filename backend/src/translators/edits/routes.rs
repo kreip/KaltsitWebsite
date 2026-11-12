@@ -83,7 +83,10 @@ fn proposal_text(text: &str, ru_game: Option<&str>) -> Result<String, ApiError> 
 }
 
 /// Write the caller's proposal for the line's dictionary entry, or rewrite
-/// the one they have (a new version). Members only.
+/// the one they have (a new version). With `context`: for this place only —
+/// a story line, or outside the story (with `here`) a field of a game
+/// object, which asks the pack's maintainer for a separate translation
+/// there. Members only.
 #[utoipa::path(
     post,
     path = "/translators/proposals",
@@ -109,12 +112,25 @@ pub async fn create_proposal(
     if !matches!(input.source.as_str(), "own" | "sova" | "ai") {
         return Err(ApiError::BadRequest("source: own, sova or ai".into()));
     }
-    if input.context && input.place.is_text() {
-        return Err(ApiError::BadRequest(
-            "a text outside the story has one translation everywhere".into(),
-        ));
-    }
     let line = editable_place(&state, &input.place).await?;
+    // Outside the story the game shows one translation everywhere: "only here" must name
+    // the place of the game data it asks a separate translation for.
+    let here = match (input.context && input.place.is_text(), &input.here) {
+        (true, Some(here)) => {
+            if !db::game_place_exists(&state.db, &line.edit_key, here).await? {
+                return Err(ApiError::BadRequest(
+                    "the game data does not show this text at that place".into(),
+                ));
+            }
+            Some(here)
+        }
+        (true, None) => {
+            return Err(ApiError::BadRequest(
+                "a text outside the story has one translation everywhere: name the place a separate one is needed at".into(),
+            ));
+        }
+        (false, _) => None,
+    };
     let text = proposal_text(&input.text, line.ru_game.as_deref())?;
     check_many(&state, &line.edit_key, input.confirm_many, input.context).await?;
     let id = db::upsert_proposal(
@@ -124,6 +140,7 @@ pub async fn create_proposal(
         &text,
         &input.source,
         input.context,
+        here,
         me.id,
     )
     .await?;

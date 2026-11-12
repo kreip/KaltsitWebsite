@@ -23,6 +23,7 @@ import type { TypedT } from "#/lib/i18n/messages";
 import { type AgreeVariant, setRecommendRuleFn, translatorsMeQueryOptions } from "#/lib/translators/api";
 import { cn } from "#/lib/utils";
 import type { EditPlace } from "#/types/generated/EditPlace";
+import type { GameHere } from "#/types/generated/GameHere";
 import type { KeyEdits } from "#/types/generated/KeyEdits";
 import type { LineTerm } from "#/types/generated/LineTerm";
 import type { OutdatedEdit } from "#/types/generated/OutdatedEdit";
@@ -174,10 +175,12 @@ export interface IRuCellProps {
     onEditor: (state: EditorState | null) => void;
     /** The search's text, highlighted in the game's Russian. */
     find?: IFind | null;
+    /** Outside the story: the place of the game data the row stands at (a proposal may ask a separate translation there). */
+    here?: GameHere | null;
     t: T;
 }
 
-export function RuCell({ line, analysis, place, nickname, showVariants, showDiff, edits, outdated, me, editor, onEditor, find = null, t }: IRuCellProps): React.ReactElement {
+export function RuCell({ line, analysis, place, nickname, showVariants, showDiff, edits, outdated, me, editor, onEditor, find = null, here = null, t }: IRuCellProps): React.ReactElement {
     const f = useFormatters();
     const [history, setHistory] = useState(false);
     const quotes = quotesAt(edits, place);
@@ -255,7 +258,7 @@ export function RuCell({ line, analysis, place, nickname, showVariants, showDiff
             ) : null}
             {line.ruGameMatch === "lines" ? <span className="text-subtle-foreground text-xs">{t("ru.lineByLine")}</span> : null}
             <Terms terms={line.terms} t={t} />
-            <Proposals {...notes} nickname={nickname} compare={showDiff} ruGame={line.ruGame} marks={(p) => marks(`proposal:${p.id}`)} onEdit={(p) => onEditor({ kind: "proposal", text: p.text, source: p.source === "sova" || p.source === "ai" ? p.source : "own", context: p.context })} />
+            <Proposals {...notes} nickname={nickname} compare={showDiff} ruGame={line.ruGame} marks={(p) => marks(`proposal:${p.id}`)} onEdit={(p) => onEditor({ kind: "proposal", text: p.text, source: p.source === "sova" || p.source === "ai" ? p.source : "own", context: p.context, here: p.here })} />
             {showVariants ? (
                 <>
                     {line.sova ? (
@@ -275,7 +278,7 @@ export function RuCell({ line, analysis, place, nickname, showVariants, showDiff
             ) : null}
             <OutdatedHere items={outdated} nickname={nickname} t={t} />
             <LineComments {...notes} />
-            {editor?.kind === "proposal" ? <ProposalEditor line={line} place={place} initial={editor.text} source={editor.source} context={editor.context} nickname={nickname} onClose={() => onEditor(null)} t={t} /> : null}
+            {editor?.kind === "proposal" ? <ProposalEditor line={line} place={place} initial={editor.text} source={editor.source} context={editor.context} here={editor.context ? (editor.here ?? null) : here} nickname={nickname} onClose={() => onEditor(null)} t={t} /> : null}
             {editor && editor.kind !== "proposal" ? <CommentEditor line={line} place={place} edits={edits} kind={editor.kind} quote={editor.quote} onClose={() => onEditor(null)} t={t} /> : null}
         </div>
     );

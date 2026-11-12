@@ -8,6 +8,11 @@ import type { TranslatorLine } from "./TranslatorLine";
  */
 export type ObjectLine = {
     /**
+     * The record of the game data holding it (`char_002_amiya`, `main_00-01`):
+     * the first one when several records of the object hold the same text.
+     */
+    objectId: string;
+    /**
      * `name`, `trait`, `talent.description`, `skill.name`, `module.effect`, ...
      */
     field: string;

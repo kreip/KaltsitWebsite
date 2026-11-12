@@ -199,6 +199,9 @@ pub struct GameObject {
 #[serde(rename_all = "camelCase")]
 #[ts(export)]
 pub struct ObjectLine {
+    /// The record of the game data holding it (`char_002_amiya`, `main_00-01`):
+    /// the first one when several records of the object hold the same text.
+    pub object_id: String,
     /// `name`, `trait`, `talent.description`, `skill.name`, `module.effect`, ...
     pub field: String,
     /// Which one of several (skill 2), from 1; 0 when there is one.

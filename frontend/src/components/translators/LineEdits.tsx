@@ -30,6 +30,7 @@ import { cn } from "#/lib/utils";
 import type { EditComment } from "#/types/generated/EditComment";
 import type { EditPerson } from "#/types/generated/EditPerson";
 import type { EditPlace } from "#/types/generated/EditPlace";
+import type { GameHere } from "#/types/generated/GameHere";
 import type { KeyEdits } from "#/types/generated/KeyEdits";
 import type { OutdatedEdit } from "#/types/generated/OutdatedEdit";
 import type { Proposal } from "#/types/generated/Proposal";
@@ -417,10 +418,19 @@ export function Proposals({ edits, place, me, nickname, onEdit, marks, compare =
                                     <span>· {f.date((p.editedAt ?? p.createdAt) * 1000, { dateStyle: "medium" })}</span>
                                     {p.editedAt !== null ? <span>· {t("proposal.edited")}</span> : null}
                                     {p.source !== "own" ? <span>· {t(`proposal.from.${p.source}` as "proposal.from.sova")}</span> : null}
-                                    {p.context ? (
+                                    {p.context && !p.here ? (
                                         <Badge variant="info" size="sm">
                                             {t("proposal.contextBadge")}
                                         </Badge>
+                                    ) : null}
+                                    {p.here ? (
+                                        // Outside the story the game cannot tell places apart: a request to the pack's maintainer.
+                                        <>
+                                            <Badge variant="warning" size="sm">
+                                                {t("proposal.onlyHere")}
+                                            </Badge>
+                                            <GamePlace section={p.here.section} objectId={p.here.objectId} objectEn={p.here.objectEn ?? null} field={p.here.field} idx={p.here.idx} t={t} />
+                                        </>
                                     ) : null}
                                     <AgreeButton place={place} variant="proposal" proposalId={p.id} people={p.agreements} me={me} own={mine} t={t} />
                                     {p.context && p.approvedAt !== null ? (
@@ -485,7 +495,7 @@ export function OutdatedHere({ items, nickname, t }: { items: readonly OutdatedE
 }
 
 /** What the in-row editor is open for. */
-export type EditorState = { kind: "proposal"; text: string; source: ProposalSource; context: boolean } | { kind: "remark" | "note"; quote: string | null };
+export type EditorState = { kind: "proposal"; text: string; source: ProposalSource; context: boolean; here?: GameHere | null } | { kind: "remark" | "note"; quote: string | null };
 
 /** The text selected inside `within`, if any: a comment quotes it. */
 function selectedIn(within: Element | null): string | null {
@@ -613,6 +623,8 @@ interface ISaveDialogProps {
     places: number;
     /** Offer "only this place" when the line allows it (`contextAllowed`: every story line); a rewrite keeps its scope. Else the "changes everywhere" note. */
     allowContext: boolean;
+    /** Outside the story, at a place of the game data: offer "a separate translation is needed here" (a request to the pack's maintainer). */
+    here?: GameHere | null;
     pending: boolean;
     onSave: (context: boolean) => void;
     nickname: string;
@@ -620,7 +632,7 @@ interface ISaveDialogProps {
 }
 
 /** Saving a proposal for an entry in several places: for all of them (with the list and a confirmation) or for this place only. */
-export function SaveDialog({ open, onOpenChange, place, places, allowContext, pending, onSave, nickname, t }: ISaveDialogProps): React.ReactElement {
+export function SaveDialog({ open, onOpenChange, place, places, allowContext, here = null, pending, onSave, nickname, t }: ISaveDialogProps): React.ReactElement {
     const scopeId = useId();
     const [context, setContext] = useState(false);
     const [understood, setUnderstood] = useState(false);
@@ -631,7 +643,7 @@ export function SaveDialog({ open, onOpenChange, place, places, allowContext, pe
                 <AlertDialogHeader>
                     <AlertDialogTitle>{t("save.title", { count: places })}</AlertDialogTitle>
                     <AlertDialogDescription>{t("save.proposalOnly")}</AlertDialogDescription>
-                    {allowContext ? (
+                    {allowContext || here ? (
                         <RadioGroup aria-labelledby={scopeId} value={context ? "here" : "all"} onValueChange={(v) => setContext(v === "here")} className="gap-2 pt-2">
                             <span id={scopeId} className="sr-only">
                                 {t("save.scope")}
@@ -648,8 +660,13 @@ export function SaveDialog({ open, onOpenChange, place, places, allowContext, pe
                             <label className="flex items-start gap-2 text-sm">
                                 <Radio value="here" />
                                 <span className="flex flex-col">
-                                    <span className="font-medium">{t("save.here")}</span>
-                                    <span className="text-muted-foreground text-xs">{t("save.hereHint")}</span>
+                                    <span className="font-medium">{here ? t("save.onlyHere") : t("save.here")}</span>
+                                    <span className="text-muted-foreground text-xs">{here ? t("save.onlyHereHint") : t("save.hereHint")}</span>
+                                    {here ? (
+                                        <span className="text-muted-foreground text-xs">
+                                            <GamePlace section={here.section} objectId={here.objectId} objectEn={here.objectEn ?? null} field={here.field} idx={here.idx} t={t} />
+                                        </span>
+                                    ) : null}
                                 </span>
                             </label>
                         </RadioGroup>
@@ -750,19 +767,21 @@ interface IEditorProps {
     source: ProposalSource;
     /** Editing a one-place proposal: it stays one. */
     context: boolean;
+    /** The place of the game data: of the one-place proposal being edited, else of the row (a new one may ask a separate translation there). */
+    here?: GameHere | null;
     nickname: string;
     onClose: () => void;
     t: T;
 }
 
 /** The in-row editor of my proposal: Ctrl+Enter saves, Esc cancels; a substitution is one chip, a tag a span as in the game (TokenEditor.tsx). */
-export function ProposalEditor({ line, place, initial, source, context, nickname, onClose, t }: IEditorProps): React.ReactElement {
+export function ProposalEditor({ line, place, initial, source, context, here = null, nickname, onClose, t }: IEditorProps): React.ReactElement {
     const id = useId();
     const hintId = useId();
     const [text, setText] = useState(initial);
     const [asking, setAsking] = useState(false);
     const tools = useEditorTools(line.en, t);
-    const save = useEditMutation((c: { context: boolean; confirmMany: boolean }) => createProposalFn({ data: { place, text, source, context: c.context, confirmMany: c.confirmMany } }), t("edit.failedSave"));
+    const save = useEditMutation((c: { context: boolean; confirmMany: boolean }) => createProposalFn({ data: { place, text, source, context: c.context, here, confirmMany: c.confirmMany } }), t("edit.failedSave"));
     const clean = cleanText(text);
     const sameAsGame = line.ruGame !== null && clean === cleanText(line.ruGame);
     const canSave = clean.length > 0 && !sameAsGame && !save.isPending;
@@ -787,7 +806,7 @@ export function ProposalEditor({ line, place, initial, source, context, nickname
             </span>
             {line.ruGameMatch === "lines" || line.en.includes("\n") ? <span className="text-subtle-foreground text-xs">{t("editor.wholeEntry")}</span> : null}
             {sameAsGame ? <span className="text-subtle-foreground text-xs">{t("editor.sameAsGame")}</span> : null}
-            {context ? <span className="text-subtle-foreground text-xs">{t("editor.contextOnly")}</span> : <PlacesNote line={line} place={place} nickname={nickname} t={t} />}
+            {context ? <span className="text-subtle-foreground text-xs">{here ? t("editor.onlyHere") : t("editor.contextOnly")}</span> : <PlacesNote line={line} place={place} nickname={nickname} t={t} />}
             <div className="flex flex-wrap items-center gap-2">
                 <Button size="sm" onClick={submit} disabled={!canSave}>
                     {save.isPending ? <Spinner /> : null}
@@ -798,7 +817,7 @@ export function ProposalEditor({ line, place, initial, source, context, nickname
                 </Button>
                 <span className="text-subtle-foreground text-xs">{t("editor.keys")}</span>
             </div>
-            {asking ? <SaveDialog open={asking} onOpenChange={setAsking} place={place} places={line.places} allowContext={line.contextAllowed} pending={save.isPending} onSave={(c) => save.mutate({ context: c, confirmMany: !c }, done)} nickname={nickname} t={t} /> : null}
+            {asking ? <SaveDialog open={asking} onOpenChange={setAsking} place={place} places={line.places} allowContext={line.contextAllowed} here={here} pending={save.isPending} onSave={(c) => save.mutate({ context: c, confirmMany: !c }, done)} nickname={nickname} t={t} /> : null}
         </div>
     );
 }

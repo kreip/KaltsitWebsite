@@ -13253,7 +13253,7 @@
         "tags": [
           "translators"
         ],
-        "summary": "The whole export as one ZIP: the changed dictionaries (or\n00_translators.txt), story_lines.tsv and plugin_strings.tsv when there\nare rows, report.txt. Same rights as the export.",
+        "summary": "The whole export as one ZIP: the changed dictionaries (or\n00_translators.txt), story_lines.tsv, plugin_strings.tsv and\nonly_here.tsv when there are rows, report.txt. Same rights as the export.",
         "operationId": "export_archive",
         "parameters": [
           {
@@ -14090,7 +14090,7 @@
         "tags": [
           "translators"
         ],
-        "summary": "Write the caller's proposal for the line's dictionary entry, or rewrite\nthe one they have (a new version). Members only.",
+        "summary": "Write the caller's proposal for the line's dictionary entry, or rewrite\nthe one they have (a new version). With `context`: for this place only —\na story line, or outside the story (with `here`) a field of a game\nobject, which asks the pack's maintainer for a separate translation\nthere. Members only.",
         "operationId": "create_proposal",
         "requestBody": {
           "content": {
@@ -24517,6 +24517,7 @@
           "pluginRows",
           "storyRows",
           "contextRows",
+          "onlyHereRows",
           "loadedAfter",
           "overriddenBy",
           "replaced",
@@ -24572,6 +24573,11 @@
           },
           "mode": {
             "type": "string"
+          },
+          "onlyHereRows": {
+            "type": "integer",
+            "format": "int32",
+            "description": "Rows of `only_here.tsv`: a separate translation asked for one place\nof the game data, for the pack's maintainer to decide."
           },
           "overriddenBy": {
             "type": "array",
@@ -25431,6 +25437,42 @@
           "zones": {
             "type": "integer",
             "minimum": 0
+          }
+        }
+      },
+      "GameHere": {
+        "type": "object",
+        "description": "A place of the game data: a field of an object (this operator's second\nskill's description). A proposal \"only here\" outside the story names it.",
+        "required": [
+          "section",
+          "objectId",
+          "field",
+          "idx"
+        ],
+        "properties": {
+          "field": {
+            "type": "string",
+            "description": "`name`, `skill.description`, `module.effect`, ..."
+          },
+          "idx": {
+            "type": "integer",
+            "format": "int32",
+            "description": "Which one of several (skill 2), from 1; 0 when there is one."
+          },
+          "objectEn": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The object's English name."
+          },
+          "objectId": {
+            "type": "string",
+            "description": "The object's id in the game data (a table's name for `other`)."
+          },
+          "section": {
+            "type": "string",
+            "description": "`operators`, `enemies`, `stages`, `items`, `archives` or `other`."
           }
         }
       },
@@ -29329,6 +29371,7 @@
         "type": "object",
         "description": "One text of an object: what of the object it is, and the text as a line\nof the table, edited as the text itself (one translation everywhere).",
         "required": [
+          "objectId",
           "field",
           "idx",
           "note",
@@ -29351,6 +29394,10 @@
           "note": {
             "type": "string",
             "description": "What tells it from the object's other texts at the same field, as\ncodes: variants joined by `,`, the parts of one by `+`. `E2` elite,\n`L30` operator level, `P6` potential, `S7` skill level, `M3` mastery,\n`T2` module stage, `N1` the number in a list, `V2` the voice set, `C`\nchallenge mode, `DE` / `DN` / `DT` the story / standard / adverse\nenvironment, `#…` a code of the game as it is, `@…` the id of the\nstory an operator record's introduction leads to. May be empty."
+          },
+          "objectId": {
+            "type": "string",
+            "description": "The record of the game data holding it (`char_002_amiya`, `main_00-01`):\nthe first one when several records of the object hold the same text."
           },
           "place": {
             "$ref": "#/components/schemas/EditPlace"
@@ -31396,6 +31443,17 @@
             "format": "int64",
             "description": "Unix seconds of the last rewrite, null when never rewritten."
           },
+          "here": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/GameHere",
+                "description": "A one-place proposal outside the story: the place of the game data\nit asks a separate translation for (the pack's maintainer decides)."
+              }
+            ]
+          },
           "id": {
             "type": "integer",
             "format": "int64"
@@ -31454,6 +31512,17 @@
               "context": {
                 "type": "boolean",
                 "description": "For this place only (a context translation), not for every place of the entry."
+              },
+              "here": {
+                "oneOf": [
+                  {
+                    "type": "null"
+                  },
+                  {
+                    "$ref": "#/components/schemas/GameHere",
+                    "description": "With `context`, for a text outside the story: the place of the game\ndata a separate translation is asked for."
+                  }
+                ]
               },
               "source": {
                 "type": "string",

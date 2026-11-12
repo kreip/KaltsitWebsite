@@ -138,6 +138,7 @@ export function ExportDialog({ forGame, releases, t }: { forGame: boolean; relea
                                 <li>{t("export.written", { count: r.written })}</li>
                                 <li>{t("export.story", { count: r.storyRows, context: r.contextRows })}</li>
                                 <li>{t("export.plugin", { count: r.pluginRows })}</li>
+                                {r.onlyHereRows > 0 ? <li>{t("export.onlyHere", { count: r.onlyHereRows })}</li> : null}
                                 <li className={r.skipped.length > 0 ? "text-warning-foreground" : undefined}>{t("export.skipped", { count: r.skipped.length })}</li>
                                 {format === "file" ? (
                                     <li className={r.overriddenBy.length > 0 ? "text-warning-foreground" : "text-muted-foreground"}>{r.loadedAfter.length > 0 ? t("export.after", { files: r.loadedAfter.map((x) => `${x} (${r.overriddenBy.find((o) => o.file === x)?.keys ?? 0})`).join(", ") }) : t("export.afterNone")}</li>
