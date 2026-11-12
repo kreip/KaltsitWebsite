@@ -63,9 +63,9 @@ function matches(term: GlossaryTerm, q: string): boolean {
     return [term.en, term.key, term.ru, term.ruPlural ?? "", term.synonyms ?? ""].some((v) => fold(v).includes(q));
 }
 
-/** The sheet's name as shown: Sova's copied sheet by what it is. */
+/** The sheet's name as shown: the sheet copied from a translator's own glossary by what it is. */
 function sheetLabel(term: GlossaryTerm, t: T): string {
-    return term.fromSova ? t("glossary.sovaSheet") : term.sheet;
+    return term.fromSova ? t("glossary.translatorSheet") : term.sheet;
 }
 
 /** For a term spelled like others, the entry its lines are counted at (itself when it is that one or alone). */
@@ -464,7 +464,7 @@ export function GlossaryTab({ query: asked, onQuery }: IGlossaryTabProps): React
                                         <span className="flex flex-col items-start gap-0.5 text-xs">
                                             {term.fromSova ? (
                                                 <Badge variant="tint" size="sm" style={{ "--tone": "var(--dmg-physic)" } as React.CSSProperties}>
-                                                    {t("glossary.sovaSheet")}
+                                                    {t("glossary.translatorSheet")}
                                                 </Badge>
                                             ) : (
                                                 <span className="text-muted-foreground">{term.sheet}</span>

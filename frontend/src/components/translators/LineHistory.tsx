@@ -10,7 +10,7 @@ import { Badge } from "#/components/ui/badge";
 import { Dialog, DialogDescription, DialogHeader, DialogPanel, DialogPopup, DialogTitle } from "#/components/ui/dialog";
 import { LoadFailed } from "#/components/ui/load-failed";
 import { Skeleton } from "#/components/ui/skeleton";
-import { useFormatters } from "#/lib/i18n";
+import { useFormatters, useLocale } from "#/lib/i18n";
 import type { TypedT } from "#/lib/i18n/messages";
 import { lineHistoryQueryOptions } from "#/lib/translators/api";
 import type { EditPlace } from "#/types/generated/EditPlace";
@@ -19,6 +19,7 @@ import { TONE, Toned } from "./LineEdits";
 import { StoryText } from "./StoryText";
 import { TextDiff } from "./TextDiff";
 import type { messages } from "./translators.messages";
+import { fromWords } from "./translatorVariants";
 
 type T = TypedT<typeof messages>;
 
@@ -40,6 +41,7 @@ function eventLabel(e: HistoryEvent, first: boolean, t: T): string {
 
 function HistoryList({ place, nickname, t }: { place: EditPlace; nickname: string; t: T }): React.ReactElement {
     const f = useFormatters();
+    const locale = useLocale();
     const query = useQuery(lineHistoryQueryOptions(place));
     if (query.isError) return <LoadFailed layout="inline" message={t("history.load")} onRetry={() => query.refetch()} />;
     if (!query.data) return <Skeleton className="h-24 w-full" />;
@@ -67,7 +69,7 @@ function HistoryList({ place, nickname, t }: { place: EditPlace; nickname: strin
                                     <>
                                         <span className="text-foreground">{eventLabel(e, e.proposalId !== null && firstOf.get(e.proposalId) === i, t)}</span>
                                         <span>· {f.date(e.at * 1000, { dateStyle: "medium", timeStyle: "short" })}</span>
-                                        {e.kind === "proposal" && e.source && e.source !== "own" ? <span>· {t(`proposal.from.${e.source}` as "proposal.from.sova")}</span> : null}
+                                        {e.kind === "proposal" && e.source && e.source !== "own" ? <span>· {fromWords(e.source, t, locale)}</span> : null}
                                         {e.context ? (
                                             <Badge variant="info" size="sm">
                                                 {t("proposal.contextBadge")}

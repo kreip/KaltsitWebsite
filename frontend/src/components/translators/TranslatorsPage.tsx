@@ -3,8 +3,8 @@
  * (`translators.members`); anyone else sees "No access" and no data.
  *
  * Story tab: pick a chapter and a story, read its lines as Russian as the game
- * shows it now | English | Chinese, with the glossary's terms and Sova's and
- * the AI's variants. Search tab: every text of the game (SearchTab.tsx).
+ * shows it now | English | Chinese, with the glossary's terms, the
+ * translators' variants (translatorVariants.ts) and the machine's. Search tab: every text of the game (SearchTab.tsx).
  * Game sections tab: the texts outside the story, an object at a time
  * (SectionsTab.tsx).
  * Glossary tab: the team's whole glossary and the terms suggested for it.
@@ -48,6 +48,7 @@ import { Toggle } from "./SwitchToggle";
 import { charBase } from "./service";
 import { entryLabel, groupLabel, useRename } from "./storyNames";
 import type { messages } from "./translators.messages";
+import { translatorName } from "./translatorVariants";
 import { useScrollToRow } from "./useScrollToRow";
 
 type T = TypedT<typeof messages>;
@@ -150,18 +151,19 @@ function StoryStatus({ storyId, reads, me, t }: { storyId: string; reads: readon
     );
 }
 
-/** Sova's footnotes to the chapter (arktr), folded above the table. */
-function SovaNotes({ notes, t }: { notes: readonly string[]; t: T }): React.ReactElement | null {
+/** A translator's footnotes to the chapter (arktr brings Sova's), folded above the table, each under its author's name. */
+function TranslatorNotes({ notes, t }: { notes: readonly string[]; t: T }): React.ReactElement | null {
+    const locale = useLocale();
     if (notes.length === 0) return null;
     return (
         <Collapsible>
             <CollapsibleTrigger render={<Button variant="ghost" size="sm" />}>
                 <NotebookPen aria-hidden="true" />
-                {t("sovaNotes.title", { count: notes.length })}
+                {t("translatorNotes.title", { count: notes.length })}
             </CollapsibleTrigger>
             <CollapsiblePanel className="flex flex-col gap-2 pt-2">
                 {notes.map((n) => (
-                    <Toned key={n} tone={TONE.note} label={t("sovaNotes.author")}>
+                    <Toned key={n} tone={TONE.note} label={t("translatorNotes.author", { name: translatorName("sova", locale) })}>
                         {n}
                     </Toned>
                 ))}
@@ -212,7 +214,7 @@ function Lines({ storyId, title, showCn, showService, showVariants, showDiff, t 
         <div className="flex flex-col gap-2">
             <p className="text-subtle-foreground text-xs">{t("table.summary", { count: lines.length, ru: withRu })}</p>
             <StoryStatus storyId={storyId} reads={reads} me={me.data} t={t} />
-            <SovaNotes notes={sovaNotes} t={t} />
+            <TranslatorNotes notes={sovaNotes} t={t} />
             <LinesTable storyId={storyId} lines={lines} edits={edits} outdated={outdated} me={me.data} label={t("table.label", { story: title })} showCn={showCn} showVariants={showVariants} showDiff={showDiff} commands={showService ? (script.data?.commands ?? null) : null} nameOf={nameOf} nickname={nickname} />
         </div>
     );

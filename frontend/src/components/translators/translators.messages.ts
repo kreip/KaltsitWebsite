@@ -84,10 +84,10 @@ export const messages = {
     },
     "toggle.variants": {
         text: "Show variants",
-        description: "Switch that shows Sova's and the AI's translations under each Russian line.",
+        description: "Switch that shows the translators' and the machine's variants under each Russian line.",
     },
     "toggle.variantsHint": {
-        text: "Sova and machine translation under the Russian.",
+        text: "The translators' variants and machine translation.",
         description: "Second line under the Show variants switch.",
     },
     "book.back": {
@@ -163,9 +163,12 @@ export const messages = {
     },
     "terms.variant": {
         text: "glossary",
-        description: "Mark beside a term from the sheet copied from Sova's glossary: a variant, never checked.",
+        description: "Mark beside a term from the sheet copied from a translator's own glossary: a variant, never checked.",
     },
-    "hints.sova": { text: "Sova", description: "Label of Sova's translation of a line." },
+    "hints.translator": {
+        text: "{name}",
+        description: "Label of a translator's variant of a line: the author's name (Sova).",
+    },
     "hints.ai": { text: "Machine translation", description: "Label of the machine translation of a line." },
     "hints.dict": {
         text: "Dictionary (overridden by the plugin)",
@@ -327,9 +330,9 @@ export const messages = {
         text: "edited",
         description: "Marks a proposal that was rewritten after it was first saved.",
     },
-    "proposal.from.sova": {
-        text: "from Sova's",
-        description: "Marks a proposal that started from Sova's translation.",
+    "proposal.from.translator": {
+        text: "from {name}'s variant",
+        description: "Marks a proposal that started from a translator's variant; {name} is the translator.",
     },
     "proposal.from.ai": {
         text: "from machine translation",
@@ -407,9 +410,9 @@ export const messages = {
         text: "My translation",
         description: "Label of the editor of the viewer's own proposal.",
     },
-    "editor.label.sova": {
-        text: "My translation, from Sova's",
-        description: "Label of the editor when it started from Sova's translation.",
+    "editor.label.translator": {
+        text: "My translation, from {name}'s variant",
+        description: "Label of the editor when it started from a translator's variant; {name} is the translator.",
     },
     "editor.label.ai": {
         text: "My translation, from machine translation",
@@ -555,9 +558,9 @@ export const messages = {
         text: "Doctor",
         description: "Shown for {@nickname} in story text when the signed-in member has no game nickname.",
     },
-    "glossary.sovaSheet": {
+    "glossary.translatorSheet": {
         text: "Glossary",
-        description: "Name shown for the glossary sheet copied from Sova's glossary; its terms are variants, not approved.",
+        description: "Name shown for the glossary sheet copied from a translator's own glossary; its terms are variants, not approved.",
     },
     "action.propose": {
         text: "Propose",
@@ -565,7 +568,7 @@ export const messages = {
     },
     "action.proposeThis": {
         text: "Propose this",
-        description: "Small button under Sova's or the AI's variant: opens the editor filled with that variant.",
+        description: "Small button under a translator's or the machine's variant: opens the editor filled with that variant.",
     },
     "action.remark": {
         text: "Remark",
@@ -623,9 +626,9 @@ export const messages = {
         text: "{name}'s proposal",
         description: "Option: the note is about a translator's proposal; name is its author.",
     },
-    "note.aboutSova": {
-        text: "Sova's variant",
-        description: "Option: the note is about Sova's translation.",
+    "note.aboutTranslator": {
+        text: "{name}'s variant",
+        description: "Option: the note is about a translator's variant; {name} is the translator.",
     },
     "note.aboutAi": {
         text: "Machine translation",
@@ -703,13 +706,13 @@ export const messages = {
         text: "This proposal is for this place only.",
         description: "Under the editor of a one-place proposal.",
     },
-    "sovaNotes.title": {
-        text: "Sova's notes to the chapter ({count})",
-        description: "Button unfolding Sova's footnotes to the chapter, above the story table.",
+    "translatorNotes.title": {
+        text: "Translator's comments to the chapter ({count})",
+        description: "Button unfolding a translator's footnotes to the chapter, above the story table.",
     },
-    "sovaNotes.author": {
-        text: "Sova",
-        description: "Author label of one of Sova's notes.",
+    "translatorNotes.author": {
+        text: "Translator's comment · {name}",
+        description: "Label of one of a translator's footnotes to the chapter; {name} is the translator.",
     },
     "service.music": {
         text: "Music: {name}",
@@ -849,7 +852,7 @@ export const messages = {
     },
     "checks.recommended": {
         text: "recommended",
-        description: "Badge on the one variant of a line that passes every check and wins by the rule (most agreed proposal, else Sova's, the AI's, the game's).",
+        description: "Badge on the one variant of a line that passes every check and wins by the rule (most agreed proposal, else a translator's, the machine's, the game's).",
     },
     "checks.recommendedHint": {
         text: "The best variant without errors.",

@@ -2,7 +2,8 @@
  * One story's lines as a dense table: # | speaker | Russian as in the game |
  * English | Chinese (optional). Under the Russian: the glossary terms of the
  * line's English with whether the Russian holds their form, the proposals,
- * Sova's and the AI's variants (each with "Propose this"), the notes and
+ * the translators' variants (each under its author's name) and the
+ * machine's (each with "Propose this"), the notes and
  * remarks. Hovering the Russian shows its actions (LineEdits.tsx), over the
  * game's text and under the approved variant. With Service on, the stage
  * commands sit between the lines as gray rows, in words.
@@ -18,7 +19,7 @@ import { Label } from "#/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "#/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "#/components/ui/table";
 import { toastManager } from "#/components/ui/toast";
-import { useFormatters, useT } from "#/lib/i18n";
+import { useFormatters, useLocale, useT } from "#/lib/i18n";
 import type { TypedT } from "#/lib/i18n/messages";
 import { type AgreeVariant, setRecommendRuleFn, translatorsMeQueryOptions } from "#/lib/translators/api";
 import { cn } from "#/lib/utils";
@@ -39,6 +40,7 @@ import { type IFind, StoryText } from "./StoryText";
 import { DISPLAYED_KINDS, describeCommands } from "./service";
 import { TextDiff } from "./TextDiff";
 import type { messages } from "./translators.messages";
+import { TRANSLATOR_SOURCES, translatorName } from "./translatorVariants";
 
 type T = TypedT<typeof messages>;
 
@@ -96,7 +98,7 @@ function Terms({ terms, t }: { terms: readonly LineTerm[]; t: T }): React.ReactE
     if (terms.length === 0) return null;
     return (
         <ul className="flex flex-wrap gap-x-3 gap-y-0.5 text-xs" aria-label={t("terms.label")}>
-            {groupTerms(terms, t("glossary.sovaSheet")).map((g) => (
+            {groupTerms(terms, t("glossary.translatorSheet")).map((g) => (
                 <li key={g.matched} className="inline-flex items-center gap-1" title={g.title}>
                     <span className="text-muted-foreground">{g.matched}</span>
                     <span className="text-subtle-foreground" aria-hidden="true">
@@ -122,7 +124,7 @@ function Terms({ terms, t }: { terms: readonly LineTerm[]; t: T }): React.ReactE
     );
 }
 
-/** Sova's or the AI's variant on one line: label, text, and "Propose this" right after it. */
+/** A translator's or the machine's variant on one line: label, text, and "Propose this" right after it. */
 function InlineVariant({ tone, label, text, nickname, action, marks, agree }: { tone: string; label: string; text: string; nickname: string; action?: React.ReactNode; marks?: React.ReactNode; agree?: React.ReactNode }): React.ReactElement {
     return (
         <div className="border-(--tone) border-s-2 ps-2" style={{ "--tone": tone } as React.CSSProperties}>
@@ -182,6 +184,7 @@ export interface IRuCellProps {
 
 export function RuCell({ line, analysis, place, nickname, showVariants, showDiff, edits, outdated, me, editor, onEditor, find = null, here = null, t }: IRuCellProps): React.ReactElement {
     const f = useFormatters();
+    const locale = useLocale();
     const [history, setHistory] = useState(false);
     const quotes = quotesAt(edits, place);
     const notes = { edits, place, me, t };
@@ -261,12 +264,24 @@ export function RuCell({ line, analysis, place, nickname, showVariants, showDiff
             <Proposals {...notes} nickname={nickname} compare={showDiff} ruGame={line.ruGame} marks={(p) => marks(`proposal:${p.id}`)} onEdit={(p) => onEditor({ kind: "proposal", text: p.text, source: p.source === "sova" || p.source === "ai" ? p.source : "own", context: p.context, here: p.here })} />
             {showVariants ? (
                 <>
-                    {line.sova ? (
-                        <>
-                            <InlineVariant tone={TONE.sova} label={t("hints.sova")} text={line.sova} nickname={nickname} marks={marks("sova")} agree={line.editable ? voteAndApprove("sova") : undefined} action={line.editable && !editor ? take("sova", line.sova) : undefined} />
-                            <VariantNotes {...notes} variant="sova" />
-                        </>
-                    ) : null}
+                    {/* Each translator's variant under its author's name. */}
+                    {TRANSLATOR_SOURCES.map((source) => {
+                        const text = line[source];
+                        return text ? (
+                            <Fragment key={source}>
+                                <InlineVariant
+                                    tone={TONE.translator}
+                                    label={t("hints.translator", { name: translatorName(source, locale) })}
+                                    text={text}
+                                    nickname={nickname}
+                                    marks={marks(source)}
+                                    agree={line.editable ? voteAndApprove(source) : undefined}
+                                    action={line.editable && !editor ? take(source, text) : undefined}
+                                />
+                                <VariantNotes {...notes} variant={source} />
+                            </Fragment>
+                        ) : null;
+                    })}
                     {line.ai ? (
                         <>
                             <InlineVariant tone={TONE.ai} label={t("hints.ai")} text={line.ai} nickname={nickname} marks={marks("ai")} agree={line.editable ? voteAndApprove("ai") : undefined} action={line.editable && !editor ? take("ai", line.ai) : undefined} />

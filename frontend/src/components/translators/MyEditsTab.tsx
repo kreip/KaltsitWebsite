@@ -18,7 +18,7 @@ import { Skeleton } from "#/components/ui/skeleton";
 import { Spinner } from "#/components/ui/spinner";
 import { Switch } from "#/components/ui/switch";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "#/components/ui/table";
-import { useFormatters, useT } from "#/lib/i18n";
+import { useFormatters, useLocale, useT } from "#/lib/i18n";
 import type { TypedT } from "#/lib/i18n/messages";
 import { deleteProposalFn, editsQueryOptions, proposalVersionsQueryOptions, rewriteProposalFn, translatorsMeQueryOptions } from "#/lib/translators/api";
 import type { EditRow } from "#/types/generated/EditRow";
@@ -30,6 +30,7 @@ import { useStoryNames } from "./storyNames";
 import { TextDiff } from "./TextDiff";
 import { TokenEditor } from "./TokenEditor";
 import type { messages } from "./translators.messages";
+import { fromWords } from "./translatorVariants";
 import { plainText, TEXT_PLACE } from "./where";
 
 type T = TypedT<typeof messages>;
@@ -75,6 +76,7 @@ function Where({ row, t }: { row: EditRow; t: T }): React.ReactElement {
 /** A proposal's texts, newest first, each compared by words with the one before it (the first with the game's Russian). */
 function Versions({ id, ruGame, t }: { id: number; ruGame: string | null; t: T }): React.ReactElement {
     const f = useFormatters();
+    const locale = useLocale();
     const query = useQuery(proposalVersionsQueryOptions(id));
     if (query.isError) return <LoadFailed layout="inline" message={t("history.load")} onRetry={() => query.refetch()} />;
     if (!query.data) return <Skeleton className="h-10 w-full" />;
@@ -88,7 +90,7 @@ function Versions({ id, ruGame, t }: { id: number; ruGame: string | null; t: T }
                     <li key={v.id} className="flex flex-col border-s-2 ps-2">
                         <span className="text-subtle-foreground">
                             {f.date(v.createdAt * 1000, { dateStyle: "medium", timeStyle: "short" })} · {v.author.name}
-                            {v.source !== "own" ? ` · ${t(`proposal.from.${v.source}` as "proposal.from.sova")}` : ""}
+                            {v.source !== "own" ? ` · ${fromWords(v.source, t, locale)}` : ""}
                             {i === 0 ? ` · ${t("history.current")}` : ""}
                         </span>
                         {before === null ? <span className="whitespace-pre-line">{v.text}</span> : <TextDiff before={before} after={v.text} labels={labels} />}

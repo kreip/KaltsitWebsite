@@ -44,6 +44,7 @@ import { TextDiff } from "./TextDiff";
 import { type ITagButton, type ITokenLabels, type TagLookup, TokenEditor } from "./TokenEditor";
 import { spanLook, tagOf, tagWords, useGameTags } from "./tags";
 import type { messages } from "./translators.messages";
+import { editorLabel, fromWords, TRANSLATOR_SOURCES, translatorName } from "./translatorVariants";
 
 type T = TypedT<typeof messages>;
 
@@ -52,7 +53,7 @@ export const CONFIRM_PLACES = 1;
 
 /**
  * The tones of the variants and comments, from the project's tokens: the
- * proposals in the info blue (agreed), Sova in the physical-damage tan, the AI
+ * proposals in the info blue (agreed), a translator's variant in the physical-damage tan, the AI
  * in the arts violet, the dictionary under a plugin and outdated decisions in
  * the warning amber, approved in success green, remarks muted, translator's
  * notes in the healing mint with their own icon.
@@ -60,7 +61,7 @@ export const CONFIRM_PLACES = 1;
 export const TONE = {
     approved: "var(--success)",
     proposal: "var(--info)",
-    sova: "var(--dmg-physic)",
+    translator: "var(--dmg-physic)",
     ai: "var(--dmg-magic)",
     dict: "var(--warning)",
     outdated: "var(--warning)",
@@ -265,7 +266,7 @@ export function LineComments({ edits, place, me, t }: ICommentsProps): React.Rea
     );
 }
 
-/** Who agrees with Sova's or the AI's text at this place. */
+/** Who agrees with a translator's or the AI's text at this place. */
 export function placeVotes(edits: KeyEdits | undefined, place: EditPlace, variant: "sova" | "ai"): EditPerson[] {
     return edits?.placeAgreements.find((a) => a.variant === variant && samePlace(a.place, place))?.people ?? [];
 }
@@ -399,6 +400,7 @@ interface IProposalsProps extends ICommentsProps {
 
 export function Proposals({ edits, place, me, nickname, onEdit, marks, compare = false, ruGame = null, t }: IProposalsProps): React.ReactElement | null {
     const f = useFormatters();
+    const locale = useLocale();
     const remove = useEditMutation((id: number) => deleteProposalFn({ data: { id } }), t("edit.failedDelete"));
     const list = proposalsAt(edits, place);
     if (list.length === 0) return null;
@@ -417,7 +419,7 @@ export function Proposals({ edits, place, me, nickname, onEdit, marks, compare =
                                     <span>{mine ? t("proposal.mine") : t("proposal.by", { name: p.author.name })}</span>
                                     <span>· {f.date((p.editedAt ?? p.createdAt) * 1000, { dateStyle: "medium" })}</span>
                                     {p.editedAt !== null ? <span>· {t("proposal.edited")}</span> : null}
-                                    {p.source !== "own" ? <span>· {t(`proposal.from.${p.source}` as "proposal.from.sova")}</span> : null}
+                                    {p.source !== "own" ? <span>· {fromWords(p.source, t, locale)}</span> : null}
                                     {p.context && !p.here ? (
                                         <Badge variant="info" size="sm">
                                             {t("proposal.contextBadge")}
@@ -778,6 +780,7 @@ interface IEditorProps {
 export function ProposalEditor({ line, place, initial, source, context, here = null, nickname, onClose, t }: IEditorProps): React.ReactElement {
     const id = useId();
     const hintId = useId();
+    const locale = useLocale();
     const [text, setText] = useState(initial);
     const [asking, setAsking] = useState(false);
     const tools = useEditorTools(line.en, t);
@@ -797,7 +800,7 @@ export function ProposalEditor({ line, place, initial, source, context, here = n
     return (
         <div className="flex flex-col gap-1.5">
             <label htmlFor={id} className="text-subtle-foreground text-xs">
-                {source === "own" ? t("editor.label") : t(`editor.label.${source}` as "editor.label.sova")}
+                {editorLabel(source, t, locale)}
             </label>
             <TokenEditor id={id} initial={initial} nickname={nickname} palette={tools.palette} tags={tools.tags} lookup={tools.lookup} onChange={setText} onSubmit={submit} onCancel={onClose} labels={tools.labels} describedBy={hintId} />
             <TagsWarning en={line.en} text={text} words={tools.words} t={t} />
@@ -838,13 +841,14 @@ const LINE = "__line__";
 export function CommentEditor({ line, place, edits, kind, quote: initialQuote, onClose, t }: ICommentEditorProps): React.ReactElement {
     const id = useId();
     const variantId = useId();
+    const locale = useLocale();
     const [text, setText] = useState("");
     const [quote, setQuote] = useState(initialQuote);
     const [variant, setVariant] = useState<string>(LINE);
     const options: { value: string; label: string }[] = [{ value: LINE, label: t("note.aboutLine") }];
     if (line.ruGame) options.push({ value: "game", label: t("note.aboutGame") });
     for (const p of proposalsAt(edits, place)) options.push({ value: `proposal:${p.id}`, label: t("note.aboutProposal", { name: p.author.name }) });
-    if (line.sova) options.push({ value: "sova", label: t("note.aboutSova") });
+    for (const source of TRANSLATOR_SOURCES) if (line[source]) options.push({ value: source, label: t("note.aboutTranslator", { name: translatorName(source, locale) }) });
     if (line.ai) options.push({ value: "ai", label: t("note.aboutAi") });
     const save = useEditMutation(() => {
         const [v, pid] = variant.split(":");
