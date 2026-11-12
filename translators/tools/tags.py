@@ -5,8 +5,9 @@ game's explanation, and how many texts use it.
     python3 translators/tools/tags.py [backend-url] > translators/out/tags.md
 
 Reads `GET /api/translators/tags` (rebuilt by the import) with the internal
-service key of the running backend container, and counts the substitutions
-(`{…}`) and Unity's tags (`<i>`, `<color=…>`) with the section's search.
+service key of the running backend container; counts the substitutions
+(`{…}`) with the section's search and Unity's tags (`<i>`, `<color=…>`) in
+the database (the search reads texts without their tags).
 """
 import json
 import subprocess
@@ -42,6 +43,16 @@ def uses(text):
     return get("texts", q=text, limit=1)["total"]
 
 
+def uses_tag(opener):
+    """Texts whose English holds a tag: the search reads texts without their tags, so the database counts."""
+    sql = "SELECT COUNT(*) FROM translators.texts WHERE strpos(lower(en), '%s') > 0" % opener.replace("'", "''")
+    out = subprocess.run(
+        ["docker", "compose", "exec", "-T", "postgres", "psql", "-U", "myrtle", "-d", "myrtle", "-A", "-t", "-c", sql],
+        capture_output=True, text=True, check=True,
+    ).stdout.strip()
+    return int(out)
+
+
 tags = get("tags")
 styles = [t for t in tags if t["kind"] == "style"]
 terms = [t for t in tags if t["kind"] == "term"]
@@ -67,7 +78,7 @@ print("| тег | что делает | текстов |")
 print("|---|---|---|")
 for tag, what in [("<i>", "курсив"), ("<b>", "жирный"), ("<u>", "подчёркнутый"), ("<color=", "цвет (значение — в теге)"), ("<size=", "размер шрифта"), ("<p=", "абзац в сюжете (закрывается `</>`)")]:
     shown = tag if tag.endswith(">") else tag + "…>"
-    print(f"| `{shown}` | {what} | {uses(tag)} |")
+    print(f"| `{shown}` | {what} | {uses_tag(tag)} |")
 
 print("\n## Подстановки `{…}` — игра подставляет значение\n")
 print("| подстановка | что это | текстов |")
