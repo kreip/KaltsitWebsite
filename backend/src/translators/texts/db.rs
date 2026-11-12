@@ -180,19 +180,26 @@ fn like_start(q: &str) -> String {
     all[1..].to_owned()
 }
 
+/// The search text from which Postgres keeps a value out of its row (bytes).
+const LONG_FOLD: usize = 1_900;
+
 /// How well a row answers the query, as a sort key: 0 the whole English or
 /// the whole Russian is the query, 1 it holds the query as whole words, 2 the
-/// English or the Russian starts with it, 3 it holds it somewhere. The
-/// search text is the English, a line break, the Russian.
+/// English or the Russian starts with it, 3 it holds it somewhere (or is
+/// pages long). The search text is the English, a line break, the Russian.
 fn push_rank<'q>(qb: &mut QueryBuilder<'q, Postgres>, folded: &'q str, whole: bool) {
     let start = like_start(folded);
-    qb.push("CASE WHEN t.fold = ")
-        .push_bind(folded)
-        .push(" OR t.fold LIKE ")
-        .push_bind(format!("{}\n%", &start[..start.len() - 1]))
-        .push(" OR t.fold LIKE ")
-        .push_bind(format!("%\n{}", &start[..start.len() - 1]))
-        .push(" THEN 0");
+    // A text pages long only holds the query: it is kept compressed apart from its row, and
+    // every look into it unpacks it again (measured: the sort of a common word took 3x longer).
+    qb.push(format!(
+        "CASE WHEN octet_length(t.fold) > {LONG_FOLD} THEN 3 WHEN t.fold = "
+    ))
+    .push_bind(folded)
+    .push(" OR t.fold LIKE ")
+    .push_bind(format!("{}\n%", &start[..start.len() - 1]))
+    .push(" OR t.fold LIKE ")
+    .push_bind(format!("%\n{}", &start[..start.len() - 1]))
+    .push(" THEN 0");
     // With "whole words only" every row is of this kind already.
     if whole {
         qb.push(" ELSE 1 END");
@@ -240,11 +247,12 @@ pub async fn search(
                FROM translators.texts t",
     );
     conditions(&mut page, server, q, &folded);
-    page.push(" ORDER BY rank, story_only, length(t.en), t.id LIMIT ")
+    // The length in bytes: read from a long value's header, without unpacking it.
+    page.push(" ORDER BY rank, story_only, octet_length(t.en), t.id LIMIT ")
         .push_bind(limit)
         .push(" OFFSET ")
         .push_bind(offset)
-        .push(") t ORDER BY t.rank, t.story_only, length(t.en), t.id");
+        .push(") t ORDER BY t.rank, t.story_only, octet_length(t.en), t.id");
     // Not kept prepared: a kept statement soon gets one plan for every query, and the right
     // plan depends on the words (the index for a rare word, the whole table for "the" or two letters).
     let (total, rows): (i64, Vec<HitRow>) = tokio::try_join!(

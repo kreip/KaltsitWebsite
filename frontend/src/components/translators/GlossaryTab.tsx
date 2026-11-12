@@ -17,7 +17,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import { Check, ExternalLink, List, RefreshCw, Trash2, Undo2, X } from "lucide-react";
 import type React from "react";
-import { useEffect, useId, useMemo, useState } from "react";
+import { useEffect, useId, useMemo, useRef, useState } from "react";
 import { SearchField } from "#/components/SearchField";
 import { Alert, AlertDescription } from "#/components/ui/alert";
 import { Badge } from "#/components/ui/badge";
@@ -279,10 +279,13 @@ function Suggestions({ t }: { t: T }): React.ReactElement | null {
     const me = useQuery(translatorsMeQueryOptions());
     const list = query.data ?? [];
     const waiting = list.filter((s) => s.status === "open").length;
+    // Open at first when something waits for the lead; after that only a click folds or unfolds it.
     const [open, setOpen] = useState<boolean | null>(null);
+    const first = useRef<boolean | null>(null);
+    if (first.current === null && query.data) first.current = waiting > 0;
     if (!me.data || list.length === 0) return null;
     return (
-        <Collapsible open={open ?? waiting > 0} onOpenChange={setOpen}>
+        <Collapsible open={open ?? first.current ?? false} onOpenChange={setOpen}>
             <CollapsibleTrigger render={<Button variant="outline" size="sm" />}>{t("suggest.list", { count: list.length, waiting })}</CollapsibleTrigger>
             <CollapsiblePanel className="flex flex-col gap-2 pt-3">
                 <p className="text-subtle-foreground text-xs">{t("suggest.listHint")}</p>
