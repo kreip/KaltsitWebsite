@@ -314,14 +314,6 @@ export const messages = {
         text: "Outdated",
         description: "Status of a decision made for an English text the story no longer has at that place (it changed in an import).",
     },
-    "approved.label": {
-        text: "Approved by {name}, {date}",
-        description: "Label over the approved translation of a line; name is the lead, date when.",
-    },
-    "approved.game": {
-        text: "Checked as in the game by {name}, {date}",
-        description: "Label over a line whose current game translation the lead checked and kept.",
-    },
     "proposal.mine": {
         text: "My proposal",
         description: "Author label of the viewer's own proposal for a line.",
@@ -567,8 +559,8 @@ export const messages = {
         description: "Button at the top right of a line's Russian (on hover): opens the editor for a proposed translation.",
     },
     "action.proposeThis": {
-        text: "Propose this",
-        description: "Small button under a translator's or the machine's variant: opens the editor filled with that variant.",
+        text: "Propose, starting from this variant",
+        description: "Icon button of a translator's or the machine's variant: open the editor with its text.",
     },
     "action.remark": {
         text: "Remark",
@@ -2341,6 +2333,74 @@ export const messages = {
     "lineHistory.reopened": {
         text: "{name} took the rejection back",
         description: "History event: a rejection taken back.",
+    },
+    "approved.headGame": {
+        text: "Approved: the text as in the game",
+        description: "Head of the approved block when the game's Russian was approved as it is.",
+    },
+    "approved.headVariant": {
+        text: "Approved: the variant by {name}",
+        description: "Head of the approved block: a proposal or a translator's variant, by its author.",
+    },
+    "approved.headAi": {
+        text: "Approved: the machine translation",
+        description: "Head of the approved block when the machine's variant was approved.",
+    },
+    "approved.headProposal": {
+        text: "Approved: a proposal",
+        description: "Head of the approved block when the approved proposal is gone (deleted).",
+    },
+    "approved.byDate": {
+        text: "{name}, {date}",
+        description: "Who approved and when, after the approved block's head.",
+    },
+    "approved.newer": {
+        text: "a newer proposal exists",
+        description: "Badge on the approved block: a proposal was written or rewritten after the approval.",
+    },
+    "approve.gameTitle": {
+        text: "Keep the text as in the game?",
+        description: "Title of the confirmation when the game's text is approved on a line with proposals.",
+    },
+    "approve.gameHint": {
+        text: "{count, plural, one {The line has a proposal.} other {The line has # proposals.}} The game's text is approved as it is; the proposals stay, not approved.",
+        description: "Line of the confirmation when the game's text is approved on a line with proposals.",
+    },
+    "approve.gameKeep": {
+        text: "Keep as in the game",
+        description: "Confirm button: approve the game's text as it is.",
+    },
+    "help.label": {
+        text: "What the buttons mean",
+        description: "Accessible name of the ? next to a line's action icons.",
+    },
+    "help.approve": {
+        text: "Approve — this text goes to the game (on the game's text: keep it as it is). Translators only.",
+        description: "Help line: the approve button.",
+    },
+    "help.reject": {
+        text: "Reject a proposal; the author sees the reason. Translators only.",
+        description: "Help line: the reject button.",
+    },
+    "help.propose": {
+        text: "Propose your translation (from the game's text or from this variant).",
+        description: "Help line: the propose icon.",
+    },
+    "help.remark": {
+        text: "Remark — a problem in the line; it can be marked resolved. Select a fragment first to quote it.",
+        description: "Help line: the remark icon.",
+    },
+    "help.note": {
+        text: "Translator's note — a lasting explanation (about the line or one variant).",
+        description: "Help line: the note icon.",
+    },
+    "help.history": {
+        text: "History — every change of the line's translation.",
+        description: "Help line: the history icon.",
+    },
+    "help.agree": {
+        text: "Agree — vote for this variant; the number is how many agree.",
+        description: "Help line: the agree icon.",
     },
 } satisfies MessageMap;
 

@@ -12,7 +12,6 @@ import { Link } from "@tanstack/react-router";
 import { Check, ChevronDown, History, PenLine, RotateCcw, Trash2, Undo2, X } from "lucide-react";
 import type React from "react";
 import { useId, useMemo, useRef, useState } from "react";
-import { AlertDialog, AlertDialogClose, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogPopup, AlertDialogTitle } from "#/components/ui/alert-dialog";
 import { Badge } from "#/components/ui/badge";
 import { Button } from "#/components/ui/button";
 import { Checkbox } from "#/components/ui/checkbox";
@@ -24,15 +23,13 @@ import { Skeleton } from "#/components/ui/skeleton";
 import { Spinner } from "#/components/ui/spinner";
 import { Switch } from "#/components/ui/switch";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "#/components/ui/table";
-import { Textarea } from "#/components/ui/textarea";
-import { toastManager } from "#/components/ui/toast";
 import { useFormatters, useLocale, useT } from "#/lib/i18n";
 import type { TypedT } from "#/lib/i18n/messages";
-import { decideProposalsFn, deleteProposalFn, editsQueryOptions, type ProposalDecision, proposalVersionsQueryOptions, rewriteProposalFn, translatorsMeQueryOptions } from "#/lib/translators/api";
+import { deleteProposalFn, editsQueryOptions, type ProposalDecision, proposalVersionsQueryOptions, rewriteProposalFn, translatorsMeQueryOptions } from "#/lib/translators/api";
 import type { EditRow } from "#/types/generated/EditRow";
 import type { TranslatorsMe } from "#/types/generated/TranslatorsMe";
 import { ExportDialog } from "./ExportDialog";
-import { CONFIRM_PLACES, cleanText, exportsForGame, isLead, marksReleases, SaveDialog, TagsWarning, useEditMutation, useEditorTools } from "./LineEdits";
+import { CONFIRM_PLACES, cleanText, exportsForGame, isLead, marksReleases, RejectDialog, SaveDialog, TagsWarning, useDecide, useEditMutation, useEditorTools } from "./LineEdits";
 import { StoryText } from "./StoryText";
 import { useStoryNames } from "./storyNames";
 import { TextDiff } from "./TextDiff";
@@ -52,42 +49,6 @@ const STATE_VARIANT = {
     outdated: "warning",
     rejected: "error",
 } as const;
-
-/** A decision on proposals by id; the toast says how many were skipped (outdated, already decided). */
-function useDecide(t: T) {
-    return useEditMutation(async (v: { ids: number[]; decision: ProposalDecision; reason: string }) => {
-        const r = await decideProposalsFn({ data: v });
-        if (r.skipped > 0) toastManager.add({ title: t("decide.skipped", { done: r.approved, skipped: r.skipped }), type: "info" });
-        return r;
-    }, t("decide.failed"));
-}
-
-/** "Reject" with an optional reason its author sees: for one proposal or the ones ticked. */
-function RejectDialog({ open, onOpenChange, count, pending, onReject, t }: { open: boolean; onOpenChange: (open: boolean) => void; count: number; pending: boolean; onReject: (reason: string) => void; t: T }): React.ReactElement {
-    const id = useId();
-    const [reason, setReason] = useState("");
-    return (
-        <AlertDialog open={open} onOpenChange={onOpenChange}>
-            <AlertDialogPopup>
-                <AlertDialogHeader>
-                    <AlertDialogTitle>{t("decide.rejectTitle", { count })}</AlertDialogTitle>
-                    <AlertDialogDescription>{t("decide.rejectHint")}</AlertDialogDescription>
-                    <label htmlFor={id} className="pt-2 text-subtle-foreground text-xs">
-                        {t("decide.reason")}
-                    </label>
-                    <Textarea id={id} size="sm" value={reason} onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setReason(e.target.value)} autoFocus />
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                    <AlertDialogClose render={<Button variant="ghost" />}>{t("editor.cancel")}</AlertDialogClose>
-                    <Button variant="destructive" onClick={() => onReject(reason.trim())} disabled={pending}>
-                        {pending ? <Spinner /> : <X aria-hidden="true" />}
-                        {t("decide.reject")}
-                    </Button>
-                </AlertDialogFooter>
-            </AlertDialogPopup>
-        </AlertDialog>
-    );
-}
 
 /** The state of a row; for a translator a menu: approve / reject a proposal, withdraw an approval, reopen a rejected one. */
 function StateCell({ row, lead, t }: { row: EditRow; lead: boolean; t: T }): React.ReactElement {

@@ -9,11 +9,10 @@
  * commands sit between the lines as gray rows, in words.
  */
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { Check, X } from "lucide-react";
+import { Check, PenLine, X } from "lucide-react";
 import type React from "react";
 import { Fragment, useId, useMemo, useState } from "react";
 import { Badge } from "#/components/ui/badge";
-import { Button } from "#/components/ui/button";
 import { InfoHint } from "#/components/ui/info-hint";
 import { Label } from "#/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "#/components/ui/select";
@@ -21,7 +20,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "#
 import { toastManager } from "#/components/ui/toast";
 import { useFormatters, useLocale, useT } from "#/lib/i18n";
 import type { TypedT } from "#/lib/i18n/messages";
-import { type AgreeVariant, setRecommendRuleFn, translatorsMeQueryOptions } from "#/lib/translators/api";
+import { setRecommendRuleFn, translatorsMeQueryOptions } from "#/lib/translators/api";
 import { cn } from "#/lib/utils";
 import type { EditPlace } from "#/types/generated/EditPlace";
 import type { GameHere } from "#/types/generated/GameHere";
@@ -33,7 +32,32 @@ import type { TranslatorLine } from "#/types/generated/TranslatorLine";
 import type { TranslatorsMe } from "#/types/generated/TranslatorsMe";
 import { BulkApprove, type IBulkLine } from "./BulkApprove";
 import { type Address, checkVariant, type ICandidate, type IVariantCheck, neighbourAddress, type RecommendRule, recommend } from "./checks";
-import { AgreeButton, ApproveButton, ApprovedVariant, approvedVariant, CellActions, CommentEditor, diffLabels, type EditorState, isLead, LineComments, OutdatedHere, ProposalEditor, Proposals, placeOf, placeVotes, proposalsAt, quotesAt, StatusDot, TONE, Toned, VariantNotes } from "./LineEdits";
+import {
+    ActionRow,
+    AgreeButton,
+    ApproveButton,
+    ApprovedVariant,
+    approvedVariant,
+    CellActions,
+    CommentEditor,
+    diffLabels,
+    type EditorState,
+    IconAction,
+    isLead,
+    LineComments,
+    ON_HOVER,
+    OutdatedHere,
+    ProposalEditor,
+    Proposals,
+    placeOf,
+    placeVotes,
+    proposalsAt,
+    quotesAt,
+    StatusDot,
+    TONE,
+    Toned,
+    VariantNotes,
+} from "./LineEdits";
 import { LineHistoryDialog } from "./LineHistory";
 import { Marks } from "./Marks";
 import { type IFind, StoryText } from "./StoryText";
@@ -124,15 +148,14 @@ function Terms({ terms, t }: { terms: readonly LineTerm[]; t: T }): React.ReactE
     );
 }
 
-/** A translator's or the machine's variant on one line: label, text, and "Propose this" right after it. */
-function InlineVariant({ tone, label, text, nickname, action, marks, agree }: { tone: string; label: string; text: string; nickname: string; action?: React.ReactNode; marks?: React.ReactNode; agree?: React.ReactNode }): React.ReactElement {
+/** A translator's or the machine's variant on one line: label, text, its marks, then its own actions (Approve; propose from it, agree). */
+function InlineVariant({ tone, label, text, nickname, marks, actions }: { tone: string; label: string; text: string; nickname: string; marks?: React.ReactNode; actions?: React.ReactNode }): React.ReactElement {
     return (
         <div className="border-(--tone) border-s-2 ps-2" style={{ "--tone": tone } as React.CSSProperties}>
             <span className="me-1.5 text-subtle-foreground text-xs">{label}</span>
             <StoryText text={text} nickname={nickname} />
             {marks}
-            {agree}
-            {action ? <span className="ms-2">{action}</span> : null}
+            {actions ? <span className="ms-1.5">{actions}</span> : null}
         </div>
     );
 }
@@ -194,24 +217,24 @@ export function RuCell({ line, analysis, place, nickname, showVariants, showDiff
         const check = checks.get(variant);
         return check ? <Marks check={check} recommended={recommended === variant} skipGlossary={skipGlossary} t={t} /> : null;
     };
-    const voteAndApprove = (variant: "sova" | "ai") => (
-        <>
-            <AgreeButton place={place} variant={variant} people={placeVotes(edits, place, variant)} me={me} t={t} />
-            {approved !== variant ? <ApproveButton place={place} variant={variant} me={me} approved={false} t={t} /> : null}
-        </>
-    );
-    // What is approved here (the entry, else a one-place proposal): the panel withdraws it too.
-    const approvedHere = proposalsAt(edits, place).find((p) => p.context && p.approvedAt !== null);
-    const withdraw = edits?.approval ? (
-        <ApproveButton place={place} variant={edits.approval.variant as AgreeVariant} proposalId={edits.approval.proposalId ?? undefined} me={me} approved t={t} />
-    ) : approvedHere ? (
-        <ApproveButton place={place} variant="proposal" proposalId={approvedHere.id} me={me} approved t={t} />
-    ) : null;
-    const take = (source: "sova" | "ai", text: string) => (
-        <Button variant="link" size="xs" className="h-auto px-0 text-xs" onClick={() => onEditor({ kind: "proposal", text, source, context: false })}>
-            {t("action.proposeThis")}
-        </Button>
-    );
+    // A translator's or the machine's variant: Approve (at once, no "propose" step) | propose from it, agree.
+    const variantActions = (variant: "sova" | "ai", text: string) => {
+        if (!line.editable) return undefined;
+        const votes = placeVotes(edits, place, variant);
+        return (
+            <ActionRow
+                className={votes.length > 0 ? undefined : ON_HOVER}
+                main={isLead(me) && approved !== variant ? <ApproveButton place={place} variant={variant} me={me} approved={false} t={t} /> : undefined}
+                secondary={
+                    <>
+                        {!editor ? <IconAction icon={<PenLine aria-hidden="true" />} label={t("action.proposeThis")} onClick={() => onEditor({ kind: "proposal", text, source: variant, context: false })} /> : null}
+                        <AgreeButton place={place} variant={variant} people={votes} me={me} inBar t={t} />
+                    </>
+                }
+            />
+        );
+    };
+    const proposalCount = proposalsAt(edits, place).length;
     return (
         <div className="group/cell flex flex-col gap-1" data-sel="ru">
             {history ? <LineHistoryDialog place={place} open={history} onOpenChange={setHistory} nickname={nickname} t={t} /> : null}
@@ -223,13 +246,8 @@ export function RuCell({ line, analysis, place, nickname, showVariants, showDiff
                         line={line}
                         onOpen={onEditor}
                         onHistory={() => setHistory(true)}
-                        game={
-                            <>
-                                {line.ruGame && line.editable ? <AgreeButton place={place} variant="game" people={edits?.gameAgreements ?? []} me={me} t={t} /> : null}
-                                {line.ruGame && line.editable && approved !== "game" ? <ApproveButton place={place} variant="game" me={me} approved={false} t={t} /> : null}
-                                {withdraw}
-                            </>
-                        }
+                        main={line.ruGame && line.editable && approved !== "game" && isLead(me) ? <ApproveButton place={place} variant="game" me={me} approved={false} confirmProposals={proposalCount} t={t} /> : undefined}
+                        agree={line.ruGame && line.editable && (edits?.gameAgreements.length ?? 0) === 0 ? <AgreeButton place={place} variant="game" people={edits?.gameAgreements ?? []} me={me} inBar t={t} /> : undefined}
                         t={t}
                     />
                 ) : null}
@@ -269,22 +287,14 @@ export function RuCell({ line, analysis, place, nickname, showVariants, showDiff
                         const text = line[source];
                         return text ? (
                             <Fragment key={source}>
-                                <InlineVariant
-                                    tone={TONE.translator}
-                                    label={t("hints.translator", { name: translatorName(source, locale) })}
-                                    text={text}
-                                    nickname={nickname}
-                                    marks={marks(source)}
-                                    agree={line.editable ? voteAndApprove(source) : undefined}
-                                    action={line.editable && !editor ? take(source, text) : undefined}
-                                />
+                                <InlineVariant tone={TONE.translator} label={t("hints.translator", { name: translatorName(source, locale) })} text={text} nickname={nickname} marks={marks(source)} actions={variantActions(source, text)} />
                                 <VariantNotes {...notes} variant={source} />
                             </Fragment>
                         ) : null;
                     })}
                     {line.ai ? (
                         <>
-                            <InlineVariant tone={TONE.ai} label={t("hints.ai")} text={line.ai} nickname={nickname} marks={marks("ai")} agree={line.editable ? voteAndApprove("ai") : undefined} action={line.editable && !editor ? take("ai", line.ai) : undefined} />
+                            <InlineVariant tone={TONE.ai} label={t("hints.ai")} text={line.ai} nickname={nickname} marks={marks("ai")} actions={variantActions("ai", line.ai)} />
                             <VariantNotes {...notes} variant="ai" />
                         </>
                     ) : null}
