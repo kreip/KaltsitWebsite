@@ -30,7 +30,8 @@ static SCAN: LazyLock<Regex> = LazyLock::new(|| {
 });
 
 /// Something that starts like a tag but is not one.
-static GARBAGE: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"<[@$/]").expect("the garbage pattern"));
+static GARBAGE: LazyLock<Regex> =
+    LazyLock::new(|| Regex::new(r"<[@$/]").expect("the garbage pattern"));
 
 #[derive(Debug, Default, PartialEq, Eq)]
 struct Markup {
@@ -65,18 +66,19 @@ fn markup(text: &str) -> Markup {
         out.garbage += GARBAGE.find_iter(&text[last..m.start()]).count();
         last = m.end();
         // Close the innermost span that matches; the ones opened inside it end unclosed.
-        let close = |out: &mut Markup, open: &mut Vec<(Kind, String)>, kind: Kind, name: Option<&str>| {
-            match open
-                .iter()
-                .rposition(|(k, n)| *k == kind && name.is_none_or(|x| x == n))
-            {
-                Some(i) => {
-                    out.unclosed += open.len() - i - 1;
-                    open.truncate(i);
+        let close =
+            |out: &mut Markup, open: &mut Vec<(Kind, String)>, kind: Kind, name: Option<&str>| {
+                match open
+                    .iter()
+                    .rposition(|(k, n)| *k == kind && name.is_none_or(|x| x == n))
+                {
+                    Some(i) => {
+                        out.unclosed += open.len() - i - 1;
+                        open.truncate(i);
+                    }
+                    None => out.garbage += 1,
                 }
-                None => out.garbage += 1,
-            }
-        };
+            };
         if let Some(g) = c.get(1) {
             push(&mut out, &mut open, Kind::Universal, g.as_str().to_owned());
         } else if c.get(2).is_some() {
@@ -89,7 +91,12 @@ fn markup(text: &str) -> Markup {
             let name = g.as_str().to_lowercase();
             close(&mut out, &mut open, Kind::Inline, Some(&name));
         } else if let Some(g) = c.get(6) {
-            push(&mut out, &mut open, Kind::ColorSize, g.as_str().to_lowercase());
+            push(
+                &mut out,
+                &mut open,
+                Kind::ColorSize,
+                g.as_str().to_lowercase(),
+            );
         } else if let Some(g) = c.get(7) {
             let name = g.as_str().to_lowercase();
             close(&mut out, &mut open, Kind::ColorSize, Some(&name));
@@ -125,7 +132,11 @@ fn breaks(s: &str) -> usize {
 }
 
 /// Every problem of the game's Russian `ru` of the English `en`.
-pub fn problems(en: &str, ru: &str, finder: Option<(&Finder, &[glossary::parse::Term])>) -> Vec<&'static str> {
+pub fn problems(
+    en: &str,
+    ru: &str,
+    finder: Option<(&Finder, &[glossary::parse::Term])>,
+) -> Vec<&'static str> {
     let mut out = Vec::new();
     if let Some((finder, terms)) = finder {
         // Terms by the English they matched: one of them found is enough (as on the page).
@@ -184,10 +195,12 @@ pub async fn refresh(pool: &PgPool, server: &str) -> Result<usize, sqlx::Error> 
     .await
     .map_err(|e| sqlx::Error::Protocol(e.to_string()))?;
     let mut tx = pool.begin().await?;
-    sqlx::query("UPDATE translators.texts SET problems = '{}' WHERE server = $1 AND problems <> '{}'")
-        .bind(server)
-        .execute(&mut *tx)
-        .await?;
+    sqlx::query(
+        "UPDATE translators.texts SET problems = '{}' WHERE server = $1 AND problems <> '{}'",
+    )
+    .bind(server)
+    .execute(&mut *tx)
+    .await?;
     for chunk in found.chunks(5_000) {
         let ids: Vec<i64> = chunk.iter().map(|(id, _)| *id).collect();
         let list: Vec<&str> = chunk.iter().map(|(_, p)| p.as_str()).collect();
@@ -213,19 +226,37 @@ mod tests {
     fn tells_a_broken_tag_from_a_missing_one() {
         let en = "Deals <@ba.vup>120%</> damage to {0} targets";
         // As in the original.
-        assert_eq!(tag_problems(en, "Наносит <@ba.vup>120%</> урона {0} целям"), (false, false));
+        assert_eq!(
+            tag_problems(en, "Наносит <@ba.vup>120%</> урона {0} целям"),
+            (false, false)
+        );
         // The highlight lost, the text whole.
-        assert_eq!(tag_problems(en, "Наносит 120% урона {0} целям"), (false, true));
+        assert_eq!(
+            tag_problems(en, "Наносит 120% урона {0} целям"),
+            (false, true)
+        );
         // Left open.
-        assert_eq!(tag_problems(en, "Наносит <@ba.vup>120% урона {0} целям"), (true, false));
+        assert_eq!(
+            tag_problems(en, "Наносит <@ba.vup>120% урона {0} целям"),
+            (true, false)
+        );
         // Broken: half a tag.
-        assert_eq!(tag_problems(en, "Наносит <@ba.vup120%</> урона {0} целям"), (true, false));
+        assert_eq!(
+            tag_problems(en, "Наносит <@ba.vup120%</> урона {0} целям"),
+            (true, false)
+        );
         // A substitution lost.
-        assert_eq!(tag_problems(en, "Наносит <@ba.vup>120%</> урона целям"), (true, false));
+        assert_eq!(
+            tag_problems(en, "Наносит <@ba.vup>120%</> урона целям"),
+            (true, false)
+        );
         // A stray closer.
         assert_eq!(tag_problems("Plain", "Просто</>"), (true, false));
         // Names in angle brackets are text.
-        assert_eq!(tag_problems("<Roadblock> ahead", "<Заграждение> впереди"), (false, false));
+        assert_eq!(
+            tag_problems("<Roadblock> ahead", "<Заграждение> впереди"),
+            (false, false)
+        );
     }
 
     #[test]

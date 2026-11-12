@@ -96,7 +96,8 @@ async fn proposals_votes_comments_and_outdated() {
     let b = user(&pool, "boris").await;
     assert_eq!(
         tdb::member_role(&pool, a).await.unwrap().map(|r| r.0),
-        Some(vec!["translator".to_owned()])
+        // A new member is a user until an admin gives another role.
+        Some(vec!["user".to_owned()])
     );
 
     line(&pool, "s1", 3, 0, "Doctor?", "Доктор?").await;
@@ -1267,5 +1268,58 @@ async fn a_long_text_is_edited() {
             .len()
             >= 4
     );
+    drop_db(pool, name).await;
+}
+
+#[tokio::test]
+#[ignore = "creates and drops a database on the local Postgres"]
+async fn a_rejected_proposal_leaves_the_line_until_rewritten() {
+    let (pool, name) = fresh_db().await;
+    let a = user(&pool, "anna").await;
+    let lead = user(&pool, "lena").await;
+    line(&pool, "s1", 5, 0, "Hello.", "Привет.").await;
+    let key = "Hello.".to_owned();
+    let id = db::upsert_proposal(
+        &pool,
+        &key,
+        &place("s1", 5),
+        "Здравствуй.",
+        "own",
+        false,
+        None,
+        a,
+    )
+    .await
+    .unwrap();
+    let target = db::decision_target(&pool, id).await.unwrap().unwrap();
+    assert!(!target.rejected && !target.approved);
+    db::set_rejected(&pool, id, &key, &place("s1", 5), true, Some("не так"), lead)
+        .await
+        .unwrap();
+    // Gone from the line, still in the author's list with the reason.
+    let edits = db::key_edits(&pool, std::slice::from_ref(&key))
+        .await
+        .unwrap();
+    assert!(edits.iter().all(|e| e.proposals.is_empty()));
+    let rows = db::edit_rows(&pool, Some(a)).await.unwrap();
+    assert_eq!(rows.len(), 1);
+    assert_eq!(rows[0].state, "rejected");
+    assert_eq!(rows[0].proposal.reject_reason.as_deref(), Some("не так"));
+    // Writing it again makes it a proposal again.
+    db::upsert_proposal(
+        &pool,
+        &key,
+        &place("s1", 5),
+        "Здравствуйте.",
+        "own",
+        false,
+        None,
+        a,
+    )
+    .await
+    .unwrap();
+    let rows = db::edit_rows(&pool, Some(a)).await.unwrap();
+    assert_eq!(rows[0].state, "proposed");
+    assert!(rows[0].proposal.rejected_by.is_none());
     drop_db(pool, name).await;
 }

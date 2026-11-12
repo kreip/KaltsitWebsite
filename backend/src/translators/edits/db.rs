@@ -183,8 +183,8 @@ pub async fn places(pool: &PgPool, key: &str, limit: i64) -> Result<Vec<KeyPlace
         .fetch_all(pool)
         .await?;
         out.extend(
-            game.into_iter()
-                .map(|(section, object_id, object_en, field, idx, en, ru)| KeyPlace {
+            game.into_iter().map(
+                |(section, object_id, object_en, field, idx, en, ru)| KeyPlace {
                     section,
                     en,
                     ru_game: ru,
@@ -199,7 +199,8 @@ pub async fn places(pool: &PgPool, key: &str, limit: i64) -> Result<Vec<KeyPlace
                     object_en: Some(object_en),
                     field: Some(field),
                     idx: Some(idx),
-                }),
+                },
+            ),
         );
     }
     Ok(out)
@@ -754,10 +755,10 @@ pub async fn rewrite_proposal(
         "UPDATE translators.proposals SET text = $2, updated_at = NOW(),
              rejected_by = NULL, rejected_at = NULL, reject_reason = NULL WHERE id = $1",
     )
-        .bind(id)
-        .bind(text)
-        .execute(&mut *tx)
-        .await?;
+    .bind(id)
+    .bind(text)
+    .execute(&mut *tx)
+    .await?;
     add_version(&mut tx, id, text, source, author).await?;
     tx.commit().await
 }
@@ -1344,7 +1345,10 @@ pub async fn edit_rows(pool: &PgPool, author: Option<Uuid>) -> Result<Vec<EditRo
             let mut proposal = r.p.into_proposal(agreed);
             // A text outside the story names its entry, so its places can be asked for.
             if proposal.place.is_text() {
-                let md5 = format!("{:x}", <md5::Md5 as md5::Digest>::digest(proposal.edit_key.as_bytes()));
+                let md5 = format!(
+                    "{:x}",
+                    <md5::Md5 as md5::Digest>::digest(proposal.edit_key.as_bytes())
+                );
                 proposal.place = EditPlace::text_by_md5(&proposal.edit_key, &md5);
             }
             EditRow {
@@ -1423,7 +1427,10 @@ pub struct DecisionTarget {
     pub approved: bool,
 }
 
-pub async fn decision_target(pool: &PgPool, id: i64) -> Result<Option<DecisionTarget>, sqlx::Error> {
+pub async fn decision_target(
+    pool: &PgPool,
+    id: i64,
+) -> Result<Option<DecisionTarget>, sqlx::Error> {
     sqlx::query_as(
         "SELECT p.edit_key, p.text, p.story_id, p.line, p.part, p.context,
                 (p.outdated_at IS NOT NULL) AS outdated, (p.rejected_at IS NOT NULL) AS rejected,

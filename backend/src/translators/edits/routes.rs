@@ -871,7 +871,9 @@ pub async fn decide_proposals(
         return Err(ApiError::Forbidden);
     }
     if input.ids.len() > 5_000 {
-        return Err(ApiError::BadRequest("at most 5000 proposals at once".into()));
+        return Err(ApiError::BadRequest(
+            "at most 5000 proposals at once".into(),
+        ));
     }
     let decision = input.decision.as_str();
     if !matches!(decision, "approve" | "reject" | "withdraw" | "reopen") {
@@ -912,7 +914,8 @@ pub async fn decide_proposals(
         let acted = match decision {
             "approve" if !p.outdated && !p.approved => {
                 if p.rejected {
-                    db::set_rejected(&state.db, id, &p.edit_key, &place, false, None, me.id).await?;
+                    db::set_rejected(&state.db, id, &p.edit_key, &place, false, None, me.id)
+                        .await?;
                 }
                 if p.context {
                     db::approve_context(&state.db, &p.edit_key, id, &place, me.id, true).await?;

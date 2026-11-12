@@ -168,14 +168,23 @@ fn problem_condition(status: &str) -> Option<String> {
     let what = match status {
         "problems" => format!("(t.problems <> '{{}}' OR {LONGER})"),
         "longer" => LONGER.to_owned(),
-        s if super::problems::PROBLEMS.contains(&s) => format!("t.problems @> ARRAY['{s}']::text[]"),
+        s if super::problems::PROBLEMS.contains(&s) => {
+            format!("t.problems @> ARRAY['{s}']::text[]")
+        }
         _ => return None,
     };
     Some(format!(" AND {what} AND NOT {APPROVED}"))
 }
 
 /// The statuses of the problems, as the filter offers them: any, then each.
-pub const PROBLEM_STATUSES: &[&str] = &["problems", "glossary", "brokenTag", "noHighlight", "newlines", "longer"];
+pub const PROBLEM_STATUSES: &[&str] = &[
+    "problems",
+    "glossary",
+    "brokenTag",
+    "noHighlight",
+    "newlines",
+    "longer",
+];
 
 /// The WHERE of a search, after `FROM translators.texts t`.
 fn conditions<'q>(
@@ -933,9 +942,7 @@ pub async fn summary(
             counts.push(", ");
         }
         let cond = problem_condition(status).unwrap_or_default();
-        counts.push(format!(
-            "COUNT(*) FILTER (WHERE TRUE {cond})"
-        ));
+        counts.push(format!("COUNT(*) FILTER (WHERE TRUE {cond})"));
     }
     counts.push(" FROM translators.texts t");
     conditions(&mut counts, server, &unfiltered, &folded);

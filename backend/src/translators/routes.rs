@@ -100,7 +100,10 @@ pub async fn me(
     };
     let signed_in = auth.0.is_some();
     // A signed-in user outside the team: whether their request waits.
-    let access_requested = match (&member, auth.0.as_ref().and_then(|u| u.user_id.parse::<Uuid>().ok())) {
+    let access_requested = match (
+        &member,
+        auth.0.as_ref().and_then(|u| u.user_id.parse::<Uuid>().ok()),
+    ) {
         (None, Some(id)) => super::admin::request_open(&state.db, id).await?,
         _ => false,
     };
