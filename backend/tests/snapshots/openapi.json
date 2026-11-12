@@ -14764,7 +14764,7 @@
           {
             "name": "status",
             "in": "query",
-            "description": "`unchecked` (nobody proposed or approved anything), `proposed`,\n`approved`, `untranslated` (no Russian) or `plugin` (the plugin's catalog holds it).",
+            "description": "`unchecked` (nobody proposed or approved anything), `proposed`,\n`approved`, `untranslated` (no Russian), `plugin` (the plugin's catalog\nholds it), or a problem of a text not approved: `problems` (any),\n`glossary`, `brokenTag`, `noHighlight`, `newlines`, `longer` (a\nproposal noticeably longer than the game's text).",
             "required": false,
             "schema": {
               "type": "string"
@@ -15036,7 +15036,7 @@
           {
             "name": "status",
             "in": "query",
-            "description": "`unchecked` (nobody proposed or approved anything), `proposed`,\n`approved`, `untranslated` (no Russian) or `plugin` (the plugin's catalog holds it).",
+            "description": "`unchecked` (nobody proposed or approved anything), `proposed`,\n`approved`, `untranslated` (no Russian), `plugin` (the plugin's catalog\nholds it), or a problem of a text not approved: `problems` (any),\n`glossary`, `brokenTag`, `noHighlight`, `newlines`, `longer` (a\nproposal noticeably longer than the game's text).",
             "required": false,
             "schema": {
               "type": "string"
@@ -15069,6 +15069,101 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/TextSearch"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        },
+        "security": [
+          {
+            "bearer_auth": []
+          }
+        ]
+      }
+    },
+    "/api/translators/texts/summary": {
+      "get": {
+        "tags": [
+          "translators"
+        ],
+        "summary": "The overview above the search and the Game sections: how many texts the\nfilters leave, with Russian, approved, and each problem's count (texts\nnot approved) under the query and the section. Members only.",
+        "operationId": "text_summary",
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "description": "A part of the English or of the Russian: any case, ё = е. Empty lists everything the filters leave.\nThe best answers come first: the query exactly, as whole words, at the start, anywhere.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "whole",
+            "in": "query",
+            "description": "Whole words only.",
+            "required": false,
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "section",
+            "in": "query",
+            "description": "`story`, `operators`, `enemies`, `stages`, `items`, `archives` or `other`.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "description": "`unchecked` (nobody proposed or approved anything), `proposed`,\n`approved`, `untranslated` (no Russian), `plugin` (the plugin's catalog\nholds it), or a problem of a text not approved: `problems` (any),\n`glossary`, `brokenTag`, `noHighlight`, `newlines`, `longer` (a\nproposal noticeably longer than the game's text).",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "Up to 200; 50 when left out.",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The counts.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TextSummary"
                 }
               }
             }
@@ -27634,6 +27729,19 @@
             ],
             "description": "The line before and after it in the story: the game's Russian, else the English."
           },
+          "cn": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "en": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The text at this place: its English, the game's Russian, the Chinese (story lines, when arktr has it)."
+          },
           "field": {
             "type": [
               "string",
@@ -27674,6 +27782,12 @@
           "part": {
             "type": "integer",
             "format": "int32"
+          },
+          "ruGame": {
+            "type": [
+              "string",
+              "null"
+            ]
           },
           "section": {
             "type": "string",
@@ -31638,6 +31752,23 @@
             "type": "integer",
             "format": "int32",
             "description": "Skill level, 1 to 7."
+          }
+        }
+      },
+      "ProblemCount": {
+        "type": "object",
+        "description": "How many texts have one problem.",
+        "required": [
+          "status",
+          "count"
+        ],
+        "properties": {
+          "count": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "status": {
+            "type": "string"
           }
         }
       },
@@ -38856,6 +38987,36 @@
             "type": "integer",
             "format": "int64",
             "description": "Every text that matches."
+          }
+        }
+      },
+      "TextSummary": {
+        "type": "object",
+        "description": "The overview above the search: the texts the filters leave, those with\nRussian and those approved; and each problem's count under the query and\nthe section.",
+        "required": [
+          "total",
+          "ru",
+          "approved",
+          "problems"
+        ],
+        "properties": {
+          "approved": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "problems": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ProblemCount"
+            }
+          },
+          "ru": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "total": {
+            "type": "integer",
+            "format": "int64"
           }
         }
       },

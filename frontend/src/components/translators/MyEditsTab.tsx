@@ -29,7 +29,7 @@ import { deleteProposalFn, editsQueryOptions, type ProposalDecision, proposalVer
 import type { EditRow } from "#/types/generated/EditRow";
 import type { TranslatorsMe } from "#/types/generated/TranslatorsMe";
 import { ExportDialog } from "./ExportDialog";
-import { CONFIRM_PLACES, cleanText, exportsForGame, isLead, marksReleases, RejectDialog, SaveDialog, TagsWarning, useDecide, useEditMutation, useEditorTools } from "./LineEdits";
+import { CONFIRM_PLACES, cleanText, exportsForGame, isLead, marksReleases, PlacesDialog, RejectDialog, SaveDialog, TagsWarning, useDecide, useEditMutation, useEditorTools } from "./LineEdits";
 import { StoryText } from "./StoryText";
 import { useStoryNames } from "./storyNames";
 import { TextDiff } from "./TextDiff";
@@ -147,7 +147,7 @@ function SelectionBar({ ids, onDone, t }: { ids: number[]; onDone: () => void; t
     );
 }
 
-function Where({ row, t }: { row: EditRow; t: T }): React.ReactElement {
+function Where({ row, nickname, t }: { row: EditRow; nickname: string; t: T }): React.ReactElement {
     const nameOf = useStoryNames();
     const { place } = row.proposal;
     // A text outside the story: it is found again in Search.
@@ -157,7 +157,7 @@ function Where({ row, t }: { row: EditRow; t: T }): React.ReactElement {
                 <Link to="/translators" search={{ tab: "search", q: plainText(row.proposal.editKey) }} className="underline-offset-4 hover:underline">
                     {t("where.text")}
                 </Link>
-                {row.places > 1 ? <span className="text-subtle-foreground text-xs">{t("where.places", { count: row.places })}</span> : null}
+                {row.places > 1 ? <PlacesDialog place={row.proposal.place} count={row.places} after={row.proposal.text} nickname={nickname} t={t} /> : null}
             </span>
         );
     const n = nameOf(place.storyId);
@@ -171,7 +171,7 @@ function Where({ row, t }: { row: EditRow; t: T }): React.ReactElement {
             ) : (
                 <span>{label}</span>
             )}
-            {row.places > 1 ? <span className="text-subtle-foreground text-xs">{t("where.places", { count: row.places })}</span> : null}
+            {row.places > 1 ? <PlacesDialog place={row.proposal.place} count={row.places} after={row.proposal.text} nickname={nickname} t={t} /> : null}
         </span>
     );
 }
@@ -239,7 +239,7 @@ function Rewrite({ row, nickname, onClose, t }: { row: EditRow; nickname: string
                 </Button>
                 <span className="text-subtle-foreground text-xs">{t("editor.keys")}</span>
             </div>
-            {asking ? <SaveDialog open={asking} onOpenChange={setAsking} place={row.proposal.place} places={row.places} allowContext={false} pending={save.isPending} onSave={() => save.mutate(true, { onSuccess: onClose })} nickname={nickname} t={t} /> : null}
+            {asking ? <SaveDialog open={asking} onOpenChange={setAsking} place={row.proposal.place} places={row.places} allowContext={false} pending={save.isPending} onSave={() => save.mutate(true, { onSuccess: onClose })} nickname={nickname} text={text} t={t} /> : null}
         </div>
     );
 }
@@ -264,7 +264,9 @@ function Row({ row, me, all, nickname, lead, selected, onSelect, t }: IRowProps)
     const mine = p.author.id === me.userId;
     return (
         <TableRow className="group/row" data-state={selected ? "selected" : undefined}>
-            {lead ? <TableCell className="py-1.5 align-top">{decidable(row) ? <Checkbox checked={selected} onCheckedChange={() => undefined} onClick={(e: React.MouseEvent) => onSelect(e.shiftKey)} aria-label={t("decide.tick")} /> : null}</TableCell> : null}
+            {lead ? (
+                <TableCell className="py-1.5 align-top">{decidable(row) ? <Checkbox checked={selected} onCheckedChange={() => undefined} onMouseDown={(e: React.MouseEvent) => e.shiftKey && e.preventDefault()} onClick={(e: React.MouseEvent) => onSelect(e.shiftKey)} aria-label={t("decide.tick")} /> : null}</TableCell>
+            ) : null}
             <TableCell className={PROSE}>
                 <span className="flex flex-col gap-0.5">
                     {row.ruGame ? <StoryText text={row.ruGame} nickname={nickname} /> : <span className="text-subtle-foreground">{t("ru.missing")}</span>}
@@ -317,7 +319,7 @@ function Row({ row, me, all, nickname, lead, selected, onSelect, t }: IRowProps)
                 </div>
             </TableCell>
             <TableCell className={PROSE}>
-                <Where row={row} t={t} />
+                <Where row={row} nickname={nickname} t={t} />
             </TableCell>
             <TableCell className={PROSE}>
                 <StateCell row={row} lead={lead} t={t} />

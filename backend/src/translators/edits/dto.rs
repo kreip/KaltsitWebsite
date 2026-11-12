@@ -369,6 +369,10 @@ pub struct KeyPlace {
     /// The line before and after it in the story: the game's Russian, else the English.
     pub before: Option<String>,
     pub after: Option<String>,
+    /// The text at this place: its English, the game's Russian, the Chinese (story lines, when arktr has it).
+    pub en: Option<String>,
+    pub ru_game: Option<String>,
+    pub cn: Option<String>,
 }
 
 /// Every place of the entry at a place.

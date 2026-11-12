@@ -34,4 +34,10 @@ export type KeyPlace = {
      */
     before: string | null;
     after: string | null;
+    /**
+     * The text at this place: its English, the game's Russian, the Chinese (story lines, when arktr has it).
+     */
+    en: string | null;
+    ruGame: string | null;
+    cn: string | null;
 };

@@ -16,6 +16,8 @@ import { Badge } from "#/components/ui/badge";
 import { Button } from "#/components/ui/button";
 import { Checkbox } from "#/components/ui/checkbox";
 import { Collapsible, CollapsiblePanel, CollapsibleTrigger } from "#/components/ui/collapsible";
+import { Dialog, DialogHeader, DialogPanel, DialogPopup, DialogTitle } from "#/components/ui/dialog";
+import { InfoHint } from "#/components/ui/info-hint";
 import { LoadFailed } from "#/components/ui/load-failed";
 import { Popover, PopoverPopup, PopoverTrigger } from "#/components/ui/popover";
 import { Radio, RadioGroup } from "#/components/ui/radio-group";
@@ -23,6 +25,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "#
 import { Separator } from "#/components/ui/separator";
 import { Skeleton } from "#/components/ui/skeleton";
 import { Spinner } from "#/components/ui/spinner";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "#/components/ui/table";
 import { Textarea } from "#/components/ui/textarea";
 import { toastManager } from "#/components/ui/toast";
 import { useFormatters, useLocale } from "#/lib/i18n";
@@ -511,7 +514,16 @@ export function ApprovedVariant({ edits, place, me, nickname, marks, compareWith
     if (!a) return null;
     const when = f.date(a.at * 1000, { dateStyle: "medium" });
     const author = a.variant === "proposal" ? (edits?.proposals.find((p) => p.id === a.proposalId)?.author.name ?? null) : null;
-    const what = a.variant === "game" ? t("approved.headGame") : a.variant === "ai" ? t("approved.headAi") : a.variant === "proposal" ? (author ? t("approved.headVariant", { name: author }) : t("approved.headProposal")) : t("approved.headVariant", { name: translatorName(a.variant as (typeof TRANSLATOR_SOURCES)[number], locale) });
+    const what =
+        a.variant === "game"
+            ? t("approved.headGame")
+            : a.variant === "ai"
+              ? t("approved.headAi")
+              : a.variant === "proposal"
+                ? author
+                    ? t("approved.headVariant", { name: author })
+                    : t("approved.headProposal")
+                : t("approved.headVariant", { name: translatorName(a.variant as (typeof TRANSLATOR_SOURCES)[number], locale) });
     // A proposal written (or rewritten) after the approval.
     const newer = proposalsAt(edits, place).some((p) => p.id !== a.proposalId && (p.editedAt ?? p.createdAt) > a.at);
     return (
@@ -596,35 +608,33 @@ export function Proposals({ edits, place, me, nickname, onEdit, marks, compare =
                                     ) : null}
                                     {marks?.(p)}
                                     {before ? <span>· {p.previousText ? t("diff.vsPrevious") : t("diff.vsGame")}</span> : null}
+                                    <ActionRow
+                                        className={approvedHere || p.agreements.length > 0 ? undefined : ON_HOVER}
+                                        main={
+                                            isLead(me) ? (
+                                                approvedHere ? (
+                                                    <ApproveButton place={place} variant="proposal" proposalId={p.id} me={me} approved t={t} />
+                                                ) : (
+                                                    <>
+                                                        <ApproveButton place={place} variant="proposal" proposalId={p.id} me={me} approved={false} t={t} />
+                                                        <RejectButton proposalId={p.id} me={me} t={t} />
+                                                    </>
+                                                )
+                                            ) : undefined
+                                        }
+                                        secondary={
+                                            <>
+                                                <AgreeButton place={place} variant="proposal" proposalId={p.id} people={p.agreements} me={me} own={mine} inBar t={t} />
+                                                {mine ? (
+                                                    <>
+                                                        <IconAction icon={<PenLine aria-hidden="true" />} label={t("proposal.edit")} onClick={() => onEdit(p)} />
+                                                        <IconAction icon={<Trash2 aria-hidden="true" />} label={t("proposal.delete")} onClick={() => remove.mutate(p.id)} />
+                                                    </>
+                                                ) : null}
+                                            </>
+                                        }
+                                    />
                                 </>
-                            }
-                            actions={
-                                <ActionRow
-                                    className={approvedHere || p.agreements.length > 0 ? undefined : ON_HOVER}
-                                    main={
-                                        isLead(me) ? (
-                                            approvedHere ? (
-                                                <ApproveButton place={place} variant="proposal" proposalId={p.id} me={me} approved t={t} />
-                                            ) : (
-                                                <>
-                                                    <ApproveButton place={place} variant="proposal" proposalId={p.id} me={me} approved={false} t={t} />
-                                                    <RejectButton proposalId={p.id} me={me} t={t} />
-                                                </>
-                                            )
-                                        ) : undefined
-                                    }
-                                    secondary={
-                                        <>
-                                            <AgreeButton place={place} variant="proposal" proposalId={p.id} people={p.agreements} me={me} own={mine} inBar t={t} />
-                                            {mine ? (
-                                                <>
-                                                    <IconAction icon={<PenLine aria-hidden="true" />} label={t("proposal.edit")} onClick={() => onEdit(p)} />
-                                                    <IconAction icon={<Trash2 aria-hidden="true" />} label={t("proposal.delete")} onClick={() => remove.mutate(p.id)} />
-                                                </>
-                                            ) : null}
-                                        </>
-                                    }
-                                />
                             }
                         >
                             {before ? <TextDiff before={before} after={p.text} labels={diffLabels(t)} /> : <StoryText text={p.text} nickname={nickname} />}
@@ -767,6 +777,88 @@ export function PlacesList({ place, nickname, compact = false, t }: { place: Edi
     );
 }
 
+/**
+ * Every place of the entry as a table: № | where | was (the game's Russian
+ * there) | now (`after`: the proposal) | English | Chinese (when any place
+ * has it). Story places link to their line; game data places to their card.
+ */
+export function PlacesPreview({ place, after, nickname, t }: { place: EditPlace; after: string | null; nickname: string; t: T }): React.ReactElement {
+    const query = useQuery(placesQueryOptions(place));
+    const nameOf = useStoryNames();
+    if (query.isError) return <LoadFailed layout="inline" message={t("places.load")} onRetry={() => query.refetch()} />;
+    if (!query.data) return <Skeleton className="h-24 w-full" />;
+    const { places, total } = query.data;
+    const cn = places.some((p) => p.cn);
+    const prose = "whitespace-normal py-1.5 align-top leading-snug";
+    return (
+        <div className="flex flex-col gap-1">
+            <div className="max-h-[60vh] overflow-y-auto">
+                <Table aria-label={t("places.table")} className="wrap-anywhere text-xs">
+                    <TableHeader>
+                        <TableRow>
+                            <TableHead className="w-10">{t("table.line")}</TableHead>
+                            <TableHead className="w-48">{t("edits.col.where")}</TableHead>
+                            <TableHead>{t("edits.col.was")}</TableHead>
+                            {after !== null ? <TableHead>{t("edits.col.now")}</TableHead> : null}
+                            <TableHead>{t("table.en")}</TableHead>
+                            {cn ? <TableHead>{t("table.cn")}</TableHead> : null}
+                        </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                        {places.map((p, i) => {
+                            const story = p.section === "story";
+                            const n = story ? nameOf(p.storyId) : null;
+                            const here = story && samePlace(p, place);
+                            return (
+                                <TableRow key={story ? `${p.storyId}-${p.line}-${p.part}` : `${p.section}-${p.objectId}-${p.field}-${p.idx}`}>
+                                    <TableCell className="py-1.5 align-top text-subtle-foreground tabular-nums">{i + 1}</TableCell>
+                                    <TableCell className={prose}>
+                                        {!story ? (
+                                            <GamePlace section={p.section} objectId={p.objectId} objectEn={p.objectEn} field={p.field} idx={p.idx} t={t} />
+                                        ) : n ? (
+                                            <Link to="/translators" search={{ group: n.groupId, story: p.storyId }} hash={`n-${p.ord + 1}`} className="underline-offset-4 hover:underline">
+                                                {t("places.item", { group: n.group, story: n.story, n: p.ord + 1 })}
+                                            </Link>
+                                        ) : (
+                                            t("places.itemBare", { story: p.storyId, n: p.ord + 1 })
+                                        )}
+                                        {here ? <span className="text-subtle-foreground"> · {t("places.here")}</span> : null}
+                                    </TableCell>
+                                    <TableCell className={prose}>{p.ruGame ? <StoryText text={p.ruGame} nickname={nickname} /> : <span className="text-subtle-foreground">{t("ru.missing")}</span>}</TableCell>
+                                    {after !== null ? <TableCell className={prose}>{p.ruGame ? <TextDiff before={p.ruGame} after={after} labels={diffLabels(t)} /> : <StoryText text={after} nickname={nickname} />}</TableCell> : null}
+                                    <TableCell className={prose}>{p.en ? <StoryText text={p.en} nickname={nickname} /> : null}</TableCell>
+                                    {cn ? <TableCell className={`${prose} whitespace-pre-line`}>{p.cn ?? ""}</TableCell> : null}
+                                </TableRow>
+                            );
+                        })}
+                    </TableBody>
+                </Table>
+            </div>
+            {total > places.length ? <span className="text-subtle-foreground text-xs">{t("places.more", { count: total - places.length })}</span> : null}
+        </div>
+    );
+}
+
+/** "Places: N" in the Edits list: opens every place of the entry with was / now. */
+export function PlacesDialog({ place, count, after, nickname, t }: { place: EditPlace; count: number; after: string; nickname: string; t: T }): React.ReactElement {
+    const [open, setOpen] = useState(false);
+    return (
+        <>
+            <Button variant="link" size="xs" className="h-auto justify-start px-0 text-subtle-foreground text-xs" onClick={() => setOpen(true)}>
+                {t("where.places", { count })}
+            </Button>
+            <Dialog open={open} onOpenChange={setOpen}>
+                <DialogPopup className="max-w-6xl">
+                    <DialogHeader>
+                        <DialogTitle>{t("save.title", { count })}</DialogTitle>
+                    </DialogHeader>
+                    <DialogPanel>{open ? <PlacesPreview place={place} after={after} nickname={nickname} t={t} /> : null}</DialogPanel>
+                </DialogPopup>
+            </Dialog>
+        </>
+    );
+}
+
 interface ISaveDialogProps {
     open: boolean;
     onOpenChange: (open: boolean) => void;
@@ -779,18 +871,20 @@ interface ISaveDialogProps {
     pending: boolean;
     onSave: (context: boolean) => void;
     nickname: string;
+    /** The proposal being saved: the preview's "now". */
+    text: string;
     t: T;
 }
 
 /** Saving a proposal for an entry in several places: for all of them (with the list and a confirmation) or for this place only. */
-export function SaveDialog({ open, onOpenChange, place, places, allowContext, here = null, pending, onSave, nickname, t }: ISaveDialogProps): React.ReactElement {
+export function SaveDialog({ open, onOpenChange, place, places, allowContext, here = null, pending, onSave, nickname, text, t }: ISaveDialogProps): React.ReactElement {
     const scopeId = useId();
     const [context, setContext] = useState(false);
     const [understood, setUnderstood] = useState(false);
     const forAll = !context;
     return (
         <AlertDialog open={open} onOpenChange={onOpenChange}>
-            <AlertDialogPopup className="max-w-2xl">
+            <AlertDialogPopup className="max-w-6xl">
                 <AlertDialogHeader>
                     <AlertDialogTitle>{t("save.title", { count: places })}</AlertDialogTitle>
                     <AlertDialogDescription>{t("save.proposalOnly")}</AlertDialogDescription>
@@ -811,8 +905,11 @@ export function SaveDialog({ open, onOpenChange, place, places, allowContext, he
                             <label className="flex items-start gap-2 text-sm">
                                 <Radio value="here" />
                                 <span className="flex flex-col">
-                                    <span className="font-medium">{here ? t("save.onlyHere") : t("save.here")}</span>
-                                    <span className="text-muted-foreground text-xs">{here ? t("save.onlyHereHint") : t("save.hereHint")}</span>
+                                    <span className="flex items-center gap-1 font-medium">
+                                        {here ? t("save.onlyHere") : t("save.here")}
+                                        {here ? <InfoHint label={t("save.onlyHereHint")}>{t("save.onlyHereHint")}</InfoHint> : null}
+                                    </span>
+                                    {here ? null : <span className="text-muted-foreground text-xs">{t("save.hereHint")}</span>}
                                     {here ? (
                                         <span className="text-muted-foreground text-xs">
                                             <GamePlace section={here.section} objectId={here.objectId} objectEn={here.objectEn ?? null} field={here.field} idx={here.idx} t={t} />
@@ -826,7 +923,7 @@ export function SaveDialog({ open, onOpenChange, place, places, allowContext, he
                     )}
                     {forAll ? (
                         <div className="flex flex-col gap-2 pt-2">
-                            <PlacesList place={place} nickname={nickname} t={t} />
+                            <PlacesPreview place={place} after={cleanText(text)} nickname={nickname} t={t} />
                             {/* biome-ignore lint/a11y/noLabelWithoutControl: the kit Checkbox inside is the control */}
                             <label className="flex items-center gap-2 font-medium text-sm">
                                 <Checkbox checked={understood} onCheckedChange={(v) => setUnderstood(v === true)} />
@@ -969,7 +1066,7 @@ export function ProposalEditor({ line, place, initial, source, context, here = n
                 </Button>
                 <span className="text-subtle-foreground text-xs">{t("editor.keys")}</span>
             </div>
-            {asking ? <SaveDialog open={asking} onOpenChange={setAsking} place={place} places={line.places} allowContext={line.contextAllowed} here={here} pending={save.isPending} onSave={(c) => save.mutate({ context: c, confirmMany: !c }, done)} nickname={nickname} t={t} /> : null}
+            {asking ? <SaveDialog open={asking} onOpenChange={setAsking} place={place} places={line.places} allowContext={line.contextAllowed} here={here} pending={save.isPending} onSave={(c) => save.mutate({ context: c, confirmMany: !c }, done)} nickname={nickname} text={text} t={t} /> : null}
         </div>
     );
 }

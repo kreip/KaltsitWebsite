@@ -117,11 +117,25 @@ pub async fn place_counts(
         .collect())
 }
 
+#[derive(sqlx::FromRow)]
+struct StoryPlaceRow {
+    story_id: String,
+    line: i32,
+    part: i16,
+    ord: i32,
+    before: Option<String>,
+    after: Option<String>,
+    en: String,
+    ru_game: Option<String>,
+    cn: Option<String>,
+}
+
 pub async fn places(pool: &PgPool, key: &str, limit: i64) -> Result<Vec<KeyPlace>, sqlx::Error> {
     #[allow(clippy::type_complexity)]
-    let rows: Vec<(String, i32, i16, i32, Option<String>, Option<String>)> = sqlx::query_as(
+    let rows: Vec<StoryPlaceRow> = sqlx::query_as(
         "SELECT s.story_id, s.line, s.part, s.ord,
-                COALESCE(b.ru_game, b.en), COALESCE(a.ru_game, a.en)
+                COALESCE(b.ru_game, b.en) AS before, COALESCE(a.ru_game, a.en) AS after,
+                s.en, s.ru_game, s.cn
          FROM translators.story_lines s
          LEFT JOIN translators.story_lines b
              ON b.server = s.server AND b.story_id = s.story_id AND b.ord = s.ord - 1
@@ -136,14 +150,17 @@ pub async fn places(pool: &PgPool, key: &str, limit: i64) -> Result<Vec<KeyPlace
     .await?;
     let mut out: Vec<KeyPlace> = rows
         .into_iter()
-        .map(|(story_id, line, part, ord, before, after)| KeyPlace {
+        .map(|r| KeyPlace {
             section: STORY.to_owned(),
-            story_id,
-            line,
-            part,
-            ord,
-            before,
-            after,
+            story_id: r.story_id,
+            line: r.line,
+            part: r.part,
+            ord: r.ord,
+            before: r.before,
+            after: r.after,
+            en: Some(r.en),
+            ru_game: r.ru_game,
+            cn: r.cn.map(|c| c.replace("\\n", "\n")),
             object_id: None,
             object_en: None,
             field: None,
@@ -153,9 +170,12 @@ pub async fn places(pool: &PgPool, key: &str, limit: i64) -> Result<Vec<KeyPlace
     // Then the fields of the game data holding it.
     let left = limit - i64::try_from(out.len()).unwrap_or(limit);
     if left > 0 {
-        let game: Vec<(String, String, String, String, i16)> = sqlx::query_as(
-            "SELECT section, object_id, object_en, field, idx FROM translators.text_places
-             WHERE server = $1 AND edit_key = $2 ORDER BY section, object_id, ord LIMIT $3",
+        #[allow(clippy::type_complexity)]
+        let game: Vec<(String, String, String, String, i16, Option<String>, Option<String>)> = sqlx::query_as(
+            "SELECT p.section, p.object_id, p.object_en, p.field, p.idx, t.en, t.ru
+             FROM translators.text_places p
+             LEFT JOIN translators.texts t ON t.server = p.server AND t.edit_key = p.edit_key
+             WHERE p.server = $1 AND p.edit_key = $2 ORDER BY p.section, p.object_id, p.ord LIMIT $3",
         )
         .bind(SERVER)
         .bind(key)
@@ -164,8 +184,11 @@ pub async fn places(pool: &PgPool, key: &str, limit: i64) -> Result<Vec<KeyPlace
         .await?;
         out.extend(
             game.into_iter()
-                .map(|(section, object_id, object_en, field, idx)| KeyPlace {
+                .map(|(section, object_id, object_en, field, idx, en, ru)| KeyPlace {
                     section,
+                    en,
+                    ru_game: ru,
+                    cn: None,
                     story_id: String::new(),
                     line: 0,
                     part: 0,
@@ -1318,8 +1341,14 @@ pub async fn edit_rows(pool: &PgPool, author: Option<Uuid>) -> Result<Vec<EditRo
             let agreed = votes
                 .remove(&(r.p.edit_key.clone(), Some(id)))
                 .unwrap_or_default();
+            let mut proposal = r.p.into_proposal(agreed);
+            // A text outside the story names its entry, so its places can be asked for.
+            if proposal.place.is_text() {
+                let md5 = format!("{:x}", <md5::Md5 as md5::Digest>::digest(proposal.edit_key.as_bytes()));
+                proposal.place = EditPlace::text_by_md5(&proposal.edit_key, &md5);
+            }
             EditRow {
-                proposal: r.p.into_proposal(agreed),
+                proposal,
                 en,
                 ru_game: r.ru_game,
                 ord: r.ord,
