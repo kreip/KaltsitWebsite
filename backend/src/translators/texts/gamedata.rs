@@ -494,9 +494,8 @@ fn stage_note(s: &Value) -> String {
         Some("TOUGH") => parts.push("DT"),
         _ => {}
     }
-    match text(s, "Difficulty") {
-        Some("FOUR_STAR" | "SIX_STAR") => parts.push("C"),
-        _ => {}
+    if let Some("FOUR_STAR" | "SIX_STAR") = text(s, "Difficulty") {
+        parts.push("C");
     }
     parts.join("+")
 }

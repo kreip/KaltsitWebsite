@@ -1,7 +1,7 @@
 # Для переводчиков (translators' section)
 
-A read-only EN | RU | CN reader of the story text at `/translators`, for the
-ArknightsRU translation team. The Russian column is what the game shows now
+The ArknightsRU translation team's workplace at `/translators`: the story and the
+game's other texts as EN | RU | CN, proposals, the lead's approvals and the export for the pack. The Russian column is what the game shows now
 with the ArknightsRU pack (XUnity dictionaries `11_ui.txt`, `12_story.txt`,
 `13_names.txt` and the RichTextFix plugin's built-in catalog). Sova's and the
 AI's variants (from arktr) are shown to signed-in translators only.
@@ -100,7 +100,7 @@ never the table's name: that shows on hover); "N more" unfolds every place of th
 ## Game sections
 
 The **Game sections** tab (`/translators?tab=sections&sec=…&obj=…`) is the Story tab for the
-texts outside the story: a section (operators, enemies, stages, items) and one of its
+texts outside the story: a section (operators, enemies, stages, items, archives) and one of its
 objects for a chapter and a story; the object's texts as the same table, `Field | Russian as
 in the game | English`, in the order the game shows them, with the same actions. A text is
 edited as the text itself (`storyId = "@text"`): one translation wherever its English
@@ -109,6 +109,51 @@ progress, `GET /api/translators/objects/lines?section=&object=` gives one object
 An operator is one record of the game data (its id); elsewhere several records under one
 name (a stage and its challenge mode) are one object, named by the English name.
 «Interface and other» has no objects: it is the search over that section.
+
+The tab's last section, **Archives**, is an operator at a time: the file's parts, the
+operator records (name and introduction, with a link to the record's story on the Story
+tab), the modules' and outfits' stories, the voice lines by the game's order. A text longer
+than 600 characters or 8 lines is folded to a few lines until clicked (in the search too).
+
+Where several texts of a card share a field («Talent 1 · description» at each elite phase),
+each says what tells it apart: the import notes it per place (`text_places.note`: `E2+P6`
+elite 2 with potential 6, `S1,…,S7` skill levels, `M3` mastery, `T2` a module's stage, `C` a
+stage's challenge mode, `#…` a code of the game) and the card words it. Records of one name
+with the very same texts are one object in the picker; different ones show their first text
+the others lack.
+
+## Search order and selected text
+
+The search answers best first: the query as the whole English or Russian, then as whole
+words, then at the start, then anywhere; among equals the game's names and terms before the
+story's lines, then the shorter text. A text pages long (over ~1,900 bytes) is only ever
+"holds the query": Postgres keeps it compressed apart from its row and unpacking it for
+every test of the sort key tripled the time. Above the texts: the operators, enemies, items
+and stages whose name answers the query, each with a link to its card.
+
+A word or phrase selected in any table (a double click, a drag) opens a small menu: find it
+everywhere (the Search tab), find it in the glossary, or suggest it for the glossary. A
+suggestion (`translators.glossary_suggestions`; English, Russian, note, the line it was
+noticed in) shows in a list of its own on the Glossary tab, where the lead accepts or
+declines it. The team's sheet is never written from the site.
+
+## The game's tags
+
+One parse of the markup (`frontend/src/components/translators/markup.ts`) serves the tables,
+the editor and the checks. Spans: a game style `<@ba.vup>…</>`, a game term `<$ba.stun>…</>`,
+a story paragraph `<p=1>…</>` (all closed by `</>`), Unity's `<i>`, `<b>`, `<u>`,
+`<color=…>`, `<size=…>`; a substitution `{@nickname}`, `{0}`, `{atk:0%}` is a token; anything
+else in angle brackets is text (`<Roadblock>`). The import lists every style and term with
+the game's colour or the term's name and explanation, in the pack's Russian too
+(`translators.tags`, `GET /api/translators/tags`);
+`python3 translators/tools/tags.py > translators/out/tags.md` prints the list.
+
+A table never shows a tag spelled out: a style in its ink, a term underlined with the
+game's explanation on hover. In the editor a substitution is a chip (removed whole, inserted
+with its button) and a tag a span typed into; the buttons under the box are the
+substitutions and tags of the line's English: a tag's button wraps the selection, and with
+the cursor inside a span "Remove the tag" drops both halves at once. A warning names the
+original's tags a translation lacks or adds; the same test marks every variant.
 
 ## Export
 
@@ -122,6 +167,12 @@ name (a stage and its challenge mode) are one object, named by the English name.
 - `plugin_strings.tsv`: lines the RichTextFix plugin shows from its built-in catalog
   (any role but `ambiguous:…`: story, skill, operator…), with the role;
 - `story_lines.tsv`: every approved story line with its place (for the bundles);
+- `only_here.tsv`: outside the story the game has one translation per English text, so a
+  proposal made for one place of the game data ("a separate translation is needed here") is
+  a request to the pack's maintainer: every live one, with its place
+  (`Оператор › Amiya [char_002_amiya] › skill.description 2`), the English, the game's
+  Russian, the proposal, its author and the lead who approved it, if one did. Never written
+  to the dictionaries;
 - `report.txt`: each changed line (file, line number, before → after, who approved).
 
 Two modes: approved (for the game; the lead and the maintainer) and every proposal
@@ -183,6 +234,13 @@ checked by word stem: one ending cut, the stem at least 3 letters, `ё` = `е`, 
 
 Proposals, "keep as in the game" and comments are keyed by the English of the
 dictionary entry the import found for a line (`story_lines.edit_key`): one decision
-holds wherever the line stands; a proposal can also be made for one story line only.
+holds wherever the line stands; a proposal can also be made for one story line only, or
+(outside the story) for one place of the game data. An entry may be pages long: the edit
+tables find it by a hash index and keep one per md5 of the key, and a long entry's place
+names it as `md5:<hex>` so that it fits an address.
+
+The translators whose variants the import brings are listed with their authors' names in
+`frontend/src/components/translators/translatorVariants.ts` (Sova is the first): a variant,
+a proposal started from it and a comment show the author's name.
 Storage test against a throwaway database:
 `cargo test --test translators_edits_test -- --ignored`.
