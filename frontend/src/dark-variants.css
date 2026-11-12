@@ -1,0 +1,45 @@
+/*
+ * A lighter dark theme (fork, Kolooo 2026-11-13: "try it"). Only the
+ * brightness of the backgrounds, panels and borders changes; text, accents
+ * and the light theme stay as they are. Two variants to compare, picked by
+ * `?darkv=1` / `?darkv=2` in any address (kept in the browser; `?darkv=0` is
+ * the original near-black): 1 is the default.
+ *   1 — page ~#1f1f22, panels and tables one step lighter, borders clearer;
+ *   2 — page ~#27272a, the same steps above it.
+ * The attribute is set by the script in `lib/darkVariant.ts`.
+ */
+.dark[data-darkv="1"] {
+    --bg-base: oklch(0.235 0.005 285);
+    --surface: oklch(0.27 0.005 285 / 0.8);
+    --background: oklch(0.235 0.005 285);
+    --card: oklch(0.27 0.005 285);
+    --popover: oklch(0.27 0.005 285);
+    --sidebar: oklch(0.255 0.005 285);
+    --accent: oklch(0.315 0.005 285);
+    --input: oklch(0.315 0.005 285);
+    --muted: oklch(0.315 0.005 285);
+    --secondary: oklch(0.315 0.005 285);
+    --sidebar-accent: oklch(0.315 0.005 285);
+    --border: oklch(0.39 0.005 285);
+    --sidebar-border: oklch(0.39 0.005 285);
+    --primary-foreground: oklch(0.235 0.005 285);
+    --sidebar-primary-foreground: oklch(0.235 0.005 285);
+}
+
+.dark[data-darkv="2"] {
+    --bg-base: oklch(0.27 0.005 285);
+    --surface: oklch(0.305 0.005 285 / 0.8);
+    --background: oklch(0.27 0.005 285);
+    --card: oklch(0.305 0.005 285);
+    --popover: oklch(0.305 0.005 285);
+    --sidebar: oklch(0.29 0.005 285);
+    --accent: oklch(0.35 0.005 285);
+    --input: oklch(0.35 0.005 285);
+    --muted: oklch(0.35 0.005 285);
+    --secondary: oklch(0.35 0.005 285);
+    --sidebar-accent: oklch(0.35 0.005 285);
+    --border: oklch(0.43 0.005 285);
+    --sidebar-border: oklch(0.43 0.005 285);
+    --primary-foreground: oklch(0.27 0.005 285);
+    --sidebar-primary-foreground: oklch(0.27 0.005 285);
+}

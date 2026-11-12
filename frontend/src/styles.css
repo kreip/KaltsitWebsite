@@ -8,6 +8,7 @@
 @import "@fontsource-variable/geist-mono";
 @import "@fontsource-variable/orbitron";
 @import "tailwindcss";
+@import "./dark-variants.css";
 
 @custom-variant dark (&:is(.dark *));
 @plugin "@tailwindcss/typography";

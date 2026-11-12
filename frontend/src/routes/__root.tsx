@@ -11,6 +11,7 @@ import { isSignInPrompt } from "#/lib/auth/search";
 import { getSessionFn } from "#/lib/auth/server";
 import { authActions, authStore } from "#/lib/auth/store";
 import { CommandProvider } from "#/lib/command-context";
+import { DARK_VARIANT_SCRIPT } from "#/lib/darkVariant";
 import type { IBootstrap } from "#/lib/i18n";
 import { DEFAULT_LOCALE, directionForLocale, I18nProvider } from "#/lib/i18n";
 import { getI18nBootstrapFn } from "#/lib/i18n/server";
@@ -252,6 +253,8 @@ function RootDocument({ children }: { children: React.ReactNode }) {
                     has nothing to patch: suppress the comparison on this element only. */}
                 {/* biome-ignore lint/security/noDangerouslySetInnerHtml: theme init script */}
                 <script suppressHydrationWarning dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
+                {/* biome-ignore lint/security/noDangerouslySetInnerHtml: the lighter dark theme's variant (fork) */}
+                <script suppressHydrationWarning dangerouslySetInnerHTML={{ __html: DARK_VARIANT_SCRIPT }} />
                 <HeadContent />
                 <link rel="canonical" href={canonical} />
                 <meta property="og:url" content={canonical} />
