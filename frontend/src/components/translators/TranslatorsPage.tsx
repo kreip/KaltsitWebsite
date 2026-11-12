@@ -47,12 +47,12 @@ import { type SearchSection, type SearchStatus, SearchTab } from "./SearchTab";
 import { SectionLocale } from "./SectionLocale";
 import { type GameSection, SectionsTab } from "./SectionsTab";
 import { SelectionMenu } from "./SelectionMenu";
-import { Toggle } from "./SwitchToggle";
 import { charBase } from "./service";
 import { entryLabel, groupLabel, useRename } from "./storyNames";
 import type { messages } from "./translators.messages";
 import { translatorName } from "./translatorVariants";
 import { useScrollToRow } from "./useScrollToRow";
+import { GameOnly, ViewMenu, viewOf } from "./ViewMenu";
 
 type T = TypedT<typeof messages>;
 
@@ -69,6 +69,8 @@ export interface ITranslatorsSearch {
     variants?: false;
     /** Compare: proposals as their changes against the text one step back. */
     diff?: boolean;
+    /** Only as in the game: the game's text (and the English), nothing else. */
+    game?: boolean;
     /** Search: the text looked for, whole words only, the section and the state. */
     q?: string;
     whole?: boolean;
@@ -230,7 +232,7 @@ interface ISearchProps {
 
 function StoryTab({ search, onSearch }: ISearchProps): React.ReactElement {
     const t: T = useT("translators");
-    const ids = { chapter: useId(), story: useId(), cn: useId(), service: useId(), variants: useId(), diff: useId() };
+    const ids = { chapter: useId(), story: useId() };
     const index = useQuery(storyIndexQueryOptions("en"));
 
     const groups = index.data?.groups ?? [];
@@ -241,10 +243,11 @@ function StoryTab({ search, onSearch }: ISearchProps): React.ReactElement {
     const groupItem = items.find((i) => i.id === search.group) ?? null;
     const stories = useMemo(() => (group ? [...group.stories].sort((a, b) => a.sort - b.sort) : []), [group]);
     const story = stories.find((s) => s.id === search.story) ?? null;
-    const showCn = search.cn === true;
-    const showService = search.service === true;
-    const showVariants = search.variants !== false;
-    const showDiff = search.diff === true;
+    const view = viewOf(search);
+    const showCn = view.cn;
+    const showService = view.service;
+    const showVariants = view.variants;
+    const showDiff = view.diff;
 
     return (
         <>
@@ -306,10 +309,7 @@ function StoryTab({ search, onSearch }: ISearchProps): React.ReactElement {
                         </Select>
                     </div>
 
-                    <Toggle id={ids.variants} checked={showVariants} onChange={(checked) => onSearch({ ...search, variants: checked ? undefined : false })} label={t("toggle.variants")} hint={t("toggle.variantsHint")} />
-                    <Toggle id={ids.diff} checked={showDiff} onChange={(checked) => onSearch({ ...search, diff: checked || undefined })} label={t("toggle.diff")} hint={t("toggle.diffHint")} />
-                    <Toggle id={ids.cn} checked={showCn} onChange={(checked) => onSearch({ ...search, cn: checked || undefined })} label={t("toggle.cn")} hint={t("toggle.cnHint")} />
-                    <Toggle id={ids.service} checked={showService} onChange={(checked) => onSearch({ ...search, service: checked || undefined })} label={t("toggle.service")} hint={t("toggle.serviceHint")} />
+                    <ViewMenu search={search} onSearch={onSearch} story />
 
                     {story && group ? (
                         <Button variant="ghost" size="sm" render={<Link to="/translators/book" search={{ group: group.id, story: story.id }} />}>
@@ -404,36 +404,38 @@ function MemberTabs({ search, onSearch }: ISearchProps): React.ReactElement {
     const tab: TranslatorsTab = search.tab === "admin" && !admin ? "story" : (search.tab ?? "story");
     return (
         <>
-            <Tabs value={tab} onValueChange={(v: string) => onSearch({ ...search, tab: v === "story" ? undefined : (v as TranslatorsTab) })}>
-                <TabsList aria-label={t("tabs.label")}>
-                    <TabsTab value="story">{t("tabs.story")}</TabsTab>
-                    <TabsTab value="search">{t("tabs.search")}</TabsTab>
-                    <TabsTab value="sections">{t("tabs.sections")}</TabsTab>
-                    <TabsTab value="glossary">{t("tabs.glossary")}</TabsTab>
-                    <TabsTab value="edits">{t("tabs.edits")}</TabsTab>
-                    {admin ? <TabsTab value="admin">{t("tabs.admin")}</TabsTab> : null}
-                </TabsList>
-                <TabsPanel value="story" className="flex flex-col gap-6 pt-4">
-                    <StoryTab search={search} onSearch={onSearch} />
-                </TabsPanel>
-                <TabsPanel value="search" className="flex flex-col gap-6 pt-4">
-                    <SearchTab search={search} onSearch={onSearch} />
-                </TabsPanel>
-                <TabsPanel value="sections" className="flex flex-col gap-6 pt-4">
-                    <SectionsTab search={search} onSearch={onSearch} />
-                </TabsPanel>
-                <TabsPanel value="glossary" className="flex flex-col gap-6 pt-4">
-                    <GlossaryTab query={search.gq ?? ""} onQuery={(gq) => onSearch({ ...search, gq: gq || undefined })} />
-                </TabsPanel>
-                <TabsPanel value="edits" className="flex flex-col gap-6 pt-4">
-                    <MyEditsTab />
-                </TabsPanel>
-                {admin && me.data ? (
-                    <TabsPanel value="admin" className="flex flex-col gap-6 pt-4">
-                        <AdminTab me={me.data} />
+            <GameOnly.Provider value={search.game === true}>
+                <Tabs value={tab} onValueChange={(v: string) => onSearch({ ...search, tab: v === "story" ? undefined : (v as TranslatorsTab) })}>
+                    <TabsList aria-label={t("tabs.label")}>
+                        <TabsTab value="story">{t("tabs.story")}</TabsTab>
+                        <TabsTab value="search">{t("tabs.search")}</TabsTab>
+                        <TabsTab value="sections">{t("tabs.sections")}</TabsTab>
+                        <TabsTab value="glossary">{t("tabs.glossary")}</TabsTab>
+                        <TabsTab value="edits">{t("tabs.edits")}</TabsTab>
+                        {admin ? <TabsTab value="admin">{t("tabs.admin")}</TabsTab> : null}
+                    </TabsList>
+                    <TabsPanel value="story" className="flex flex-col gap-6 pt-4">
+                        <StoryTab search={search} onSearch={onSearch} />
                     </TabsPanel>
-                ) : null}
-            </Tabs>
+                    <TabsPanel value="search" className="flex flex-col gap-6 pt-4">
+                        <SearchTab search={search} onSearch={onSearch} />
+                    </TabsPanel>
+                    <TabsPanel value="sections" className="flex flex-col gap-6 pt-4">
+                        <SectionsTab search={search} onSearch={onSearch} />
+                    </TabsPanel>
+                    <TabsPanel value="glossary" className="flex flex-col gap-6 pt-4">
+                        <GlossaryTab query={search.gq ?? ""} onQuery={(gq) => onSearch({ ...search, gq: gq || undefined })} />
+                    </TabsPanel>
+                    <TabsPanel value="edits" className="flex flex-col gap-6 pt-4">
+                        <MyEditsTab />
+                    </TabsPanel>
+                    {admin && me.data ? (
+                        <TabsPanel value="admin" className="flex flex-col gap-6 pt-4">
+                            <AdminTab me={me.data} />
+                        </TabsPanel>
+                    ) : null}
+                </Tabs>
+            </GameOnly.Provider>
             {/* A word selected in any table: find it everywhere, in the glossary, or suggest it for the glossary. The other tabs keep their place in the address. */}
             <SelectionMenu onFind={(q) => onSearch({ ...search, tab: "search", q, whole: undefined, section: undefined, status: undefined })} onGlossary={(gq) => onSearch({ ...search, tab: "glossary", gq })} />
         </>

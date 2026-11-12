@@ -462,7 +462,9 @@ pub async fn refresh_glossary(
         let pool = state.db.clone();
         let http = state.http_client.clone();
         tokio::spawn(async move {
-            let _ = glossary::refresh(&pool, &http).await;
+            if glossary::refresh(&pool, &http).await.is_ok() {
+                let _ = super::texts::problems::refresh(&pool, SERVER).await;
+            }
         });
         // Let the task mark itself as running before answering.
         tokio::task::yield_now().await;
@@ -600,6 +602,8 @@ async fn import_now(state: &AppState, sources: Sources) -> Result<(), ApiError> 
             .await
             .map_err(ApiError::Internal)?;
     }
+    // What is wrong with each text, for the search's status filter.
+    super::texts::problems::refresh(&state.db, SERVER).await?;
     tracing::info!(
         lines = summary.lines,
         with_ru = summary.with_ru_game,

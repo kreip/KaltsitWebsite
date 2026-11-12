@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { TranslatorLine } from "#/types/generated/TranslatorLine";
-import { addressOf, checkVariant, type ICandidate, neighbourAddress, passes, recommend } from "./checks";
+import { addressOf, checkVariant, type ICandidate, lineProblems, neighbourAddress, passes, recommend } from "./checks";
+import { tagHealth } from "./markup";
 
 function line(over: Partial<TranslatorLine>): TranslatorLine {
     return {
@@ -41,7 +42,7 @@ describe("variant checks", () => {
         const l = line({ en: "<i>{@nickname}</i>,\\nlook.", ruGame: "<i>{@nickname}</i>,\nсмотри." });
         expect(passes(checkVariant(l.ruGame ?? "", "game", l, null))).toBe(true);
         const c = checkVariant("Доктор, смотри.", "ai", l, null);
-        expect(c.tags).toBe(true);
+        expect(c.brokenTag).toBe(true);
         expect(c.placeholders).toEqual(["{@nickname}"]);
         expect(c.newlines).toEqual({ en: 1, ru: 0 });
     });
@@ -69,9 +70,29 @@ describe("variant checks", () => {
     });
 });
 
+describe("tags", () => {
+    const en = "Deals <@ba.vup>120%</> damage to {0} targets";
+    it("tell a broken tag from a missing highlight, as the backend does", () => {
+        expect(tagHealth(en, "Наносит <@ba.vup>120%</> урона {0} целям")).toEqual({ broken: false, noHighlight: false });
+        expect(tagHealth(en, "Наносит 120% урона {0} целям")).toEqual({ broken: false, noHighlight: true });
+        expect(tagHealth(en, "Наносит <@ba.vup>120% урона {0} целям")).toEqual({ broken: true, noHighlight: false });
+        expect(tagHealth(en, "Наносит <@ba.vup120%</> урона {0} целям")).toEqual({ broken: true, noHighlight: false });
+        expect(tagHealth(en, "Наносит <@ba.vup>120%</> урона целям")).toEqual({ broken: true, noHighlight: false });
+        expect(tagHealth("Plain", "Просто</>")).toEqual({ broken: true, noHighlight: false });
+        expect(tagHealth("<Roadblock> ahead", "<Заграждение> впереди")).toEqual({ broken: false, noHighlight: false });
+    });
+
+    it("name a line's problems, none once approved", () => {
+        const l = line({ en, ruGame: "Наносит 120% урона {0} целям" });
+        const checks = new Map([["game", checkVariant(l.ruGame ?? "", "game", l, null)]]);
+        expect([...lineProblems(false, checks)]).toEqual(["noHighlight"]);
+        expect([...lineProblems(true, checks)]).toEqual([]);
+    });
+});
+
 describe("recommended", () => {
     const ok = checkVariant("Доктор, взгляните.", "sova", line({}), null);
-    const bad = { ...ok, tags: true };
+    const bad = { ...ok, brokenTag: true };
     const c = (variant: string, agreements: number, pass = true): ICandidate => ({ variant, agreements, check: pass ? ok : bad });
 
     it("rule B: nothing when the game's Russian passes; else the best passing variant", () => {

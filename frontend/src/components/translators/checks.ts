@@ -6,7 +6,7 @@
  */
 import type { MissingTerm } from "#/types/generated/MissingTerm";
 import type { TranslatorLine } from "#/types/generated/TranslatorLine";
-import { sameTags, TOKEN_SOURCE } from "./markup";
+import { TOKEN_SOURCE, tagHealth } from "./markup";
 
 /** "Noticeably longer than in the game": both more than this share longer… */
 export const LONGER_SHARE = 0.15;
@@ -20,8 +20,10 @@ export type Address = "ты" | "вы";
 export interface IVariantCheck {
     /** Glossary terms whose form the text lacks. */
     glossary: readonly MissingTerm[];
-    /** The text's markup tags are not the English's: a span of some tag is missing or extra (`markup.ts`, `tagDiff`). */
-    tags: boolean;
+    /** A tag broken: left open, half a tag, a stray closer, a substitution lost or added, a tag the English lacks (`markup.ts`, `tagHealth`). */
+    brokenTag: boolean;
+    /** A tag of the English missing, the text otherwise whole: the game shows it without its highlight. */
+    noHighlight: boolean;
     /** Substitutions (`{0}`, `{@nickname}`) missing from the text or not in the English. */
     placeholders: string[];
     /** Line breaks: the English's count and the text's, when they differ. */
@@ -113,9 +115,11 @@ export function checkVariant(text: string, variant: string, line: TranslatorLine
         if (base > 0 && own - base > LONGER_CHARS && own / base - 1 > LONGER_SHARE) longer = own / base - 1;
     }
     const own = addressOf(text);
+    const tags = tagHealth(line.en, text);
     return {
         glossary: line.variantGlossary.find((v) => v.variant === variant)?.missing ?? [],
-        tags: !sameTags(line.en, text),
+        brokenTag: tags.broken,
+        noHighlight: tags.noHighlight,
         placeholders: [...difference(enTokens, ruTokens), ...difference(ruTokens, enTokens)],
         newlines: enBreaks === ruBreaks ? null : { en: enBreaks, ru: ruBreaks },
         longer,
@@ -125,7 +129,7 @@ export function checkVariant(text: string, variant: string, line: TranslatorLine
 
 /** Whether a variant passes every check. */
 export function passes(c: IVariantCheck): boolean {
-    return c.glossary.length === 0 && !c.tags && c.placeholders.length === 0 && c.newlines === null && c.longer === null && c.address === null;
+    return c.glossary.length === 0 && !c.brokenTag && !c.noHighlight && c.placeholders.length === 0 && c.newlines === null && c.longer === null && c.address === null;
 }
 
 export interface ICandidate {
@@ -168,4 +172,28 @@ export function recommend(candidates: readonly ICandidate[], approved: boolean, 
     const best = proposals[0] ?? ok.find((c) => c.variant === "sova") ?? ok.find((c) => c.variant === "ai");
     const pick = rule === "A" ? (best ?? ok.find((c) => c.variant === "game")) : best;
     return pick?.variant ?? null;
+}
+
+/** The problems the filters and the yellow rows name. */
+export const PROBLEM_KINDS = ["glossary", "brokenTag", "noHighlight", "newlines", "longer", "address"] as const;
+export type ProblemKind = (typeof PROBLEM_KINDS)[number];
+
+/**
+ * What is wrong with a line as the game shows it — its glossary forms, tags,
+ * line breaks, ты / вы — and whether a proposal is noticeably longer. None
+ * once the line is approved (it was checked).
+ */
+export function lineProblems(approved: boolean, checks: ReadonlyMap<string, IVariantCheck>): Set<ProblemKind> {
+    const out = new Set<ProblemKind>();
+    if (approved) return out;
+    const game = checks.get("game");
+    if (game) {
+        if (game.glossary.length > 0) out.add("glossary");
+        if (game.brokenTag || game.placeholders.length > 0) out.add("brokenTag");
+        if (game.noHighlight) out.add("noHighlight");
+        if (game.newlines) out.add("newlines");
+        if (game.address) out.add("address");
+    }
+    for (const [variant, c] of checks) if (variant.startsWith("proposal:") && c.longer !== null) out.add("longer");
+    return out;
 }

@@ -21,35 +21,40 @@ import { Collapsible, CollapsiblePanel, CollapsibleTrigger } from "#/components/
 import { Empty, EmptyHeader, EmptyTitle } from "#/components/ui/empty";
 import { Label } from "#/components/ui/label";
 import { LoadFailed } from "#/components/ui/load-failed";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "#/components/ui/select";
+import { Select, SelectContent, SelectItem, SelectSeparator, SelectTrigger, SelectValue } from "#/components/ui/select";
 import { Skeleton } from "#/components/ui/skeleton";
 import { Spinner } from "#/components/ui/spinner";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "#/components/ui/table";
 import { useDebounce } from "#/hooks/use-debounce";
 import { useFormatters, useLocale, useT } from "#/lib/i18n";
 import type { TypedT } from "#/lib/i18n/messages";
-import { searchLinesQueryOptions, translatorsMeQueryOptions } from "#/lib/translators/api";
+import { searchLinesQueryOptions, textSummaryQueryOptions, translatorsMeQueryOptions } from "#/lib/translators/api";
+import { cn } from "#/lib/utils";
 import type { GameHere } from "#/types/generated/GameHere";
 import type { KeyEdits } from "#/types/generated/KeyEdits";
 import type { ObjectHit } from "#/types/generated/ObjectHit";
 import type { SearchLine } from "#/types/generated/SearchLine";
 import type { TextAt } from "#/types/generated/TextAt";
+import type { TextSummary } from "#/types/generated/TextSummary";
 import type { TranslatorsMe } from "#/types/generated/TranslatorsMe";
 import type { RecommendRule } from "./checks";
 import { type EditorState, PlacesList, StatusDot } from "./LineEdits";
-import { analyse, PROSE, RuCell, Speaker } from "./LinesTable";
+import { analyse, filterWord, PROBLEM_ROW, PROSE, RuCell, Speaker } from "./LinesTable";
 import { Folded, isLong, useUnfolded } from "./LongText";
+import { NextUnchecked, TextCounts } from "./Overview";
 import { GamePlace } from "./PlaceWords";
 import { type IFind, StoryText } from "./StoryText";
-import { Toggle } from "./SwitchToggle";
 import { useStoryNames } from "./storyNames";
 import type { messages } from "./translators.messages";
+import { ViewMenu, viewOf } from "./ViewMenu";
 import { fileWord, isCardSection, sectionWord } from "./where";
 
 type T = TypedT<typeof messages>;
 
 export const SEARCH_SECTIONS = ["story", "operators", "enemies", "stages", "items", "archives", "other"] as const;
-export const SEARCH_STATUSES = ["unchecked", "proposed", "approved", "untranslated"] as const;
+/** The states, then the problems of the texts not approved (`texts.problems` on the backend, with a count each). */
+export const SEARCH_STATUSES = ["unchecked", "proposed", "approved", "untranslated", "problems", "glossary", "brokenTag", "noHighlight", "newlines", "longer"] as const;
+const STATES = 4;
 export type SearchSection = (typeof SEARCH_SECTIONS)[number];
 export type SearchStatus = (typeof SEARCH_STATUSES)[number];
 
@@ -61,6 +66,7 @@ export interface ISearchState {
     status?: SearchStatus;
     variants?: false;
     diff?: boolean;
+    game?: boolean;
 }
 
 /** One place of a found text: a link to the story line, or the game object's field in words. */
@@ -177,7 +183,7 @@ function Results({ rows, edits, me, find, showVariants, showDiff, t }: IResultsP
                     const folded = long && !unfolded.has(String(id)) && editing?.id !== id;
                     const unfold = () => unfolded.toggle(String(id));
                     return (
-                        <TableRow key={id} data-status={r.line.status} data-place={`${r.place.storyId}|${r.place.line}|${r.place.part}`}>
+                        <TableRow key={id} className={cn(analyses[i].problems.size > 0 && PROBLEM_ROW)} data-status={r.line.status} data-place={`${r.place.storyId}|${r.place.line}|${r.place.part}`}>
                             <TableCell className="py-1.5 align-top text-subtle-foreground text-xs tabular-nums leading-snug">
                                 <span className="flex items-center gap-1.5">
                                     {i + 1}
@@ -230,7 +236,7 @@ function Results({ rows, edits, me, find, showVariants, showDiff, t }: IResultsP
     );
 }
 
-function Found({ query, me, showVariants, showDiff, t }: { query: { q: string; whole: boolean; section: string | null; status: string | null }; me: TranslatorsMe; showVariants: boolean; showDiff: boolean; t: T }): React.ReactElement {
+function Found({ query, me, showVariants, showDiff, summary, t }: { query: { q: string; whole: boolean; section: string | null; status: string | null }; me: TranslatorsMe; showVariants: boolean; showDiff: boolean; summary: TextSummary | undefined; t: T }): React.ReactElement {
     const f = useFormatters();
     const search = useInfiniteQuery(searchLinesQueryOptions(query));
     const pages = search.data?.pages ?? [];
@@ -257,6 +263,12 @@ function Found({ query, me, showVariants, showDiff, t }: { query: { q: string; w
         <div className="flex flex-col gap-2">
             <Objects objects={first.objects} t={t} />
             <p className="text-subtle-foreground text-xs">{t("search.found", { count: f.number(total), millis: f.number(first.millis) })}</p>
+            {summary ? (
+                <div className="flex flex-wrap items-center gap-3">
+                    <TextCounts total={summary.total} ru={summary.ru} approved={summary.approved} t={t} />
+                    {rows.length > 0 ? <NextUnchecked t={t} /> : null}
+                </div>
+            ) : null}
             {rows.length === 0 ? (
                 <Empty>
                     <EmptyHeader>
@@ -291,7 +303,7 @@ export interface ISearchTabProps {
 export function SearchTab({ search, onSearch, only, lead }: ISearchTabProps): React.ReactElement {
     const t: T = useT("translators");
     const me = useQuery(translatorsMeQueryOptions());
-    const ids = { whole: useId(), section: useId(), status: useId(), variants: useId(), diff: useId() };
+    const ids = { whole: useId(), section: useId(), status: useId() };
     // The box answers as one types; the address follows once typing stops.
     const [text, setText] = useState(search.q ?? "");
     const settled = useDebounce(text, 400).trim();
@@ -309,11 +321,17 @@ export function SearchTab({ search, onSearch, only, lead }: ISearchTabProps): Re
     useEffect(() => {
         if (asked !== pushed.current && asked !== shown.current.trim()) setText(asked);
     }, [asked]);
-    const showVariants = search.variants !== false;
-    const showDiff = search.diff === true;
+    const view = viewOf(search);
+    const showVariants = view.variants;
+    const showDiff = view.diff;
     const q = search.q ?? "";
     const section = only ?? search.section;
     const filtered = q !== "" || section !== undefined || search.status !== undefined;
+    const query = { q, whole: search.whole === true, section: section ?? null, status: search.status ?? null };
+    // The counts: of the filters for the overview, of each problem for the status filter.
+    const summary = useQuery({ ...textSummaryQueryOptions(query), enabled: Boolean(me.data) });
+    const countOf = (s: string) => summary.data?.problems.find((p) => p.status === s)?.count;
+    const statusWord = (s: string) => ((SEARCH_STATUSES.slice(STATES) as readonly string[]).includes(s) ? filterWord(s, t, countOf(s)) : t(`search.status.${s}` as "search.status.all"));
     return (
         <>
             <div className="flex flex-wrap items-end gap-4">
@@ -345,19 +363,24 @@ export function SearchTab({ search, onSearch, only, lead }: ISearchTabProps): Re
                     <Label htmlFor={ids.status}>{t("search.status")}</Label>
                     <Select value={search.status ?? "all"} onValueChange={(v: string | null) => onSearch({ ...search, status: v && v !== "all" ? (v as SearchStatus) : undefined })}>
                         <SelectTrigger id={ids.status} size="sm">
-                            <SelectValue>{() => t(`search.status.${search.status ?? "all"}` as "search.status.all")}</SelectValue>
+                            <SelectValue>{() => statusWord(search.status ?? "all")}</SelectValue>
                         </SelectTrigger>
                         <SelectContent>
-                            {(["all", ...SEARCH_STATUSES] as const).map((s) => (
+                            {(["all", ...SEARCH_STATUSES.slice(0, STATES)] as const).map((s) => (
                                 <SelectItem key={s} value={s}>
-                                    {t(`search.status.${s}` as "search.status.all")}
+                                    {statusWord(s)}
+                                </SelectItem>
+                            ))}
+                            <SelectSeparator />
+                            {SEARCH_STATUSES.slice(STATES).map((s) => (
+                                <SelectItem key={s} value={s} disabled={summary.data !== undefined && countOf(s) === 0 && search.status !== s}>
+                                    {statusWord(s)}
                                 </SelectItem>
                             ))}
                         </SelectContent>
                     </Select>
                 </div>
-                <Toggle id={ids.variants} checked={showVariants} onChange={(checked) => onSearch({ ...search, variants: checked ? undefined : false })} label={t("toggle.variants")} hint={t("toggle.variantsHint")} />
-                <Toggle id={ids.diff} checked={showDiff} onChange={(checked) => onSearch({ ...search, diff: checked || undefined })} label={t("toggle.diff")} hint={t("toggle.diffHint")} />
+                <ViewMenu search={search} onSearch={onSearch} />
             </div>
             {!filtered ? (
                 <Empty>
@@ -366,7 +389,7 @@ export function SearchTab({ search, onSearch, only, lead }: ISearchTabProps): Re
                     </EmptyHeader>
                 </Empty>
             ) : me.data ? (
-                <Found query={{ q, whole: search.whole === true, section: section ?? null, status: search.status ?? null }} me={me.data} showVariants={showVariants} showDiff={showDiff} t={t} />
+                <Found query={query} me={me.data} showVariants={showVariants} showDiff={showDiff} summary={summary.data} t={t} />
             ) : (
                 <Skeleton className="h-96 w-full rounded-2xl" />
             )}

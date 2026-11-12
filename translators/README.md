@@ -256,3 +256,32 @@ an approved one, Back to proposals for a rejected one. Tick boxes (Shift for a r
 for every waiting proposal) and the "Selected: N · Approve · Reject" bar decide many at once
 (`POST /api/translators/proposals/decisions`). A rejected proposal leaves the line and the
 progress; its author rewriting it makes it a proposal again.
+
+## The line's buttons
+
+Each text carries its own buttons: the game's text (in the panel shown on hover), each proposal,
+a translator's and the machine's variant. The main decisions have a word and an icon —
+**Approve** (✓) and, on a proposal, **Reject** (✗); on the approved one **Withdraw**. A
+translator's or the machine's variant is approved at once. "Approve" on the game's text keeps it
+as in the game and asks first when the line has proposals. Propose, remark, note, history and
+agree are gray icons after a rule; "?" says what each means. The approved block says what was
+approved ("the text as in the game", "the variant by <author>") and marks a newer proposal.
+
+## View
+
+The **View** button next to the filters (Story, Search, Game sections) holds the display
+settings: the variants, compare, Chinese and the service rows (Story), and **Only as in the game**
+(`game=1` in the address): the game's text and the English, nothing else. A translator's variant
+equal to the game's text is not shown.
+
+## Problems
+
+A line whose game text has a problem is yellow (an approved one never is); the status filter
+names them with counts: a glossary form not found, a broken tag (left open or broken, a stray
+closer, a substitution `{…}` lost or added, a tag the English lacks), no highlight (the English
+has a tag the Russian lacks, the text whole), line breaks, a proposal noticeably longer than the
+game's text, ты / вы. The page works them out (`checks.ts`, `markup.ts::tagHealth`); for the
+search the backend keeps them per text (`texts.problems`, migration t019, `texts/problems.rs`,
+redone after every import and glossary download; `status=problems|glossary|brokenTag|noHighlight|
+newlines|longer`). `GET /api/translators/texts/summary` gives the overview above Search and Game
+sections (texts, with Russian, checked) and each problem's count.

@@ -11,11 +11,11 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Check, PenLine, X } from "lucide-react";
 import type React from "react";
-import { Fragment, useId, useMemo, useState } from "react";
+import { Fragment, useContext, useId, useMemo, useState } from "react";
 import { Badge } from "#/components/ui/badge";
 import { InfoHint } from "#/components/ui/info-hint";
 import { Label } from "#/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "#/components/ui/select";
+import { Select, SelectContent, SelectItem, SelectSeparator, SelectTrigger, SelectValue } from "#/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "#/components/ui/table";
 import { toastManager } from "#/components/ui/toast";
 import { useFormatters, useLocale, useT } from "#/lib/i18n";
@@ -31,7 +31,7 @@ import type { StoryCommand } from "#/types/generated/StoryCommand";
 import type { TranslatorLine } from "#/types/generated/TranslatorLine";
 import type { TranslatorsMe } from "#/types/generated/TranslatorsMe";
 import { BulkApprove, type IBulkLine } from "./BulkApprove";
-import { type Address, checkVariant, type ICandidate, type IVariantCheck, neighbourAddress, type RecommendRule, recommend } from "./checks";
+import { type Address, checkVariant, type ICandidate, type IVariantCheck, lineProblems, neighbourAddress, PROBLEM_KINDS, type ProblemKind, type RecommendRule, recommend } from "./checks";
 import {
     ActionRow,
     AgreeButton,
@@ -65,6 +65,7 @@ import { DISPLAYED_KINDS, describeCommands } from "./service";
 import { TextDiff } from "./TextDiff";
 import type { messages } from "./translators.messages";
 import { TRANSLATOR_SOURCES, translatorName } from "./translatorVariants";
+import { GameOnly } from "./ViewMenu";
 
 type T = TypedT<typeof messages>;
 
@@ -160,10 +161,33 @@ function InlineVariant({ tone, label, text, nickname, marks, actions }: { tone: 
     );
 }
 
+/** The same text, spaces aside: a translator's variant equal to the game's text is not shown. */
+function sameText(a: string | null | undefined, b: string | null | undefined): boolean {
+    const squash = (x: string) => x.replaceAll("\\n", "\n").replace(/\s+/g, " ").trim();
+    return Boolean(a && b) && squash(a as string) === squash(b as string);
+}
+
+/** A translator's variant at a line, unless it is the game's text again. */
+export function translatorText(line: TranslatorLine, source: (typeof TRANSLATOR_SOURCES)[number]): string | null {
+    const text = line[source];
+    return text && !sameText(text, line.ruGame) ? text : null;
+}
+
 /** A line's checks per variant and its recommended variant (checks.ts holds the rule). */
 export interface IAnalysis {
     checks: Map<string, IVariantCheck>;
     recommended: string | null;
+    /** What is wrong with the line as the game shows it (none once approved): its row is yellow. */
+    problems: Set<ProblemKind>;
+}
+
+/** A line with a problem stands out in yellow. */
+export const PROBLEM_ROW = "bg-warning/8";
+
+/** "Errors: all (12)", then each problem with its count: the status filter's problem options. */
+export function problemOptions(analyses: readonly IAnalysis[]): { value: "problems" | ProblemKind; count: number }[] {
+    const count = (k: ProblemKind) => analyses.filter((a) => a.problems.has(k)).length;
+    return [{ value: "problems" as const, count: analyses.filter((a) => a.problems.size > 0).length }, ...PROBLEM_KINDS.map((k) => ({ value: k, count: count(k) }))];
 }
 
 export function analyse(line: TranslatorLine, edits: KeyEdits | undefined, place: EditPlace, neighbours: Address | null, rule: RecommendRule): IAnalysis {
@@ -176,12 +200,12 @@ export function analyse(line: TranslatorLine, edits: KeyEdits | undefined, place
         candidates.push({ variant, agreements, check });
     };
     for (const p of proposalsAt(edits, place)) add(`proposal:${p.id}`, p.text, p.agreements.length);
-    add("sova", line.sova);
+    for (const source of TRANSLATOR_SOURCES) add(source, translatorText(line, source));
     add("ai", line.ai);
     add("game", line.ruGame);
     if (edits?.approval) checks.set("approved", checkVariant(edits.approval.text, "approved", line, neighbours));
     const approvedHere = Boolean(edits?.approval) || proposalsAt(edits, place).some((p) => p.context && p.approvedAt !== null);
-    return { checks, recommended: line.editable ? recommend(candidates, approvedHere, rule) : null };
+    return { checks, recommended: line.editable ? recommend(candidates, approvedHere, rule) : null, problems: lineProblems(line.status === "approved", checks) };
 }
 
 export interface IRuCellProps {
@@ -205,7 +229,16 @@ export interface IRuCellProps {
     t: T;
 }
 
-export function RuCell({ line, analysis, place, nickname, showVariants, showDiff, edits, outdated, me, editor, onEditor, find = null, here = null, t }: IRuCellProps): React.ReactElement {
+export function RuCell(props: IRuCellProps): React.ReactElement {
+    // Only as in the game: the game's text, nothing else.
+    if (useContext(GameOnly)) {
+        const { line, nickname, find = null, t } = props;
+        return <div data-sel="ru">{line.ruGame ? <StoryText text={line.ruGame} nickname={nickname} find={find} /> : <span className="text-subtle-foreground">{t("ru.missing")}</span>}</div>;
+    }
+    return <FullRuCell {...props} />;
+}
+
+function FullRuCell({ line, analysis, place, nickname, showVariants, showDiff, edits, outdated, me, editor, onEditor, find = null, here = null, t }: IRuCellProps): React.ReactElement {
     const f = useFormatters();
     const locale = useLocale();
     const [history, setHistory] = useState(false);
@@ -284,7 +317,8 @@ export function RuCell({ line, analysis, place, nickname, showVariants, showDiff
                 <>
                     {/* Each translator's variant under its author's name. */}
                     {TRANSLATOR_SOURCES.map((source) => {
-                        const text = line[source];
+                        // The game's text again: nothing new to show.
+                        const text = translatorText(line, source);
                         return text ? (
                             <Fragment key={source}>
                                 <InlineVariant tone={TONE.translator} label={t("hints.translator", { name: translatorName(source, locale) })} text={text} nickname={nickname} marks={marks(source)} actions={variantActions(source, text)} />
@@ -354,8 +388,15 @@ function RuleSelect({ rule, t }: { rule: RecommendRule; t: T }): React.ReactElem
     );
 }
 
-type LineFilter = "all" | "proposals" | "recommended" | "outdated" | "remarks";
+type LineFilter = "all" | "proposals" | "recommended" | "outdated" | "remarks" | "problems" | ProblemKind;
 const FILTERS: readonly LineFilter[] = ["all", "proposals", "recommended", "outdated", "remarks"];
+
+/** The status filter's word for an option: a problem with its count. */
+export function filterWord(value: string, t: T, count?: number): string {
+    if (value === "problems") return t("problem.all", { count: count ?? 0 });
+    if ((PROBLEM_KINDS as readonly string[]).includes(value)) return t("problem.item", { name: t(`problem.${value}` as "problem.glossary"), count: count ?? 0 });
+    return t(`filter.${value}` as "filter.all");
+}
 
 export interface ILinesTableProps {
     storyId: string;
@@ -403,9 +444,12 @@ export function LinesTable({ storyId, lines, edits, outdated, me, label, showCn,
         if (filter === "proposals") return proposalsAt(e, place).length > 0;
         if (filter === "recommended") return analyses[i].recommended !== null;
         if (filter === "outdated") return line.status === "outdated";
+        if (filter === "problems") return analyses[i].problems.size > 0;
+        if (filter !== "remarks") return analyses[i].problems.has(filter);
         return (e?.comments ?? []).some((c) => c.kind !== "note" && !c.resolvedBy);
     };
     const shown = lines.filter(shows).length;
+    const problems = problemOptions(analyses);
     const bulk: IBulkLine[] = lines.map((line, i) => {
         const place = placeOf(storyId, line);
         const e = byKey.get(line.editKey);
@@ -420,12 +464,18 @@ export function LinesTable({ storyId, lines, edits, outdated, me, label, showCn,
                     <Label htmlFor={filterId}>{t("filter.label")}</Label>
                     <Select value={filter} onValueChange={(v: string | null) => setFilter((v as LineFilter) ?? "all")}>
                         <SelectTrigger id={filterId} size="sm">
-                            <SelectValue>{() => t(`filter.${filter}` as "filter.all")}</SelectValue>
+                            <SelectValue>{() => filterWord(filter, t, problems.find((p) => p.value === filter)?.count)}</SelectValue>
                         </SelectTrigger>
                         <SelectContent>
                             {FILTERS.map((f) => (
                                 <SelectItem key={f} value={f}>
                                     {t(`filter.${f}` as "filter.all")}
+                                </SelectItem>
+                            ))}
+                            <SelectSeparator />
+                            {problems.map((p) => (
+                                <SelectItem key={p.value} value={p.value} disabled={p.count === 0}>
+                                    {filterWord(p.value, t, p.count)}
                                 </SelectItem>
                             ))}
                         </SelectContent>
@@ -454,7 +504,14 @@ export function LinesTable({ storyId, lines, edits, outdated, me, label, showCn,
                         return (
                             <Fragment key={id}>
                                 {commands && filter === "all" ? <ServiceRow commands={commandsBetween(commands, previous, line.line)} columns={columns} nameOf={nameOf} t={t} /> : null}
-                                <TableRow id={`n-${i + 1}`} className={cn("scroll-mt-(--site-header-height) target:bg-primary/10", line.kind === "option" && "bg-primary/5")} data-line={line.line} data-kind={line.kind} data-status={line.status} data-place={`${storyId}|${line.line}|${line.part}`}>
+                                <TableRow
+                                    id={`n-${i + 1}`}
+                                    className={cn("scroll-mt-(--site-header-height) target:bg-primary/10", line.kind === "option" && "bg-primary/5", analyses[i].problems.size > 0 && PROBLEM_ROW)}
+                                    data-line={line.line}
+                                    data-kind={line.kind}
+                                    data-status={line.status}
+                                    data-place={`${storyId}|${line.line}|${line.part}`}
+                                >
                                     <TableCell className="py-1.5 align-top text-subtle-foreground text-xs tabular-nums leading-snug">
                                         <span className="flex items-center gap-1.5">
                                             {i + 1}

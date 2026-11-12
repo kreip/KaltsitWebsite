@@ -12,6 +12,7 @@
  */
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import type React from "react";
 import { useId, useMemo, useState } from "react";
 import { Button } from "#/components/ui/button";
@@ -20,24 +21,25 @@ import { Empty, EmptyHeader, EmptyTitle } from "#/components/ui/empty";
 import { Label } from "#/components/ui/label";
 import { LoadFailed } from "#/components/ui/load-failed";
 import { Meter } from "#/components/ui/meter";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "#/components/ui/select";
+import { Select, SelectContent, SelectItem, SelectSeparator, SelectTrigger, SelectValue } from "#/components/ui/select";
 import { Skeleton } from "#/components/ui/skeleton";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "#/components/ui/table";
 import { useFormatters, useLocale, useT } from "#/lib/i18n";
 import type { TypedT } from "#/lib/i18n/messages";
-import { objectLinesQueryOptions, objectsQueryOptions, translatorsMeQueryOptions } from "#/lib/translators/api";
+import { objectLinesQueryOptions, objectsQueryOptions, textSummaryQueryOptions, translatorsMeQueryOptions } from "#/lib/translators/api";
 import { cn } from "#/lib/utils";
 import type { TranslatorsMe } from "#/types/generated/TranslatorsMe";
-import type { RecommendRule } from "./checks";
+import type { ProblemKind, RecommendRule } from "./checks";
 import { type EditorState, StatusDot } from "./LineEdits";
-import { analyse, PROSE, RuCell } from "./LinesTable";
+import { analyse, filterWord, PROBLEM_ROW, PROSE, problemOptions, RuCell } from "./LinesTable";
 import { Folded, isLong, useUnfolded } from "./LongText";
+import { NextUnchecked, TextCounts } from "./Overview";
 import { type ISearchState, SearchTab } from "./SearchTab";
 import { StoryText } from "./StoryText";
-import { Toggle } from "./SwitchToggle";
 import { useStoryNames } from "./storyNames";
 import type { messages } from "./translators.messages";
 import { useScrollToRow } from "./useScrollToRow";
+import { ViewMenu, viewOf } from "./ViewMenu";
 import { type CardSection, fieldLabel, noteStories, noteWords } from "./where";
 
 type T = TypedT<typeof messages>;
@@ -105,6 +107,8 @@ function ObjectAbout({ item, t }: { item: IObjectItem; t: T }): React.ReactEleme
     );
 }
 
+type CardFilter = "all" | "proposals" | "problems" | ProblemKind;
+
 interface ICardProps {
     section: CardSection;
     item: IObjectItem;
@@ -134,6 +138,10 @@ function Card({ section, item, me, showVariants, showDiff, t }: ICardProps): Rea
     const [editing, setEditing] = useState<{ id: string; state: EditorState } | null>(null);
     const unfolded = useUnfolded();
     const storyOf = useStoryNames();
+    const filterId = useId();
+    const [filter, setFilter] = useState<CardFilter>("all");
+    const problems = problemOptions(analyses);
+    const shows = (i: number) => (filter === "all" ? true : filter === "proposals" ? rows[i].line.status === "proposed" : filter === "problems" ? analyses[i].problems.size > 0 : analyses[i].problems.has(filter));
     if (query.isError) return <LoadFailed message={t("sections.load.lines")} onRetry={() => query.refetch()} />;
     if (!query.data) return <Skeleton className="h-96 w-full rounded-2xl" />;
     const nickname = me.nickname ?? t("nickname.fallback");
@@ -142,10 +150,31 @@ function Card({ section, item, me, showVariants, showDiff, t }: ICardProps): Rea
     return (
         <div className="flex flex-col gap-2">
             <p className="text-subtle-foreground text-xs">{t("sections.summary", { count: rows.length, ru: rows.filter((r) => r.line.ruGame).length })}</p>
-            <span className="flex items-center gap-2">
-                <Meter value={share * 100} aria-label={t("sections.progressLabel")} className="w-32" />
-                <span className="text-subtle-foreground text-xs">{t("sections.progressLong", { checked: f.percent(share), waiting: f.number(item.waiting) })}</span>
-            </span>
+            <div className="flex flex-wrap items-end gap-3">
+                <span className="flex items-center gap-2 pb-1.5">
+                    <Meter value={share * 100} aria-label={t("sections.progressLabel")} className="w-32" />
+                    <span className="text-subtle-foreground text-xs">{t("sections.progressLong", { checked: f.percent(share), waiting: f.number(item.waiting) })}</span>
+                </span>
+                <div className="flex w-full flex-col gap-1.5 sm:w-64">
+                    <Label htmlFor={filterId}>{t("filter.label")}</Label>
+                    <Select value={filter} onValueChange={(v: string | null) => setFilter((v as CardFilter) ?? "all")}>
+                        <SelectTrigger id={filterId} size="sm">
+                            <SelectValue>{() => filterWord(filter, t, problems.find((p) => p.value === filter)?.count)}</SelectValue>
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="all">{t("filter.all")}</SelectItem>
+                            <SelectItem value="proposals">{t("filter.proposals")}</SelectItem>
+                            <SelectSeparator />
+                            {problems.map((p) => (
+                                <SelectItem key={p.value} value={p.value} disabled={p.count === 0}>
+                                    {filterWord(p.value, t, p.count)}
+                                </SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
+                </div>
+                <NextUnchecked t={t} />
+            </div>
             {/* Fixed widths: the Russian and the English share what the narrow columns leave, half each. */}
             <Table aria-label={t("sections.table", { object: item.label })} className="wrap-anywhere min-w-3xl table-fixed">
                 <TableHeader>
@@ -167,12 +196,13 @@ function Card({ section, item, me, showVariants, showDiff, t }: ICardProps): Rea
                         </TableRow>
                     ) : null}
                     {rows.map((r, i) => {
+                        if (!shows(i)) return null;
                         const id = `${r.field}.${r.idx}.${r.line.editKey}`;
                         const long = isLong(r.line.en, r.line.ruGame);
                         // An open editor needs the whole row.
                         const folded = long && !unfolded.has(id) && editing?.id !== id;
                         return (
-                            <TableRow key={id} id={`n-${i + 1}`} className="scroll-mt-(--site-header-height) target:bg-primary/10" data-field={r.field} data-status={r.line.status} data-place={`${r.place.storyId}|0|0`}>
+                            <TableRow key={id} id={`n-${i + 1}`} className={cn("scroll-mt-(--site-header-height) target:bg-primary/10", analyses[i].problems.size > 0 && PROBLEM_ROW)} data-field={r.field} data-status={r.line.status} data-place={`${r.place.storyId}|0|0`}>
                                 <TableCell className="py-1.5 align-top text-subtle-foreground text-xs tabular-nums leading-snug">
                                     <span className="flex items-center gap-1.5">
                                         {i + 1}
@@ -240,7 +270,7 @@ interface ICardsProps {
 
 /** A section with objects: the object picker, the switches and the chosen object's card. */
 function Cards({ section, search, onSearch, lead, t }: ICardsProps): React.ReactElement {
-    const ids = { object: useId(), variants: useId(), diff: useId() };
+    const ids = { object: useId() };
     const locale = useLocale();
     const me = useQuery(translatorsMeQueryOptions());
     const objects = useQuery(objectsQueryOptions(section));
@@ -252,10 +282,18 @@ function Cards({ section, search, onSearch, lead, t }: ICardsProps): React.React
     }, [objects.data, locale, section]);
     // A record merged into another's card (the same name and texts) opens that card.
     const item = items.find((i) => i.id === search.obj) ?? items.find((i) => search.obj !== undefined && i.also.includes(search.obj)) ?? null;
-    const showVariants = search.variants !== false;
-    const showDiff = search.diff === true;
+    const view = viewOf(search);
+    const showVariants = view.variants;
+    const showDiff = view.diff;
+    const summary = useQuery({ ...textSummaryQueryOptions({ q: "", whole: false, section, status: null }), enabled: Boolean(me.data) });
+    const at = item ? items.indexOf(item) : -1;
+    const step = (by: number) => {
+        const next = items[at + by];
+        if (next) onSearch({ ...search, obj: next.id });
+    };
     return (
         <>
+            {summary.data ? <TextCounts total={summary.data.total} ru={summary.data.ru} approved={summary.data.approved} t={t} /> : null}
             {objects.isError ? (
                 <LoadFailed message={t("sections.load.objects")} onRetry={() => objects.refetch()} />
             ) : (
@@ -290,8 +328,17 @@ function Cards({ section, search, onSearch, lead, t }: ICardsProps): React.React
                             </ComboboxPopup>
                         </Combobox>
                     </div>
-                    <Toggle id={ids.variants} checked={showVariants} onChange={(checked) => onSearch({ ...search, variants: checked ? undefined : false })} label={t("toggle.variants")} hint={t("toggle.variantsHint")} />
-                    <Toggle id={ids.diff} checked={showDiff} onChange={(checked) => onSearch({ ...search, diff: checked || undefined })} label={t("toggle.diff")} hint={t("toggle.diffHint")} />
+                    <div className="flex items-center gap-1">
+                        <Button variant="outline" size="sm" onClick={() => step(-1)} disabled={at <= 0}>
+                            <ChevronLeft aria-hidden="true" />
+                            {t("overview.previous")}
+                        </Button>
+                        <Button variant="outline" size="sm" onClick={() => step(1)} disabled={at < 0 || at >= items.length - 1}>
+                            {t("overview.next")}
+                            <ChevronRight aria-hidden="true" />
+                        </Button>
+                    </div>
+                    <ViewMenu search={search} onSearch={onSearch} />
                 </div>
             )}
             {item && me.data ? (

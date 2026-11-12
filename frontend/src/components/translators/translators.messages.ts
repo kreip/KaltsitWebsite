@@ -4,15 +4,15 @@ export const namespace = "translators";
 
 export const messages = {
     "meta.title": {
-        text: "For translators",
-        description: "Browser tab title of the translators' section (/translators).",
+        text: "Russifier",
+        description: "Browser tab title of the translators' section (/translators, also /rusifikator).",
     },
     "meta.description": {
         text: "Story text side by side: English, Russian as the game shows it now, and Chinese.",
         description: "Search-engine description of the translators' section.",
     },
     "page.title": {
-        text: "For translators",
+        text: "Russifier",
         description: "Page heading of the translators' section.",
     },
     "tabs.label": {
@@ -854,14 +854,6 @@ export const messages = {
         text: "The glossary's form is missing: {terms}",
         description: "Tooltip of the missing glossary terms of a variant; terms are 'English → Russian' pairs.",
     },
-    "checks.tags": {
-        text: "tags",
-        description: "Short mark: the variant's markup tags (italics, colour) differ from the English.",
-    },
-    "checks.tagsHint": {
-        text: "The tags (colour, term, italics) are not the English's.",
-        description: "Tooltip of the tags mark.",
-    },
     "checks.placeholdersHint": {
         text: "A substitution ({0}, nickname) differs from the English.",
         description: "Tooltip of the substitutions mark; the mark itself lists them.",
@@ -955,8 +947,8 @@ export const messages = {
         description: "Badge on a one-place proposal the lead approved.",
     },
     "filter.label": {
-        text: "Show",
-        description: "Label of the filter above the story table.",
+        text: "Status",
+        description: "Label of the status filter above a table (lines with proposals, with a recommendation, with errors…).",
     },
     "filter.all": {
         text: "All lines",
@@ -2031,8 +2023,8 @@ export const messages = {
         description: "Prominent badge on a proposal made for one place of the game data outside the story: the game shows one translation for an English text everywhere, so only the pack's maintainer can make this place differ.",
     },
     "save.onlyHere": {
-        text: "A separate translation is needed here",
-        description: "Option of the save dialog for a text outside the story that stands in several places: ask for a translation of its own at this one place.",
+        text: "A separate translation is needed",
+        description: "Option of the save dialog outside the story: ask for a translation of this one place (its explanation is on hover).",
     },
     "save.onlyHereHint": {
         text: "The game shows one translation for this English everywhere. A separate one here is a request to the pack's maintainer: it does not go to the dictionaries, only to only_here.tsv of the export.",
@@ -2401,6 +2393,94 @@ export const messages = {
     "help.agree": {
         text: "Agree — vote for this variant; the number is how many agree.",
         description: "Help line: the agree icon.",
+    },
+    "view.button": {
+        text: "View",
+        description: "Button next to the filters of the Story, Search and Game sections tabs: the page's display settings.",
+    },
+    "view.gameOnly": {
+        text: "Only as in the game",
+        description: "View menu item: show only the game's text (and the English).",
+    },
+    "view.gameOnlyHint": {
+        text: "The game's text and the English only: no proposals, approvals, variants or hints.",
+        description: "Line under 'Only as in the game' in the View menu.",
+    },
+    "view.gameOnlyShort": {
+        text: "as in the game",
+        description: "Shown on the View button while 'Only as in the game' is on.",
+    },
+    "problem.all": {
+        text: "Errors: all ({count})",
+        description: "Status filter option: lines with any error (not approved), with the count.",
+    },
+    "problem.item": {
+        text: "{name} ({count})",
+        description: "Status filter option: one error, with the count.",
+    },
+    "problem.glossary": {
+        text: "glossary form not found",
+        description: "Error: the game's text lacks a glossary term's form.",
+    },
+    "problem.brokenTag": {
+        text: "broken tag",
+        description: "Error: a tag left open or broken, a stray closer, a substitution {…} lost or added.",
+    },
+    "problem.noHighlight": {
+        text: "no highlight",
+        description: "Error: the original has a tag (colour, term) the Russian lacks; the text is whole.",
+    },
+    "problem.newlines": {
+        text: "line breaks differ",
+        description: "Error: line breaks not as in the English.",
+    },
+    "problem.longer": {
+        text: "a proposal longer than in the game",
+        description: "Error: a proposal noticeably longer than the game's text.",
+    },
+    "problem.address": {
+        text: "«ты» / «вы» not as in the scene",
+        description: "Error: the line says ты where the speaker's neighbouring lines say вы, or the reverse.",
+    },
+    "checks.brokenTag": {
+        text: "broken tag",
+        description: "Mark on a variant: a tag broken, left open, or a substitution lost.",
+    },
+    "checks.brokenTagHint": {
+        text: "A tag is left open or broken, a closer has nothing to close, or a tag the English lacks.",
+        description: "Hint of the broken tag mark.",
+    },
+    "checks.noHighlight": {
+        text: "no highlight",
+        description: "Mark on a variant: a tag of the English missing (the game shows it without its colour or term).",
+    },
+    "checks.noHighlightHint": {
+        text: "The English has a tag (colour, term, italics) this text lacks; the text is whole, the game shows it without the highlight.",
+        description: "Hint of the no highlight mark.",
+    },
+    "overview.counts": {
+        text: "Texts: {total} · with Russian: {ru} · checked: {approved} ({share})",
+        description: "The overview above a table: texts, those with Russian, those approved.",
+    },
+    "overview.nextUnchecked": {
+        text: "Next unchecked line",
+        description: "Button: scroll to the next row below that is not approved.",
+    },
+    "overview.noneBelow": {
+        text: "No unchecked line below.",
+        description: "Toast when no unchecked row is below the screen's top.",
+    },
+    "overview.previous": {
+        text: "Previous",
+        description: "Button: open the previous object of the section.",
+    },
+    "overview.next": {
+        text: "Next",
+        description: "Button: open the next object of the section.",
+    },
+    "places.table": {
+        text: "Every place of the text",
+        description: "Accessible name of the table of an entry's places (№, where, was, now, English, Chinese).",
     },
 } satisfies MessageMap;
 

@@ -180,3 +180,44 @@ export function sameTags(original: string, translation: string): boolean {
     const d = tagDiff(original, translation);
     return d.missing.length === 0 && d.extra.length === 0;
 }
+
+/** Something that starts like a tag but is not one: half a tag, a closer with nothing to close. */
+const GARBAGE = /<[@$/]/g;
+
+interface IHealth {
+    unclosed: number;
+    garbage: number;
+    tokens: string[];
+}
+
+function health(text: string): IHealth {
+    const out: IHealth = { unclosed: 0, garbage: 0, tokens: [] };
+    const visit = (nodes: readonly MarkNode[]) => {
+        for (const n of nodes) {
+            if (n.kind === "text") out.garbage += (n.value.match(GARBAGE) ?? []).length;
+            else if (n.kind === "token") out.tokens.push(n.raw.toLowerCase());
+            else {
+                if (!n.close) out.unclosed++;
+                visit(n.children);
+            }
+        }
+    };
+    visit(parseMarkup(text));
+    out.tokens.sort();
+    return out;
+}
+
+/**
+ * A translation's tags against the original's (the backend's
+ * `texts/problems.rs` says the same): `broken` — a tag left open or broken,
+ * a closer with nothing to close, a substitution `{…}` lost or added, a tag
+ * the original lacks; `noHighlight` — only a tag of the original missing, the
+ * text otherwise whole.
+ */
+export function tagHealth(original: string, translation: string): { broken: boolean; noHighlight: boolean } {
+    const e = health(original);
+    const r = health(translation);
+    const diff = tagDiff(original, translation);
+    const broken = r.unclosed > e.unclosed || r.garbage > e.garbage || r.tokens.join("\u0000") !== e.tokens.join("\u0000") || diff.extra.length > 0;
+    return { broken, noHighlight: !broken && diff.missing.length > 0 };
+}

@@ -35,6 +35,7 @@ import type { ProposalVersion } from "#/types/generated/ProposalVersion";
 import type { Release } from "#/types/generated/Release";
 import type { SearchLines } from "#/types/generated/SearchLines";
 import type { StoryProgress } from "#/types/generated/StoryProgress";
+import type { TextSummary } from "#/types/generated/TextSummary";
 import type { TranslatorStoryLines } from "#/types/generated/TranslatorStoryLines";
 import type { TranslatorsMe } from "#/types/generated/TranslatorsMe";
 
@@ -379,6 +380,22 @@ export function searchLinesQueryOptions(query: ISearchQuery) {
         },
         staleTime: 60_000,
     });
+}
+
+export const textSummaryFn = createServerFn({ method: "GET" })
+    .inputValidator((d: ISearchQuery) => d)
+    .handler(async ({ data }): Promise<TextSummary> => {
+        const q = new URLSearchParams({ q: data.q });
+        if (data.whole) q.set("whole", "true");
+        if (data.section) q.set("section", data.section);
+        if (data.status) q.set("status", data.status);
+        const res = await send(`/translators/texts/summary?${q}`, "GET");
+        return (await res.json()) as TextSummary;
+    });
+
+/** How many texts the filters leave, with Russian, approved, and each problem's count (refreshed with the edits). */
+export function textSummaryQueryOptions(query: ISearchQuery) {
+    return queryOptions({ queryKey: [...TRANSLATORS_QUERY_ROOT, "lines", "summary", query], queryFn: () => textSummaryFn({ data: query }), staleTime: 60_000 });
 }
 
 // ---- The game sections: a section's objects and one object's texts.

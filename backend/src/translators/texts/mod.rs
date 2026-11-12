@@ -9,6 +9,7 @@
 pub mod db;
 pub mod dto;
 pub mod gamedata;
+pub mod problems;
 pub mod routes;
 pub mod tags;
 
@@ -32,6 +33,7 @@ pub fn router() -> OpenApiRouter<AppState> {
         .routes(routes!(routes::objects))
         .routes(routes!(routes::object_lines))
         .routes(routes!(routes::game_tags))
+        .routes(routes!(routes::text_summary))
 }
 
 /// One entry of the list.

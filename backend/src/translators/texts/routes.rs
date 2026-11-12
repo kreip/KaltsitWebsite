@@ -32,6 +32,12 @@ const STATUSES: &[&str] = &[
     "approved",
     "untranslated",
     "plugin",
+    "problems",
+    "glossary",
+    "brokenTag",
+    "noHighlight",
+    "newlines",
+    "longer",
 ];
 
 /// Search every text of the game — the story, the game data by section
@@ -333,4 +339,31 @@ pub async fn game_tags(
         require_member(&state, &auth).await?;
     }
     Ok(Json(db::tags(&state.db, SERVER).await?))
+}
+
+/// The overview above the search and the Game sections: how many texts the
+/// filters leave, with Russian, approved, and each problem's count (texts
+/// not approved) under the query and the section. Members only.
+#[utoipa::path(
+    get,
+    path = "/translators/texts/summary",
+    tag = "translators",
+    security(("bearer_auth" = [])),
+    params(TextQuery),
+    responses(
+        (status = 200, description = "The counts.", body = super::dto::TextSummary),
+        (status = 400, response = crate::app::openapi::responses::BadRequest),
+        (status = 401, response = crate::app::openapi::responses::Unauthorized),
+        (status = 403, response = crate::app::openapi::responses::Forbidden),
+        (status = 500, response = crate::app::openapi::responses::InternalError)
+    )
+)]
+pub async fn text_summary(
+    State(state): State<AppState>,
+    auth: MaybeAuthUser,
+    Query(query): Query<TextQuery>,
+) -> Result<Json<super::dto::TextSummary>, ApiError> {
+    require_member(&state, &auth).await?;
+    check(&query)?;
+    Ok(Json(db::summary(&state.db, SERVER, &query).await?))
 }

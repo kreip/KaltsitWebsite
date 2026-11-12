@@ -20,7 +20,10 @@ pub struct TextQuery {
     #[serde(default)]
     pub section: Option<String>,
     /// `unchecked` (nobody proposed or approved anything), `proposed`,
-    /// `approved`, `untranslated` (no Russian) or `plugin` (the plugin's catalog holds it).
+    /// `approved`, `untranslated` (no Russian), `plugin` (the plugin's catalog
+    /// holds it), or a problem of a text not approved: `problems` (any),
+    /// `glossary`, `brokenTag`, `noHighlight`, `newlines`, `longer` (a
+    /// proposal noticeably longer than the game's text).
     #[serde(default)]
     pub status: Option<String>,
     #[serde(default)]
@@ -230,4 +233,30 @@ pub struct ObjectLines {
     pub rows: Vec<ObjectLine>,
     /// What was proposed, approved and said for the rows' entries (by `editKey`).
     pub edits: Vec<crate::translators::edits::dto::KeyEdits>,
+}
+
+/// How many texts have one problem.
+#[derive(Debug, Clone, Serialize, TS, ToSchema)]
+#[serde(rename_all = "camelCase")]
+#[ts(export)]
+pub struct ProblemCount {
+    pub status: String,
+    #[ts(type = "number")]
+    pub count: i64,
+}
+
+/// The overview above the search: the texts the filters leave, those with
+/// Russian and those approved; and each problem's count under the query and
+/// the section.
+#[derive(Debug, Clone, Serialize, TS, ToSchema)]
+#[serde(rename_all = "camelCase")]
+#[ts(export)]
+pub struct TextSummary {
+    #[ts(type = "number")]
+    pub total: i64,
+    #[ts(type = "number")]
+    pub ru: i64,
+    #[ts(type = "number")]
+    pub approved: i64,
+    pub problems: Vec<ProblemCount>,
 }

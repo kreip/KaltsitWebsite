@@ -157,6 +157,26 @@ fn whole_words(q: &str) -> String {
 const APPROVED: &str = "EXISTS (SELECT 1 FROM translators.approvals a WHERE a.edit_key = t.edit_key AND a.outdated_at IS NULL)";
 const PROPOSED: &str = "EXISTS (SELECT 1 FROM translators.proposals p WHERE p.edit_key = t.edit_key AND p.deleted_at IS NULL AND p.rejected_at IS NULL AND p.outdated_at IS NULL)";
 
+/// A live proposal noticeably longer than the game's Russian (the page's
+/// rule: more than 15 % and more than 15 characters longer).
+const LONGER: &str = "(t.ru IS NOT NULL AND EXISTS (SELECT 1 FROM translators.proposals p
+     WHERE p.edit_key = t.edit_key AND p.deleted_at IS NULL AND p.rejected_at IS NULL AND p.outdated_at IS NULL
+       AND char_length(p.text) - char_length(t.ru) > 15 AND char_length(p.text) > char_length(t.ru) * 1.15))";
+
+/// The condition of a problem status (never on an approved text: it was checked).
+fn problem_condition(status: &str) -> Option<String> {
+    let what = match status {
+        "problems" => format!("(t.problems <> '{{}}' OR {LONGER})"),
+        "longer" => LONGER.to_owned(),
+        s if super::problems::PROBLEMS.contains(&s) => format!("t.problems @> ARRAY['{s}']::text[]"),
+        _ => return None,
+    };
+    Some(format!(" AND {what} AND NOT {APPROVED}"))
+}
+
+/// The statuses of the problems, as the filter offers them: any, then each.
+pub const PROBLEM_STATUSES: &[&str] = &["problems", "glossary", "brokenTag", "noHighlight", "newlines", "longer"];
+
 /// The WHERE of a search, after `FROM translators.texts t`.
 fn conditions<'q>(
     qb: &mut QueryBuilder<'q, Postgres>,
@@ -193,7 +213,12 @@ fn conditions<'q>(
         Some("plugin") => {
             qb.push(" AND t.plugin_role IS NOT NULL");
         }
-        _ => {}
+        Some(s) => {
+            if let Some(c) = problem_condition(s) {
+                qb.push(c);
+            }
+        }
+        None => {}
     }
 }
 
@@ -883,4 +908,55 @@ mod tests {
         assert_eq!(object_key("archives"), "p.object_id");
         assert_eq!(object_key("stages"), "p.object_en");
     }
+}
+
+/// How many texts the search's filters leave, with Russian, approved; and,
+/// for the status filter's numbers, how many of the texts the query and the
+/// section leave have each problem (not approved).
+pub async fn summary(
+    pool: &PgPool,
+    server: &str,
+    q: &TextQuery,
+) -> Result<super::dto::TextSummary, sqlx::Error> {
+    let folded = super::fold(q.q.trim());
+    let mut totals: QueryBuilder<Postgres> = QueryBuilder::new(format!(
+        "SELECT COUNT(*), COUNT(t.ru), COUNT(*) FILTER (WHERE {APPROVED}) FROM translators.texts t"
+    ));
+    conditions(&mut totals, server, q, &folded);
+    let unfiltered = TextQuery {
+        status: None,
+        ..q.clone()
+    };
+    let mut counts: QueryBuilder<Postgres> = QueryBuilder::new("SELECT ");
+    for (i, status) in PROBLEM_STATUSES.iter().enumerate() {
+        if i > 0 {
+            counts.push(", ");
+        }
+        let cond = problem_condition(status).unwrap_or_default();
+        counts.push(format!(
+            "COUNT(*) FILTER (WHERE TRUE {cond})"
+        ));
+    }
+    counts.push(" FROM translators.texts t");
+    conditions(&mut counts, server, &unfiltered, &folded);
+    let ((total, ru, approved), row) = tokio::try_join!(
+        totals
+            .build_query_as::<(i64, i64, i64)>()
+            .persistent(false)
+            .fetch_one(pool),
+        counts.build().persistent(false).fetch_one(pool),
+    )?;
+    let mut problems = Vec::with_capacity(PROBLEM_STATUSES.len());
+    for (i, status) in PROBLEM_STATUSES.iter().enumerate() {
+        problems.push(super::dto::ProblemCount {
+            status: (*status).to_owned(),
+            count: sqlx::Row::try_get::<i64, _>(&row, i)?,
+        });
+    }
+    Ok(super::dto::TextSummary {
+        total,
+        ru,
+        approved,
+        problems,
+    })
 }
