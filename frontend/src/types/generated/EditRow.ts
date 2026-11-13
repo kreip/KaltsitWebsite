@@ -4,24 +4,26 @@ import type { Proposal } from "./Proposal";
 /**
  * One row of "My edits".
  */
-export type EditRow = { proposal: Proposal, 
-/**
- * The English of the entry.
- */
-en: string, 
-/**
- * The game's Russian now ("was").
- */
-ruGame: string | null, 
-/**
- * The proposal's place's 0-based order in its story, when the line is still there.
- */
-ord: number | null, 
-/**
- * `proposed`, `approved`, `otherApproved`, `outdated` or `rejected`.
- */
-state: string, 
-/**
- * Places holding the entry.
- */
-places: number, };
+export type EditRow = {
+    proposal: Proposal;
+    /**
+     * The English of the entry.
+     */
+    en: string;
+    /**
+     * The game's Russian now ("was").
+     */
+    ruGame: string | null;
+    /**
+     * The proposal's place's 0-based order in its story, when the line is still there.
+     */
+    ord: number | null;
+    /**
+     * `proposed`, `approved`, `otherApproved`, `outdated` or `rejected`.
+     */
+    state: string;
+    /**
+     * Places holding the entry.
+     */
+    places: number;
+};

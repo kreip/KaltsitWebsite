@@ -3,4 +3,4 @@
 /**
  * A chapter or story name of the library with the game's Russian.
  */
-export type NameRu = { en: string, ru: string, };
+export type NameRu = { en: string; ru: string };

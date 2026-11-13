@@ -4,24 +4,25 @@
  * A place of the game data: a field of an object (this operator's second
  * skill's description). A proposal "only here" outside the story names it.
  */
-export type GameHere = { 
-/**
- * `operators`, `enemies`, `stages`, `items`, `archives` or `other`.
- */
-section: string, 
-/**
- * The object's id in the game data (a table's name for `other`).
- */
-objectId: string, 
-/**
- * The object's English name.
- */
-objectEn: string | null, 
-/**
- * `name`, `skill.description`, `module.effect`, ...
- */
-field: string, 
-/**
- * Which one of several (skill 2), from 1; 0 when there is one.
- */
-idx: number, };
+export type GameHere = {
+    /**
+     * `operators`, `enemies`, `stages`, `items`, `archives` or `other`.
+     */
+    section: string;
+    /**
+     * The object's id in the game data (a table's name for `other`).
+     */
+    objectId: string;
+    /**
+     * The object's English name.
+     */
+    objectEn: string | null;
+    /**
+     * `name`, `skill.description`, `module.effect`, ...
+     */
+    field: string;
+    /**
+     * Which one of several (skill 2), from 1; 0 when there is one.
+     */
+    idx: number;
+};

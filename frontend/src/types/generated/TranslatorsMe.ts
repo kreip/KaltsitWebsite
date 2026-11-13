@@ -3,41 +3,42 @@
 /**
  * What the page needs to know about the caller.
  */
-export type TranslatorsMe = { 
-/**
- * A signed-in translator: sees Sova's and the AI's texts.
- */
-member: boolean, 
-/**
- * The member's user id, to tell their own proposals and votes.
- */
-userId: string | null, 
-/**
- * The member's role as a one-item list: `user` (proposes, agrees,
- * remarks), `translator` (also approves, rejects, exports for the game)
- * or `admin` (all of it, the pack's releases, the admin panel); empty
- * for a non-member.
- */
-roles: Array<string>, 
-/**
- * The member's game nickname, shown for `{@nickname}`; null when unknown.
- */
-nickname: string | null, 
-/**
- * The development sign-in is switched on for this backend.
- */
-devLogin: boolean, 
-/**
- * The rule that marks a line's recommended variant, the same for the
- * whole team (the lead switches it): `B` (only when the game's text has a
- * mark; the default) or `A` (the best variant of every line).
- */
-recommendRule: string, 
-/**
- * Signed in to the site (a member or not).
- */
-signedIn: boolean, 
-/**
- * Signed in, not a member, and their request for access waits.
- */
-accessRequested: boolean, };
+export type TranslatorsMe = {
+    /**
+     * A signed-in translator: sees Sova's and the AI's texts.
+     */
+    member: boolean;
+    /**
+     * The member's user id, to tell their own proposals and votes.
+     */
+    userId: string | null;
+    /**
+     * The member's role as a one-item list: `user` (proposes, agrees,
+     * remarks), `translator` (also approves, rejects, exports for the game)
+     * or `admin` (all of it, the pack's releases, the admin panel); empty
+     * for a non-member.
+     */
+    roles: Array<string>;
+    /**
+     * The member's game nickname, shown for `{@nickname}`; null when unknown.
+     */
+    nickname: string | null;
+    /**
+     * The development sign-in is switched on for this backend.
+     */
+    devLogin: boolean;
+    /**
+     * The rule that marks a line's recommended variant, the same for the
+     * whole team (the lead switches it): `B` (only when the game's text has a
+     * mark; the default) or `A` (the best variant of every line).
+     */
+    recommendRule: string;
+    /**
+     * Signed in to the site (a member or not).
+     */
+    signedIn: boolean;
+    /**
+     * Signed in, not a member, and their request for access waits.
+     */
+    accessRequested: boolean;
+};

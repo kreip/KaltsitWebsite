@@ -654,5 +654,12 @@
     "glossary.fix.approved": "утверждено",
     "glossary.fix.apply": "Создать {count, plural, one {# предложение} few {# предложения} many {# предложений} other {# предложения}}",
     "glossary.fix.done": "{count, plural, one {Создано # предложение} few {Создано # предложения} many {Создано # предложений} other {Создано # предложения}}",
-    "glossary.fix.failed": "Не удалось создать предложения."
+    "glossary.fix.failed": "Не удалось создать предложения.",
+    "at.file.unlinked": "Без привязки",
+    "at.field.levelUnknown": "уровень не определён",
+    "sections.levels": "{count, plural, one {# строка} few {# строки} many {# строк} other {# строки}} с числами по уровням",
+    "levels.hint": "В словаре {count, plural, one {# строка} few {# строки} many {# строк} other {# строки}} этого навыка с подставленными числами по уровням: сохраните, затем «Применить к уровням».",
+    "levels.apply": "Применить к уровням ({count})",
+    "levels.done": "Предложения по уровням: создано {created}, пропущено {skipped}",
+    "levels.failed": "Не удалось применить к уровням."
 }

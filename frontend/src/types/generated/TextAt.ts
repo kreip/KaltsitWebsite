@@ -3,24 +3,33 @@
 /**
  * One place of a found text: a story line, or a field of a game object.
  */
-export type TextAt = { 
-/**
- * `story`, `operators`, `enemies`, `stages`, `items`, `archives` or `other`.
- */
-section: string, 
-/**
- * A story line: the story, its line in the EN script, the option number and the line's order in the story.
- */
-storyId: string | null, line: number | null, part: number | null, ord: number | null, 
-/**
- * A game object: its id and English name (a table's name for `other`).
- */
-objectId: string | null, objectEn: string | null, 
-/**
- * `name`, `trait`, `talent.description`, `skill.name`, `module.effect`, ...
- */
-field: string | null, 
-/**
- * Which one of several (skill 2), from 1; 0 when there is one.
- */
-idx: number | null, };
+export type TextAt = {
+    /**
+     * `story`, `operators`, `enemies`, `stages`, `items`, `archives` or `other`.
+     */
+    section: string;
+    /**
+     * A story line: the story, its line in the EN script, the option number and the line's order in the story.
+     */
+    storyId: string | null;
+    line: number | null;
+    part: number | null;
+    ord: number | null;
+    /**
+     * A game object: its id and English name (a table's name for `other`).
+     */
+    objectId: string | null;
+    objectEn: string | null;
+    /**
+     * `name`, `trait`, `talent.description`, `skill.name`, `module.effect`, ...
+     */
+    field: string | null;
+    /**
+     * Which one of several (skill 2), from 1; 0 when there is one.
+     */
+    idx: number | null;
+    /**
+     * What tells it from the others at the field (`ObjectLine::note`); empty when nothing is known.
+     */
+    note: string;
+};

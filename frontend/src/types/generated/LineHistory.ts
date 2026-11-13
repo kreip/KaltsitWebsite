@@ -4,8 +4,11 @@ import type { HistoryEvent } from "./HistoryEvent";
 /**
  * The history of the translation of the entry at a place, newest first.
  */
-export type LineHistory = { editKey: string, 
-/**
- * The Russian the game shows now.
- */
-ruGame: string | null, events: Array<HistoryEvent>, };
+export type LineHistory = {
+    editKey: string;
+    /**
+     * The Russian the game shows now.
+     */
+    ruGame: string | null;
+    events: Array<HistoryEvent>;
+};

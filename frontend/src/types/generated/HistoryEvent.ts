@@ -4,40 +4,42 @@ import type { EditPerson } from "./EditPerson";
 /**
  * One step in the history of a line's translation, with the text it replaced.
  */
-export type HistoryEvent = { 
-/**
- * `game` (an import brought a new Russian from the pack), `proposal` (a
- * proposal written or rewritten), `approve` or `withdraw` (a translator),
- * `reject` (a proposal rejected: `text` is the reason, if any) or
- * `reopen` (the rejection taken back).
- */
-kind: string, 
-/**
- * Unix seconds.
- */
-at: number, 
-/**
- * Who did it; null for `game`.
- */
-by: EditPerson | null, 
-/**
- * The text after this step.
- */
-text: string | null, 
-/**
- * The text one step back: the proposal's previous version (the game's
- * Russian for its first), or the game's Russian before the import.
- */
-before: string | null, proposalId: number | null, 
-/**
- * A proposal's source (`own`, `sova`, `ai`), or the approved variant (`game`, `proposal`, `sova`, `ai`).
- */
-source: string | null, 
-/**
- * A proposal for this place only.
- */
-context: boolean, 
-/**
- * The proposal was deleted since.
- */
-deleted: boolean, };
+export type HistoryEvent = {
+    /**
+     * `game` (an import brought a new Russian from the pack), `proposal` (a
+     * proposal written or rewritten), `approve` or `withdraw` (a translator),
+     * `reject` (a proposal rejected: `text` is the reason, if any) or
+     * `reopen` (the rejection taken back).
+     */
+    kind: string;
+    /**
+     * Unix seconds.
+     */
+    at: number;
+    /**
+     * Who did it; null for `game`.
+     */
+    by: EditPerson | null;
+    /**
+     * The text after this step.
+     */
+    text: string | null;
+    /**
+     * The text one step back: the proposal's previous version (the game's
+     * Russian for its first), or the game's Russian before the import.
+     */
+    before: string | null;
+    proposalId: number | null;
+    /**
+     * A proposal's source (`own`, `sova`, `ai`), or the approved variant (`game`, `proposal`, `sova`, `ai`).
+     */
+    source: string | null;
+    /**
+     * A proposal for this place only.
+     */
+    context: boolean;
+    /**
+     * The proposal was deleted since.
+     */
+    deleted: boolean;
+};

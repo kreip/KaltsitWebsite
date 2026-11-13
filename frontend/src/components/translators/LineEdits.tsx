@@ -8,7 +8,7 @@
  */
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
-import { Check, CircleHelp, History, MessageSquare, NotebookPen, PenLine, ThumbsUp, Trash2, Undo2, X } from "lucide-react";
+import { Check, CircleHelp, History, Layers, MessageSquare, NotebookPen, PenLine, ThumbsUp, Trash2, Undo2, X } from "lucide-react";
 import type React from "react";
 import { useId, useState } from "react";
 import { AlertDialog, AlertDialogClose, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogPopup, AlertDialogTitle } from "#/components/ui/alert-dialog";
@@ -30,7 +30,7 @@ import { Textarea } from "#/components/ui/textarea";
 import { toastManager } from "#/components/ui/toast";
 import { useFormatters, useLocale } from "#/lib/i18n";
 import type { TypedT } from "#/lib/i18n/messages";
-import { type AgreeVariant, createCommentFn, createProposalFn, decideProposalsFn, deleteCommentFn, deleteProposalFn, EDIT_QUERY_ROOTS, type ProposalDecision, type ProposalSource, placesQueryOptions, resolveCommentFn, setAgreementFn, setApprovalFn } from "#/lib/translators/api";
+import { type AgreeVariant, applyLevelsFn, createCommentFn, createProposalFn, decideProposalsFn, deleteCommentFn, deleteProposalFn, EDIT_QUERY_ROOTS, type ProposalDecision, type ProposalSource, placesQueryOptions, resolveCommentFn, setAgreementFn, setApprovalFn } from "#/lib/translators/api";
 import { cn } from "#/lib/utils";
 import type { EditComment } from "#/types/generated/EditComment";
 import type { EditPerson } from "#/types/generated/EditPerson";
@@ -562,12 +562,16 @@ interface IProposalsProps extends ICommentsProps {
     ruGame?: string | null;
     /** The proposal's automatic marks, shown in its label line. */
     marks?: (p: Proposal) => React.ReactNode;
+    /** A skill's description template: how many dictionary entries carry its levels' numbers ("Apply to the levels"). */
+    levelTexts?: number;
 }
 
-export function Proposals({ edits, place, me, nickname, onEdit, marks, compare = false, ruGame = null, t }: IProposalsProps): React.ReactElement | null {
+export function Proposals({ edits, place, me, nickname, onEdit, marks, compare = false, ruGame = null, levelTexts = 0, t }: IProposalsProps): React.ReactElement | null {
     const f = useFormatters();
     const locale = useLocale();
     const remove = useEditMutation((id: number) => deleteProposalFn({ data: { id } }), t("edit.failedDelete"));
+    const levels = useEditMutation((id: number) => applyLevelsFn({ data: { id } }), t("levels.failed"));
+    const applyLevels = (id: number) => levels.mutate(id, { onSuccess: (r) => toastManager.add({ title: t("levels.done", { created: r.created, skipped: r.skipped }), type: "success" }) });
     const list = proposalsAt(edits, place);
     if (list.length === 0) return null;
     return (
@@ -629,6 +633,12 @@ export function Proposals({ edits, place, me, nickname, onEdit, marks, compare =
                                                     <>
                                                         <IconAction icon={<PenLine aria-hidden="true" />} label={t("proposal.edit")} onClick={() => onEdit(p)} />
                                                         <IconAction icon={<Trash2 aria-hidden="true" />} label={t("proposal.delete")} onClick={() => remove.mutate(p.id)} />
+                                                        {levelTexts > 0 && !p.context ? (
+                                                            <Button variant="ghost" size="xs" className="h-5 px-1 text-muted-foreground text-xs" title={t("levels.hint", { count: levelTexts })} onClick={() => applyLevels(p.id)} disabled={levels.isPending}>
+                                                                <Layers aria-hidden="true" />
+                                                                {t("levels.apply", { count: levelTexts })}
+                                                            </Button>
+                                                        ) : null}
                                                     </>
                                                 ) : null}
                                             </>
@@ -1055,6 +1065,7 @@ export function ProposalEditor({ line, place, initial, source, context, here = n
             </span>
             {line.ruGameMatch === "lines" || line.en.includes("\n") ? <span className="text-subtle-foreground text-xs">{t("editor.wholeEntry")}</span> : null}
             {sameAsGame ? <span className="text-subtle-foreground text-xs">{t("editor.sameAsGame")}</span> : null}
+            {line.levelTexts > 0 && !context ? <span className="text-subtle-foreground text-xs">{t("levels.hint", { count: line.levelTexts })}</span> : null}
             {context ? <span className="text-subtle-foreground text-xs">{here ? t("editor.onlyHere") : t("editor.contextOnly")}</span> : <PlacesNote line={line} place={place} nickname={nickname} t={t} />}
             <div className="flex flex-wrap items-center gap-2">
                 <Button size="sm" onClick={submit} disabled={!canSave}>

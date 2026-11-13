@@ -3,8 +3,10 @@
 /**
  * How many approvals a batch made.
  */
-export type ApprovalBatchResult = { approved: number, 
-/**
- * Items skipped (a line with nothing to translate, a variant it lacks).
- */
-skipped: number, };
+export type ApprovalBatchResult = {
+    approved: number;
+    /**
+     * Items skipped (a line with nothing to translate, a variant it lacks).
+     */
+    skipped: number;
+};

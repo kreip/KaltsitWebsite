@@ -46,7 +46,7 @@ describe("where a text stands, in words", () => {
         expect(tableWord("clue_data", t)).toBe("Улики");
         expect(tableWord("character_table", t)).toBe("Операторы (прочее)");
         expect(tableWord("brand_new_table", t)).toBe("brand_new_table");
-        expect(fileWord("13_names.txt", t)).toBe("Словарь имён");
+        expect(fileWord("13_names.txt", t)).toBe("Без привязки");
         expect(fileWord("plugin:skill", t)).toBe("Каталог плагина");
         expect(fileWord("99_other.txt", t)).toBe("99_other.txt");
     });

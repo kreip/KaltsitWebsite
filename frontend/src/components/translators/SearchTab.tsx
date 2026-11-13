@@ -72,7 +72,7 @@ export interface ISearchState {
 /** One place of a found text: a link to the story line, or the game object's field in words. */
 function Place({ at, t }: { at: TextAt; t: T }): React.ReactElement {
     const nameOf = useStoryNames();
-    if (at.storyId === null) return <GamePlace section={at.section} objectId={at.objectId} objectEn={at.objectEn} field={at.field} idx={at.idx} t={t} />;
+    if (at.storyId === null) return <GamePlace section={at.section} objectId={at.objectId} objectEn={at.objectEn} field={at.field} idx={at.idx} note={at.note} t={t} />;
     const n = nameOf(at.storyId);
     const label = t("where.item", { group: n?.group ?? "", story: n?.story ?? at.storyId, n: at.ord === null ? "?" : at.ord + 1 });
     if (!n) return <span>{label}</span>;

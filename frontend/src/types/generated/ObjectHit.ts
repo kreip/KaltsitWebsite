@@ -4,20 +4,21 @@
  * An object of the game whose name answers the search: it has a card on
  * the Game sections tab.
  */
-export type ObjectHit = { 
-/**
- * `operators`, `enemies`, `items` or `stages`.
- */
-section: string, 
-/**
- * What names it in the address, as `GameObject.id`.
- */
-id: string, 
-/**
- * The English name (a stage's with its code).
- */
-en: string, 
-/**
- * The name in the game's Russian, when the pack has one.
- */
-ru: string | null, };
+export type ObjectHit = {
+    /**
+     * `operators`, `enemies`, `items` or `stages`.
+     */
+    section: string;
+    /**
+     * What names it in the address, as `GameObject.id`.
+     */
+    id: string;
+    /**
+     * The English name (a stage's with its code).
+     */
+    en: string;
+    /**
+     * The name in the game's Russian, when the pack has one.
+     */
+    ru: string | null;
+};

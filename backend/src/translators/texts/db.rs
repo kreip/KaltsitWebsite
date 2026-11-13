@@ -53,10 +53,10 @@ pub async fn store(
         qb.push(" ON CONFLICT DO NOTHING");
         qb.build().execute(&mut **tx).await?;
     }
-    // 9 binds per row.
-    for chunk in places.chunks(7_000) {
+    // 10 binds per row.
+    for chunk in places.chunks(6_000) {
         let mut qb: QueryBuilder<Postgres> = QueryBuilder::new(
-            "INSERT INTO translators.text_places (server, edit_key, section, object_id, object_en, field, idx, note, ord) ",
+            "INSERT INTO translators.text_places (server, edit_key, section, object_id, object_en, field, idx, note, ord, of_key) ",
         );
         qb.push_values(chunk, |mut b, p| {
             b.push_bind(server)
@@ -67,7 +67,8 @@ pub async fn store(
                 .push_bind(&p.field)
                 .push_bind(p.idx)
                 .push_bind(&p.note)
-                .push_bind(p.ord);
+                .push_bind(p.ord)
+                .push_bind(&p.of_key);
         });
         qb.build().execute(&mut **tx).await?;
     }
@@ -339,8 +340,8 @@ pub async fn search(
     let mut at: HashMap<String, Vec<TextAt>> = HashMap::new();
     if !keys.is_empty() {
         #[allow(clippy::type_complexity)]
-        let game: Vec<(String, String, String, String, String, i16)> = sqlx::query_as(
-            "SELECT edit_key, section, object_id, object_en, field, idx FROM (
+        let game: Vec<(String, String, String, String, String, i16, String)> = sqlx::query_as(
+            "SELECT edit_key, section, object_id, object_en, field, idx, note FROM (
                  SELECT p.*, ROW_NUMBER() OVER (PARTITION BY p.edit_key ORDER BY p.section, p.object_id, p.ord) AS n
                  FROM translators.text_places p WHERE p.server = $1 AND p.edit_key = ANY($2)
              ) x WHERE n <= $3 ORDER BY edit_key, n",
@@ -350,7 +351,7 @@ pub async fn search(
         .bind(i64::try_from(PLACES_SHOWN).unwrap_or(3))
         .fetch_all(pool)
         .await?;
-        for (key, section, object_id, object_en, field, idx) in game {
+        for (key, section, object_id, object_en, field, idx, note) in game {
             at.entry(key).or_default().push(TextAt {
                 section,
                 story_id: None,
@@ -361,6 +362,7 @@ pub async fn search(
                 object_en: Some(object_en),
                 field: Some(field),
                 idx: Some(idx),
+                note,
             });
         }
         let story: Vec<(String, String, i32, i16, i32)> = sqlx::query_as(
@@ -388,6 +390,7 @@ pub async fn search(
                     object_en: None,
                     field: None,
                     idx: None,
+                    note: String::new(),
                 });
             }
         }
@@ -966,4 +969,57 @@ pub async fn summary(
         approved,
         problems,
     })
+}
+
+/// How many skill level entries each template of `keys` has.
+pub async fn level_counts(
+    pool: &PgPool,
+    server: &str,
+    keys: &[String],
+) -> Result<HashMap<String, i32>, sqlx::Error> {
+    if keys.is_empty() {
+        return Ok(HashMap::new());
+    }
+    let rows: Vec<(String, i64)> = sqlx::query_as(
+        "SELECT of_key, COUNT(DISTINCT edit_key) FROM translators.text_places
+         WHERE server = $1 AND of_key = ANY($2) GROUP BY of_key",
+    )
+    .bind(server)
+    .bind(keys)
+    .fetch_all(pool)
+    .await?;
+    Ok(rows
+        .into_iter()
+        .map(|(k, n)| (k, i32::try_from(n).unwrap_or(i32::MAX)))
+        .collect())
+}
+
+/// A template's skill level entries: `(edit_key, English, the game's Russian)`.
+pub async fn level_entries(
+    pool: &PgPool,
+    server: &str,
+    of_key: &str,
+) -> Result<Vec<(String, String, Option<String>)>, sqlx::Error> {
+    sqlx::query_as(
+        "SELECT DISTINCT t.edit_key, t.en, t.ru FROM translators.text_places p
+         JOIN translators.texts t ON t.server = p.server AND t.edit_key = p.edit_key
+         WHERE p.server = $1 AND p.of_key = $2 ORDER BY t.en",
+    )
+    .bind(server)
+    .bind(of_key)
+    .fetch_all(pool)
+    .await
+}
+
+/// The English of an entry as the list keeps it (the game data's text, tags included).
+pub async fn text_en(
+    pool: &PgPool,
+    server: &str,
+    key: &str,
+) -> Result<Option<String>, sqlx::Error> {
+    sqlx::query_scalar("SELECT en FROM translators.texts WHERE server = $1 AND edit_key = $2")
+        .bind(server)
+        .bind(key)
+        .fetch_optional(pool)
+        .await
 }

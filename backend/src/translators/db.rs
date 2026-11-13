@@ -64,6 +64,10 @@ const MIGRATIONS: &[(&str, &str)] = &[
         "t020_glossary_changes",
         include_str!("migrations/t020_glossary_changes.sql"),
     ),
+    (
+        "t021_skill_levels",
+        include_str!("migrations/t021_skill_levels.sql"),
+    ),
 ];
 
 pub async fn migrate(pool: &PgPool) -> Result<(), sqlx::Error> {
@@ -256,6 +260,7 @@ impl Row {
             places: 1,
             status: String::new(),
             variant_glossary: Vec::new(),
+            level_texts: 0,
         }
     }
 }

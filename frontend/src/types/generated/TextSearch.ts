@@ -4,16 +4,18 @@ import type { TextHit } from "./TextHit";
 /**
  * A page of the search.
  */
-export type TextSearch = { 
-/**
- * Every text that matches.
- */
-total: number, rows: Array<TextHit>, 
-/**
- * How long the database took, in milliseconds.
- */
-millis: number, 
-/**
- * How many texts the list holds (as of the last import); 0 before the first import builds it.
- */
-indexed: number, };
+export type TextSearch = {
+    /**
+     * Every text that matches.
+     */
+    total: number;
+    rows: Array<TextHit>;
+    /**
+     * How long the database took, in milliseconds.
+     */
+    millis: number;
+    /**
+     * How many texts the list holds (as of the last import); 0 before the first import builds it.
+     */
+    indexed: number;
+};

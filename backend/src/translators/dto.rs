@@ -90,6 +90,9 @@ pub struct TranslatorLine {
     /// The variants whose Russian lacks a glossary term's form (a variant not
     /// listed holds them all): `game`, `sova`, `ai`, `approved`, `proposal:<id>`.
     pub variant_glossary: Vec<VariantGlossary>,
+    /// A skill's description template: how many dictionary entries carry its
+    /// levels' numbers ("Apply to the levels" fills them from a proposal).
+    pub level_texts: i32,
 }
 
 /// One variant of a line and the glossary terms its Russian lacks.

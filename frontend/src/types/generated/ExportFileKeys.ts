@@ -3,4 +3,4 @@
 /**
  * A dictionary file and how many of the exported keys it holds.
  */
-export type ExportFileKeys = { file: string, keys: number, };
+export type ExportFileKeys = { file: string; keys: number };

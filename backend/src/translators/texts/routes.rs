@@ -1,12 +1,12 @@
 //! `GET /api/translators/texts`: the search over every text of the game.
 
 use axum::Json;
-use axum::extract::{Query, State};
+use axum::extract::{Path, Query, State};
 
 use super::db;
 use super::dto::{
-    GameObject, ObjectLine, ObjectLines, ObjectLinesQuery, ObjectsQuery, SearchLine, SearchLines,
-    TextHit, TextQuery, TextSearch,
+    GameObject, LevelsApplied, ObjectLine, ObjectLines, ObjectLinesQuery, ObjectsQuery, SearchLine,
+    SearchLines, TextHit, TextQuery, TextSearch,
 };
 use crate::app::error::ApiError;
 use crate::app::extractors::auth::MaybeAuthUser;
@@ -165,6 +165,7 @@ pub async fn object_lines(
         .map(|t| EditPlace::text_by_md5(&t.hit.edit_key, &t.hit.key_md5))
         .collect();
     let mut lines: Vec<TranslatorLine> = texts.iter().map(|t| text_line(&t.hit)).collect();
+    fill_level_counts(&state, &places, &mut lines).await?;
     let edits = edits::attach_at(&state.db, &places, &mut lines, |_| false).await?;
     crate::translators::routes::mark_glossary(&state, &mut lines, &places, &edits).await?;
     let rows = texts
@@ -231,6 +232,7 @@ fn text_line(hit: &TextHit) -> TranslatorLine {
         places: hit.places,
         status: String::new(),
         variant_glossary: Vec::new(),
+        level_texts: 0,
     }
 }
 
@@ -290,6 +292,7 @@ pub async fn search_lines(
             }
         }
     }
+    fill_level_counts(&state, &places, &mut lines).await?;
     let edits = edits::attach_at(&state.db, &places, &mut lines, |_| false).await?;
     crate::translators::routes::mark_glossary(&state, &mut lines, &places, &edits).await?;
     // The objects named by the query stand above the first page.
@@ -366,4 +369,86 @@ pub async fn text_summary(
     require_member(&state, &auth).await?;
     check(&query)?;
     Ok(Json(db::summary(&state.db, SERVER, &query).await?))
+}
+
+/// How many skill level entries each text's template has, for the texts
+/// outside the story (`TranslatorLine::level_texts`).
+async fn fill_level_counts(
+    state: &AppState,
+    places: &[EditPlace],
+    lines: &mut [TranslatorLine],
+) -> Result<(), ApiError> {
+    let keys: Vec<String> = lines
+        .iter()
+        .zip(places)
+        .filter(|(_, p)| p.is_text())
+        .map(|(l, _)| l.edit_key.clone())
+        .collect();
+    let counts = db::level_counts(&state.db, SERVER, &keys).await?;
+    for (l, p) in lines.iter_mut().zip(places) {
+        if p.is_text() {
+            l.level_texts = counts.get(&l.edit_key).copied().unwrap_or(0);
+        }
+    }
+    Ok(())
+}
+
+/// "Apply to the levels": the caller's proposal for a skill's description
+/// template, with each level's numbers put in, as their proposals for the
+/// level entries ("dealing 230% ATK …"); one per entry, the tags dropped
+/// where the entry has none. An entry whose numbers do not fit the template,
+/// or whose text would be the game's Russian, is skipped. Members only.
+#[utoipa::path(
+    post,
+    path = "/translators/proposals/{id}/levels",
+    tag = "translators",
+    security(("bearer_auth" = [])),
+    params(("id" = i64, Path, description = "My proposal for the template.")),
+    responses(
+        (status = 200, description = "How many level entries got a proposal, and how many were skipped.", body = LevelsApplied),
+        (status = 401, response = crate::app::openapi::responses::Unauthorized),
+        (status = 403, response = crate::app::openapi::responses::Forbidden),
+        (status = 404, response = crate::app::openapi::responses::NotFound),
+        (status = 500, response = crate::app::openapi::responses::InternalError)
+    )
+)]
+pub async fn apply_levels(
+    State(state): State<AppState>,
+    auth: MaybeAuthUser,
+    Path(id): Path<i64>,
+) -> Result<Json<LevelsApplied>, ApiError> {
+    let me = require_member(&state, &auth).await?;
+    let (key, author, russian, source, context) = edits::db::proposal_owner(&state.db, id)
+        .await?
+        .ok_or(ApiError::NotFound)?;
+    if author != me.id {
+        return Err(ApiError::Forbidden);
+    }
+    if context {
+        return Err(ApiError::BadRequest(
+            "a proposal for one place only cannot be applied to the levels".into(),
+        ));
+    }
+    let template = db::text_en(&state.db, SERVER, &key)
+        .await?
+        .unwrap_or_else(|| key.clone());
+    let entries = db::level_entries(&state.db, SERVER, &key).await?;
+    let mut created = 0;
+    let mut skipped = 0;
+    for (entry_key, en, ru) in entries {
+        let Some(text) = super::levels::apply(&template, &en, &russian)
+            .and_then(|t| status::clean_text(&t))
+            .filter(|t| ru.as_deref().and_then(status::clean_text).as_deref() != Some(t.as_str()))
+        else {
+            skipped += 1;
+            continue;
+        };
+        let place = EditPlace::text(&entry_key);
+        edits::db::upsert_proposal(
+            &state.db, &entry_key, &place, &text, &source, false, None, me.id,
+        )
+        .await?;
+        created += 1;
+    }
+    Ok(Json(LevelsApplied { created, skipped }))
 }

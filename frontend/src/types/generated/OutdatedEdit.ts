@@ -4,12 +4,18 @@ import type { EditPerson } from "./EditPerson";
 /**
  * An approval or proposal left at a place whose English has changed.
  */
-export type OutdatedEdit = { 
-/**
- * `proposal` or `approval`.
- */
-kind: string, line: number, part: number, 
-/**
- * The English it was made for.
- */
-editKey: string, text: string, author: EditPerson, at: number, };
+export type OutdatedEdit = {
+    /**
+     * `proposal` or `approval`.
+     */
+    kind: string;
+    line: number;
+    part: number;
+    /**
+     * The English it was made for.
+     */
+    editKey: string;
+    text: string;
+    author: EditPerson;
+    at: number;
+};

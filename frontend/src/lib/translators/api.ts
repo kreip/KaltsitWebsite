@@ -27,6 +27,7 @@ import type { GlossaryFix } from "#/types/generated/GlossaryFix";
 import type { GlossaryLines } from "#/types/generated/GlossaryLines";
 import type { GlossarySuggestion } from "#/types/generated/GlossarySuggestion";
 import type { KeyPlaces } from "#/types/generated/KeyPlaces";
+import type { LevelsApplied } from "#/types/generated/LevelsApplied";
 import type { LineHistory } from "#/types/generated/LineHistory";
 import type { LoginResponse } from "#/types/generated/LoginResponse";
 import type { MemberRow } from "#/types/generated/MemberRow";
@@ -127,6 +128,14 @@ export const createProposalFn = createServerFn({ method: "POST" })
     .handler(async ({ data }): Promise<EditCreated> => {
         const res = await send("/translators/proposals", "POST", { ...data.place, text: data.text, source: data.source, context: data.context, here: data.context ? data.here : null, confirmMany: data.confirmMany });
         return (await res.json()) as EditCreated;
+    });
+
+/** "Apply to the levels": my proposal for a skill's description template, with each level's numbers put in, as my proposals for the level entries. */
+export const applyLevelsFn = createServerFn({ method: "POST" })
+    .inputValidator((d: { id: number }) => d)
+    .handler(async ({ data }): Promise<LevelsApplied> => {
+        const res = await send(`/translators/proposals/${data.id}/levels`, "POST");
+        return (await res.json()) as LevelsApplied;
     });
 
 export const rewriteProposalFn = createServerFn({ method: "POST" })

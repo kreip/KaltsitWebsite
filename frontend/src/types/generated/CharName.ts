@@ -3,12 +3,15 @@
 /**
  * Who a story sprite is, for the Service rows ("On stage: Amiya").
  */
-export type CharName = { 
-/**
- * The sprite's id without pose and face (`char_002_amiya`).
- */
-charId: string, nameEn: string, nameRu: string | null, 
-/**
- * Named by who talks right after it (not an operator): a guess.
- */
-guessed: boolean, };
+export type CharName = {
+    /**
+     * The sprite's id without pose and face (`char_002_amiya`).
+     */
+    charId: string;
+    nameEn: string;
+    nameRu: string | null;
+    /**
+     * Named by who talks right after it (not an operator): a guess.
+     */
+    guessed: boolean;
+};

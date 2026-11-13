@@ -7,28 +7,31 @@ import type { TranslatorLine } from "./TranslatorLine";
 /**
  * One story's lines.
  */
-export type TranslatorStoryLines = { storyId: string, 
-/**
- * Unix seconds of the last import, null when nothing was imported yet.
- */
-importedAt: number | null, 
-/**
- * The lines carry Sova's and the AI's texts.
- */
-hints: boolean, lines: Array<TranslatorLine>, 
-/**
- * What was proposed, approved and said for the lines' entries (by `editKey`).
- */
-edits: Array<KeyEdits>, 
-/**
- * Decisions left at this story's places for an English that has changed.
- */
-outdated: Array<OutdatedEdit>, 
-/**
- * Sova's footnotes to the story's chapter (arktr), members only like her texts.
- */
-sovaNotes: Array<string>, 
-/**
- * Who has read the story ("I have read this scene"), first readers first.
- */
-reads: Array<StoryRead>, };
+export type TranslatorStoryLines = {
+    storyId: string;
+    /**
+     * Unix seconds of the last import, null when nothing was imported yet.
+     */
+    importedAt: number | null;
+    /**
+     * The lines carry Sova's and the AI's texts.
+     */
+    hints: boolean;
+    lines: Array<TranslatorLine>;
+    /**
+     * What was proposed, approved and said for the lines' entries (by `editKey`).
+     */
+    edits: Array<KeyEdits>;
+    /**
+     * Decisions left at this story's places for an English that has changed.
+     */
+    outdated: Array<OutdatedEdit>;
+    /**
+     * Sova's footnotes to the story's chapter (arktr), members only like her texts.
+     */
+    sovaNotes: Array<string>;
+    /**
+     * Who has read the story ("I have read this scene"), first readers first.
+     */
+    reads: Array<StoryRead>;
+};

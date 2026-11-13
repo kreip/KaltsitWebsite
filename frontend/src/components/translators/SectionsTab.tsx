@@ -12,7 +12,7 @@
  */
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronDown, ChevronLeft, ChevronRight } from "lucide-react";
 import type React from "react";
 import { useId, useMemo, useState } from "react";
 import { Button } from "#/components/ui/button";
@@ -40,7 +40,7 @@ import { useStoryNames } from "./storyNames";
 import type { messages } from "./translators.messages";
 import { useScrollToRow } from "./useScrollToRow";
 import { ViewMenu, viewOf } from "./ViewMenu";
-import { type CardSection, fieldLabel, noteStories, noteWords } from "./where";
+import { type CardSection, fieldLabel, LEVEL_FIELD, noteStories, noteWords } from "./where";
 
 type T = TypedT<typeof messages>;
 
@@ -137,6 +137,32 @@ function Card({ section, item, me, showVariants, showDiff, t }: ICardProps): Rea
     // One editor open at a time: the row and what it is open for.
     const [editing, setEditing] = useState<{ id: string; state: EditorState } | null>(null);
     const unfolded = useUnfolded();
+    // Which skills' level entries are unfolded (by the skill's number).
+    const levelsOpen = useUnfolded();
+    // The rows in the card's order; a skill's level entries after its description, behind a fold.
+    const order = useMemo(() => {
+        const out: ({ kind: "row"; i: number } | { kind: "levels"; idx: number; count: number })[] = [];
+        const levels = new Map<number, number[]>();
+        rows.forEach((r, i) => {
+            if (r.field === LEVEL_FIELD) levels.set(r.idx, [...(levels.get(r.idx) ?? []), i]);
+        });
+        const placed = new Set<number>();
+        rows.forEach((r, i) => {
+            if (r.field === LEVEL_FIELD) return;
+            out.push({ kind: "row", i });
+            const next = rows[i + 1];
+            const last = r.field === "skill.description" && (!next || next.field !== "skill.description" || next.idx !== r.idx);
+            const list = levels.get(r.idx);
+            if (last && list && !placed.has(r.idx)) {
+                placed.add(r.idx);
+                out.push({ kind: "levels", idx: r.idx, count: list.length });
+                if (levelsOpen.has(String(r.idx))) for (const j of list) out.push({ kind: "row", i: j });
+            }
+        });
+        // Level entries of a skill without a description row: listed where they are.
+        for (const [idx, list] of levels) if (!placed.has(idx)) for (const j of list) out.push({ kind: "row", i: j });
+        return out;
+    }, [rows, levelsOpen]);
     const storyOf = useStoryNames();
     const filterId = useId();
     const [filter, setFilter] = useState<CardFilter>("all");
@@ -195,7 +221,24 @@ function Card({ section, item, me, showVariants, showDiff, t }: ICardProps): Rea
                             <TableCell className={PROSE}>{code}</TableCell>
                         </TableRow>
                     ) : null}
-                    {rows.map((r, i) => {
+                    {order.map((entry) => {
+                        if (entry.kind === "levels") {
+                            // The entries with a skill level's numbers, folded under the skill's description.
+                            const open = levelsOpen.has(String(entry.idx));
+                            return (
+                                <TableRow key={`levels-${entry.idx}`} className="bg-muted/30 hover:bg-muted/30">
+                                    <TableCell className="py-1" />
+                                    <TableCell colSpan={3} className="py-1">
+                                        <Button variant="link" size="xs" className="h-auto px-0 text-xs" aria-expanded={open} onClick={() => levelsOpen.toggle(String(entry.idx))}>
+                                            {open ? <ChevronDown aria-hidden="true" /> : <ChevronRight aria-hidden="true" />}
+                                            {t("sections.levels", { count: entry.count })}
+                                        </Button>
+                                    </TableCell>
+                                </TableRow>
+                            );
+                        }
+                        const i = entry.i;
+                        const r = rows[i];
                         if (!shows(i)) return null;
                         const id = `${r.field}.${r.idx}.${r.line.editKey}`;
                         const long = isLong(r.line.en, r.line.ruGame);
@@ -209,9 +252,9 @@ function Card({ section, item, me, showVariants, showDiff, t }: ICardProps): Rea
                                         <StatusDot status={r.line.status} t={t} />
                                     </span>
                                 </TableCell>
-                                <TableCell className={cn(PROSE, "text-muted-foreground")}>
-                                    {fieldLabel(section, r.field, r.idx, t)}
-                                    {r.note && (repeated.get(`${r.field}.${r.idx}`) ?? 0) > 1 && noteWords(r.note, t) ? <span className="block text-subtle-foreground text-xs">{noteWords(r.note, t)}</span> : null}
+                                <TableCell className={cn(PROSE, "text-muted-foreground", r.field === LEVEL_FIELD && "ps-6")}>
+                                    {fieldLabel(section, r.field, r.idx, t, r.note)}
+                                    {r.field !== LEVEL_FIELD && r.note && (repeated.get(`${r.field}.${r.idx}`) ?? 0) > 1 && noteWords(r.note, t) ? <span className="block text-subtle-foreground text-xs">{noteWords(r.note, t)}</span> : null}
                                     {noteStories(r.note).map((storyId) => {
                                         const story = storyOf(storyId);
                                         return story ? (

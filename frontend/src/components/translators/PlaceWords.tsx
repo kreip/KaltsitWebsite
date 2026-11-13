@@ -19,12 +19,14 @@ export interface IGamePlaceProps {
     objectEn: string | null;
     field: string | null;
     idx: number | null;
+    /** What tells the text from the others at the field (a skill level's entry: which level). */
+    note?: string;
     t: T;
 }
 
-export function GamePlace({ section, objectId, objectEn, field, idx, t }: IGamePlaceProps): React.ReactElement {
+export function GamePlace({ section, objectId, objectEn, field, idx, note = "", t }: IGamePlaceProps): React.ReactElement {
     const code = (section === "other" ? objectEn : objectId) ?? undefined;
-    const words = gameWhere(section, objectEn, field, idx, t);
+    const words = gameWhere(section, objectEn, field, idx, t, note);
     const object = objectKey(section, objectId, objectEn);
     if (!object || !isCardSection(section)) return <span title={code}>{words}</span>;
     return (

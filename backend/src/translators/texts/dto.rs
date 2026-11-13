@@ -52,6 +52,9 @@ pub struct TextAt {
     pub field: Option<String>,
     /// Which one of several (skill 2), from 1; 0 when there is one.
     pub idx: Option<i16>,
+    /// What tells it from the others at the field (`ObjectLine::note`); empty when nothing is known.
+    #[serde(default)]
+    pub note: String,
 }
 
 /// One found text.
@@ -259,4 +262,15 @@ pub struct TextSummary {
     #[ts(type = "number")]
     pub approved: i64,
     pub problems: Vec<ProblemCount>,
+}
+
+/// What "Apply to the levels" did.
+#[derive(Debug, Serialize, TS, ToSchema)]
+#[serde(rename_all = "camelCase")]
+#[ts(export)]
+pub struct LevelsApplied {
+    /// Level entries that got (or had rewritten) my proposal.
+    pub created: i32,
+    /// Entries whose numbers do not fit the template or whose text would be the game's Russian.
+    pub skipped: i32,
 }

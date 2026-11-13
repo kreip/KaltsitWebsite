@@ -3,24 +3,25 @@
 /**
  * One way the game translates a term, from the Russian of its lines.
  */
-export type GameVariant = { 
-/**
- * The word (or, for a term of several words, the phrase) as the game writes it most often.
- */
-ru: string, 
-/**
- * Lines of the term that hold the word (any ending).
- */
-lines: number, 
-/**
- * The word is the glossary's form.
- */
-glossary: boolean, 
-/**
- * The stem(s) the lines are gathered by: names the variant to "Replace with the glossary's form".
- */
-stem: string, 
-/**
- * For a phrase: the positions (0-based) of the words that are not the glossary's.
- */
-wrong: Array<number>, };
+export type GameVariant = {
+    /**
+     * The word (or, for a term of several words, the phrase) as the game writes it most often.
+     */
+    ru: string;
+    /**
+     * Lines of the term that hold the word (any ending).
+     */
+    lines: number;
+    /**
+     * The word is the glossary's form.
+     */
+    glossary: boolean;
+    /**
+     * The stem(s) the lines are gathered by: names the variant to "Replace with the glossary's form".
+     */
+    stem: string;
+    /**
+     * For a phrase: the positions (0-based) of the words that are not the glossary's.
+     */
+    wrong: Array<number>;
+};

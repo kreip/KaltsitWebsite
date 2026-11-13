@@ -323,7 +323,15 @@ function FullRuCell({ line, analysis, place, nickname, showVariants, showDiff, e
             ) : null}
             {line.ruGameMatch === "lines" ? <span className="text-subtle-foreground text-xs">{t("ru.lineByLine")}</span> : null}
             <Terms terms={line.terms} t={t} />
-            <Proposals {...notes} nickname={nickname} compare={showDiff} ruGame={line.ruGame} marks={(p) => marks(`proposal:${p.id}`)} onEdit={(p) => onEditor({ kind: "proposal", text: p.text, source: p.source === "sova" || p.source === "ai" ? p.source : "own", context: p.context, here: p.here })} />
+            <Proposals
+                {...notes}
+                nickname={nickname}
+                compare={showDiff}
+                ruGame={line.ruGame}
+                levelTexts={line.levelTexts}
+                marks={(p) => marks(`proposal:${p.id}`)}
+                onEdit={(p) => onEditor({ kind: "proposal", text: p.text, source: p.source === "sova" || p.source === "ai" ? p.source : "own", context: p.context, here: p.here })}
+            />
             {showVariants ? (
                 <>
                     {/* Each translator's variant under its author's name. */}

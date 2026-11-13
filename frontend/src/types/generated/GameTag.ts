@@ -3,28 +3,31 @@
 /**
  * One tag of the game's markup.
  */
-export type GameTag = { 
-/**
- * With its sigil: `@ba.vup` (a style span), `$ba.stun` (a term).
- */
-tag: string, 
-/**
- * `style` or `term`.
- */
-kind: string, 
-/**
- * A style's colour in the game (`#0098DC`), when the game's table has it.
- */
-color: string | null, 
-/**
- * A term's name as the game shows it, and in the pack's Russian.
- */
-nameEn: string | null, nameRu: string | null, 
-/**
- * A term's explanation, and in the pack's Russian.
- */
-descriptionEn: string | null, descriptionRu: string | null, 
-/**
- * Texts whose English holds it.
- */
-uses: number, };
+export type GameTag = {
+    /**
+     * With its sigil: `@ba.vup` (a style span), `$ba.stun` (a term).
+     */
+    tag: string;
+    /**
+     * `style` or `term`.
+     */
+    kind: string;
+    /**
+     * A style's colour in the game (`#0098DC`), when the game's table has it.
+     */
+    color: string | null;
+    /**
+     * A term's name as the game shows it, and in the pack's Russian.
+     */
+    nameEn: string | null;
+    nameRu: string | null;
+    /**
+     * A term's explanation, and in the pack's Russian.
+     */
+    descriptionEn: string | null;
+    descriptionRu: string | null;
+    /**
+     * Texts whose English holds it.
+     */
+    uses: number;
+};

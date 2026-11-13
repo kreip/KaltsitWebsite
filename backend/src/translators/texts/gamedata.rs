@@ -46,15 +46,21 @@ pub struct GamePlace {
     /// record's introduction leads to. Empty when nothing is known.
     pub note: String,
     pub text: String,
+    /// For a dictionary entry with a skill level's numbers put in: the entry
+    /// (its edit key) of the skill's description template it was made from.
+    pub of_key: Option<String>,
 }
 
-fn read(dir: &Path, table: &str) -> Option<Value> {
+pub(super) fn read(dir: &Path, table: &str) -> Option<Value> {
     let bytes = std::fs::read(dir.join(format!("{table}.json"))).ok()?;
     serde_json::from_slice(&bytes).ok()
 }
 
 /// The entries of a dictionary kept as a list of `{ key, value }` (string keys only).
-fn entries<'a>(table: &'a Value, name: &str) -> impl Iterator<Item = (&'a str, &'a Value)> {
+pub(super) fn entries<'a>(
+    table: &'a Value,
+    name: &str,
+) -> impl Iterator<Item = (&'a str, &'a Value)> {
     table
         .get(name)
         .and_then(Value::as_array)
@@ -63,22 +69,22 @@ fn entries<'a>(table: &'a Value, name: &str) -> impl Iterator<Item = (&'a str, &
         .filter_map(|e| Some((e.get("key")?.as_str()?, e.get("value")?)))
 }
 
-fn index<'a>(table: &'a Value, name: &str) -> HashMap<&'a str, &'a Value> {
+pub(super) fn index<'a>(table: &'a Value, name: &str) -> HashMap<&'a str, &'a Value> {
     entries(table, name).collect()
 }
 
 /// A field's text, when it has any.
-fn text<'a>(v: &'a Value, name: &str) -> Option<&'a str> {
+pub(super) fn text<'a>(v: &'a Value, name: &str) -> Option<&'a str> {
     v.get(name)
         .and_then(Value::as_str)
         .filter(|s| !s.trim().is_empty())
 }
 
-fn list<'a>(v: &'a Value, name: &str) -> impl Iterator<Item = &'a Value> {
+pub(super) fn list<'a>(v: &'a Value, name: &str) -> impl Iterator<Item = &'a Value> {
     v.get(name).and_then(Value::as_array).into_iter().flatten()
 }
 
-fn number(i: usize) -> i16 {
+pub(super) fn number(i: usize) -> i16 {
     i16::try_from(i + 1).unwrap_or(i16::MAX)
 }
 
@@ -114,6 +120,7 @@ impl Object<'_> {
             idx,
             note: note.to_owned(),
             text: text.to_owned(),
+            of_key: None,
         });
     }
 }
@@ -142,7 +149,7 @@ fn unlock_note(v: &Value) -> String {
 }
 
 /// A skill's level in the list of its levels: 1 to 7, then mastery 1 to 3.
-fn skill_level_note(i: usize) -> String {
+pub(super) fn skill_level_note(i: usize) -> String {
     if i < 7 {
         format!("S{}", i + 1)
     } else {

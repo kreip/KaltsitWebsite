@@ -4,4 +4,4 @@ import type { EditPerson } from "./EditPerson";
 /**
  * One text a proposal has had.
  */
-export type ProposalVersion = { id: number, text: string, source: string, author: EditPerson, createdAt: number, };
+export type ProposalVersion = { id: number; text: string; source: string; author: EditPerson; createdAt: number };

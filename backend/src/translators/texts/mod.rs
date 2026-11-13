@@ -9,6 +9,7 @@
 pub mod db;
 pub mod dto;
 pub mod gamedata;
+pub mod levels;
 pub mod plugin_styles;
 pub mod problems;
 pub mod routes;
@@ -35,6 +36,7 @@ pub fn router() -> OpenApiRouter<AppState> {
         .routes(routes!(routes::object_lines))
         .routes(routes!(routes::game_tags))
         .routes(routes!(routes::text_summary))
+        .routes(routes!(routes::apply_levels))
 }
 
 /// One entry of the list.
@@ -62,6 +64,8 @@ pub struct TextPlace {
     /// What tells it from the other texts at the same field (`GamePlace::note`).
     pub note: String,
     pub ord: i32,
+    /// A skill level's entry: the entry of the description template (`GamePlace::of_key`).
+    pub of_key: Option<String>,
 }
 
 /// The import's list of texts.
@@ -188,6 +192,7 @@ impl<'a> Builder<'a> {
             idx: p.idx,
             note: p.note.clone(),
             ord: *ord,
+            of_key: p.of_key.clone(),
         });
         *ord += 1;
         self.rows[i].places += 1;
@@ -263,10 +268,13 @@ pub fn collect(
                 idx: 0,
                 note: String::new(),
                 text: s,
+                of_key: None,
             },
         );
     }
-    // The rest of the dictionaries, tied to nothing known.
+    // The rest of the dictionaries: an entry with a skill level's numbers put
+    // in goes under the skill's description; the others are tied to nothing known.
+    let linker = levels::Linker::new(levels::skill_levels(excel_dir));
     let mut left: Vec<(&String, &super::import::xunity::Entry)> = dict
         .entries
         .iter()
@@ -288,7 +296,16 @@ pub fn collect(
             sections: Vec::new(),
             places: 0,
         });
-        b.tag(i, OTHER);
+        let links = linker.link(key);
+        if links.is_empty() {
+            b.tag(i, OTHER);
+            continue;
+        }
+        for mut link in links {
+            let template = b.entry(&link.template);
+            link.place.of_key = Some(b.rows[template].edit_key.clone());
+            b.place(i, &link.place);
+        }
     }
     // What only the plugin's catalog holds.
     let mut only: Vec<(&str, (&str, &str))> = b

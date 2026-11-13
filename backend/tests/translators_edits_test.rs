@@ -707,6 +707,7 @@ async fn texts_are_stored_and_searched() {
         idx: 0,
         note: String::new(),
         ord: 0,
+        of_key: None,
     }];
     line(
         &pool,
@@ -1053,6 +1054,7 @@ async fn a_long_text_is_edited() {
         idx: if field == "name" { 0 } else { 1 },
         note: note.to_owned(),
         ord: 0,
+        of_key: None,
     };
     let rows = vec![
         row("Amiya", "Амия", "operators"),

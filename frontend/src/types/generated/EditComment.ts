@@ -5,21 +5,30 @@ import type { EditPlace } from "./EditPlace";
 /**
  * A note on an entry.
  */
-export type EditComment = { id: number, text: string, author: EditPerson, createdAt: number, resolvedBy: EditPerson | null, resolvedAt: number | null, place: EditPlace, 
-/**
- * The fragment of the line it is about, as selected.
- */
-quote: string | null, 
-/**
- * `remark` (a question or problem, can be resolved) or `note` (a
- * translator's note: never resolved, always shown).
- */
-kind: string, 
-/**
- * The variant a note is about: `game`, `sova`, `ai` or `proposal`; null for the line.
- */
-variant: string | null, proposalId: number | null, 
-/**
- * The variant's text when the note was written.
- */
-variantText: string | null, };
+export type EditComment = {
+    id: number;
+    text: string;
+    author: EditPerson;
+    createdAt: number;
+    resolvedBy: EditPerson | null;
+    resolvedAt: number | null;
+    place: EditPlace;
+    /**
+     * The fragment of the line it is about, as selected.
+     */
+    quote: string | null;
+    /**
+     * `remark` (a question or problem, can be resolved) or `note` (a
+     * translator's note: never resolved, always shown).
+     */
+    kind: string;
+    /**
+     * The variant a note is about: `game`, `sova`, `ai` or `proposal`; null for the line.
+     */
+    variant: string | null;
+    proposalId: number | null;
+    /**
+     * The variant's text when the note was written.
+     */
+    variantText: string | null;
+};

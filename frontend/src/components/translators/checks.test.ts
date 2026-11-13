@@ -29,6 +29,7 @@ function line(over: Partial<TranslatorLine>): TranslatorLine {
         places: 1,
         status: "unchecked",
         variantGlossary: [],
+        levelTexts: 0,
         ...over,
     };
 }

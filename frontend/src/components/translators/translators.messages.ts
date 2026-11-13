@@ -1726,6 +1726,34 @@ export const messages = {
         text: "Automatic translation",
         description: "Where a found text tied to no place of the game data is kept, in words (translators' search); the file name shows on hover.",
     },
+    "at.file.unlinked": {
+        text: "Not tied",
+        description: "Where a dictionary entry tied to no place of the game data stands, in words («Interface and other › Not tied»); the dictionary's file name shows on hover.",
+    },
+    "at.field.levelUnknown": {
+        text: "level not known",
+        description: "A dictionary entry with a skill level's numbers put in, when no level's numbers fit it: «Skill 1 · level not known».",
+    },
+    "sections.levels": {
+        text: "{count, plural, one {# entry} other {# entries}} with the levels' numbers",
+        description: "Fold under a skill's description on the operator's card: the dictionary entries with each level's numbers put in.",
+    },
+    "levels.hint": {
+        text: "The dictionary has {count, plural, one {# entry} other {# entries}} of this skill with the levels' numbers put in: save, then “Apply to the levels”.",
+        description: "Under the editor of a skill's description template, and the tooltip of the Apply to the levels button.",
+    },
+    "levels.apply": {
+        text: "Apply to the levels ({count})",
+        description: "Button beside my proposal for a skill's description template: writes my proposals for the level entries with each level's numbers put in.",
+    },
+    "levels.done": {
+        text: "Proposals for the levels: {created} written, {skipped} skipped",
+        description: "Toast after Apply to the levels; skipped are entries whose numbers do not fit the template or whose text would be the game's Russian.",
+    },
+    "levels.failed": {
+        text: "Couldn't apply to the levels.",
+        description: "Toast when Apply to the levels failed.",
+    },
     "at.file.plugin": {
         text: "Plugin catalog",
         description: "Where a found text tied to no place of the game data is kept, in words (translators' search); the file name shows on hover.",
