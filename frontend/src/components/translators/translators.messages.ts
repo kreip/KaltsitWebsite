@@ -1706,26 +1706,6 @@ export const messages = {
         text: "Items (other)",
         description: "A group of the game's tables in «Interface and other» of the translators' search: where a found text stands, in words.",
     },
-    "at.file.ui": {
-        text: "Interface dictionary",
-        description: "Where a found text tied to no place of the game data is kept, in words (translators' search); the file name shows on hover.",
-    },
-    "at.file.story": {
-        text: "Story dictionary",
-        description: "Where a found text tied to no place of the game data is kept, in words (translators' search); the file name shows on hover.",
-    },
-    "at.file.names": {
-        text: "Names dictionary",
-        description: "Where a found text tied to no place of the game data is kept, in words (translators' search); the file name shows on hover.",
-    },
-    "at.file.new": {
-        text: "New entries",
-        description: "Where a found text tied to no place of the game data is kept, in words (translators' search); the file name shows on hover.",
-    },
-    "at.file.auto": {
-        text: "Automatic translation",
-        description: "Where a found text tied to no place of the game data is kept, in words (translators' search); the file name shows on hover.",
-    },
     "at.file.unlinked": {
         text: "Not tied",
         description: "Where a dictionary entry tied to no place of the game data stands, in words («Interface and other › Not tied»); the dictionary's file name shows on hover.",

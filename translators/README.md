@@ -140,6 +140,24 @@ suggestion (`translators.glossary_suggestions`; English, Russian, note, the line
 noticed in) shows in a list of its own on the Glossary tab, where a translator accepts or
 declines it. The team's sheet is never written from the site.
 
+## The glossary and an approved line
+
+An approved line (its entry, or a one-place proposal at it) counts as checked for every
+glossary term the sheet has not changed since the approval: no cross under the line, a
+gray "approved" check instead, counted as holding the form in the Glossary tab's
+consistency, and lending no "as in the game" variant. The import keeps when each term's
+Russian last changed (`glossary_terms.changed_at`, carried over between downloads by the
+row's English); a term changed after the approval is checked again and says so. The
+Glossary tab recounts in the background after every approval.
+
+A term of several words shows the game's whole phrase in "As in the game", the words that
+are not the glossary's marked. Beside a variant with a cross, "Replace with the glossary's
+form" (`POST /api/translators/glossary/{id}/fix`) lists the lines, each with the text it
+would get — the glossary's stem plus the game word's ending, only when the two are the same
+word spelled differently; otherwise "check by hand" — and writes one proposal per entry.
+A failed download is kept as a code (`offline`, `forbidden`, `changed:…`) and worded on the
+page.
+
 ## The game's tags
 
 One parse of the markup (`frontend/src/components/translators/markup.ts`) serves the tables,
@@ -151,12 +169,36 @@ the game's colour or the term's name and explanation, in the pack's Russian too
 (`translators.tags`, `GET /api/translators/tags`);
 `python3 translators/tools/tags.py > translators/out/tags.md` prints the list.
 
-A table never shows a tag spelled out: a style in its ink, a term underlined with the
-game's explanation on hover. In the editor a substitution is a chip (removed whole, inserted
+A table never shows a tag spelled out: a style in its ink, a term as plain text (the
+game shows it so) with the game's explanation on hover. In the editor a substitution is a chip (removed whole, inserted
 with its button) and a tag a span typed into; the buttons under the box are the
 substitutions and tags of the line's English: a tag's button wraps the selection, and with
 the cursor inside a span "Remove the tag" drops both halves at once. A warning names the
 original's tags a translation lacks or adds; the same test marks every variant.
+
+"No highlight" is honest about the RichTextFix plugin (`markup.ts::lostHighlights`,
+`texts/problems.rs::lost_highlights`; the plugin's `RichTextStyleRestorer`, read by
+decompiling): into a plain translation the plugin puts back a style that covers the whole
+text, a style whose text stands in the translation as it is (a number, `SP`), and a
+style's colour on its numbers (a substitution counts as one) found as many times; it never
+puts back words, a style it does not know (`translators/tools/plugin_styles.py` keeps its
+list from the DLL; the names are matched case-sensitively) or anything into a translation
+that has tags of its own (whole-text styles aside). A term `<$…>` is never a lost
+highlight: the game shows its words plain.
+
+## Skill levels in the dictionary
+
+The pack's dictionaries hold a skill description once per level with the numbers put in
+("dealing 230% ATK … for 1.25 seconds"). The import ties such an entry to the skill
+descriptions of the same shape (`texts/levels.rs`: tags dropped, every substitution and
+number a `#`) and tells the level by the blackboard's values (`{atk_scale:0%}` → `230%`):
+`text_places.field = 'skill.level'`, the note the level(s), `of_key` the template's entry.
+The operator's card folds them under the skill's description ("N entries with the levels'
+numbers"); the search names them «Skill 1 › skill level 4». An entry tied to nothing is
+«Interface and other › Not tied» (the file name on hover). On my proposal for a template,
+"Apply to the levels" (`POST /api/translators/proposals/{id}/levels`) writes my proposals
+for the level entries with each level's numbers put in, the tags dropped where the entry
+has none.
 
 ## Export
 
