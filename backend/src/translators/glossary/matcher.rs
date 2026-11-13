@@ -30,6 +30,26 @@ fn words(s: &str) -> Vec<String> {
         .collect()
 }
 
+/// The byte spans of a text's words (runs of letters and digits), in order.
+pub fn word_spans(text: &str) -> Vec<(usize, usize)> {
+    let mut out = Vec::new();
+    let mut start: Option<usize> = None;
+    for (i, c) in text.char_indices() {
+        match (c.is_alphanumeric(), start) {
+            (true, None) => start = Some(i),
+            (false, Some(s)) => {
+                out.push((s, i));
+                start = None;
+            }
+            _ => {}
+        }
+    }
+    if let Some(s) = start {
+        out.push((s, text.len()));
+    }
+    out
+}
+
 /// The stem the kit compares by.
 pub fn stem(word: &str) -> String {
     for e in ENDINGS {

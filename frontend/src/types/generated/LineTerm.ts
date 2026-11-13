@@ -22,4 +22,12 @@ export type LineTerm = {
      * Whether the line's Russian holds the glossary form (by stem, ё = е); null when not checked.
      */
     found: boolean | null;
+    /**
+     * The line was approved after the glossary last changed the term: checked by the team, not marked.
+     */
+    verified: boolean;
+    /**
+     * The line is approved, but the glossary changed the term since: checked again, with a note.
+     */
+    changedAfterApproval: boolean;
 };

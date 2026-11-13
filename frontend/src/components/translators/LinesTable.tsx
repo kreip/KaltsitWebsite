@@ -94,9 +94,13 @@ export function Speaker({ line, t }: { line: TranslatorLine; t: T }): React.Reac
 interface ITermGroup {
     matched: string;
     ru: string[];
-    /** true / false when checked; null for Sova's sheet or a line without Russian. */
+    /** true / false when checked; null for Sova's sheet, a line without Russian, or a line approved since the term last changed. */
     found: boolean | null;
     fromSova: boolean;
+    /** Approved after the glossary last changed the term: checked by the team, no mark. */
+    verified: boolean;
+    /** Approved, but the glossary changed the term since: marked again, with a note. */
+    changed: boolean;
     title: string;
 }
 
@@ -106,11 +110,13 @@ function groupTerms(terms: readonly LineTerm[], sovaSheet: string): ITermGroup[]
     for (const term of terms) {
         let g = out.get(term.matched);
         if (!g) {
-            g = { matched: term.matched, ru: [], found: null, fromSova: true, title: "" };
+            g = { matched: term.matched, ru: [], found: null, fromSova: true, verified: false, changed: false, title: "" };
             out.set(term.matched, g);
         }
         if (!g.ru.includes(term.ru)) g.ru.push(term.ru);
         if (!term.fromSova) g.fromSova = false;
+        if (term.verified) g.verified = true;
+        if (term.changedAfterApproval) g.changed = true;
         if (term.found === true) g.found = true;
         else if (term.found === false && g.found === null) g.found = false;
         const about = [term.fromSova ? sovaSheet : term.sheet, term.ruPlural, term.note].filter(Boolean).join(" · ");
@@ -138,7 +144,12 @@ function Terms({ terms, t }: { terms: readonly LineTerm[]; t: T }): React.ReactE
                     ) : g.found === false ? (
                         <span className="inline-flex items-center gap-0.5 text-warning-foreground">
                             <X className="size-3.5" aria-hidden="true" />
-                            {t("terms.notFound")}
+                            {g.changed ? t("terms.changedAfterApproval") : t("terms.notFound")}
+                        </span>
+                    ) : g.verified ? (
+                        <span className="inline-flex text-subtle-foreground" title={t("terms.verifiedHint")}>
+                            <Check className="size-3.5" aria-hidden="true" />
+                            <span className="sr-only">{t("terms.verified")}</span>
                         </span>
                     ) : g.fromSova ? (
                         <span className="text-subtle-foreground">({t("terms.variant")})</span>

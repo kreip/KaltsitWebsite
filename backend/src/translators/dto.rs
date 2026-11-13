@@ -163,6 +163,10 @@ pub struct LineTerm {
     pub from_sova: bool,
     /// Whether the line's Russian holds the glossary form (by stem, ё = е); null when not checked.
     pub found: Option<bool>,
+    /// The line was approved after the glossary last changed the term: checked by the team, not marked.
+    pub verified: bool,
+    /// The line is approved, but the glossary changed the term since: checked again, with a note.
+    pub changed_after_approval: bool,
 }
 
 /// One glossary entry for the Glossary tab.
@@ -210,6 +214,50 @@ pub struct GlossaryLine {
     pub ru_game: Option<String>,
     /// The Russian holds the glossary's form; null when not checked.
     pub found: Option<bool>,
+    /// Approved after the glossary last changed the term: counted as holding the form.
+    pub verified: bool,
+}
+
+/// "Replace with the glossary's form" for one of a term's game variants.
+#[derive(Debug, serde::Deserialize, ToSchema)]
+#[serde(rename_all = "camelCase")]
+pub struct GlossaryFixInput {
+    /// The variant's stem(s), as `GameVariant.stem`.
+    pub stem: String,
+    /// Write the proposals (else only list what would be written).
+    #[serde(default)]
+    pub apply: bool,
+}
+
+/// One line the glossary's form would be put into.
+#[derive(Debug, Serialize, TS, ToSchema)]
+#[serde(rename_all = "camelCase")]
+#[ts(export)]
+pub struct GlossaryFixLine {
+    pub story_id: String,
+    /// 0-based order in its story.
+    pub ord: i32,
+    pub en: String,
+    /// The Russian the line stands with now (the approved text, else the game's).
+    pub text: String,
+    /// The text with the glossary's form in the same case; null when the case is not sure ("check by hand").
+    pub result: Option<String>,
+    /// The entry is approved already (a proposal is still written, as a newer one).
+    pub approved: bool,
+    /// Story lines of the same entry: one proposal covers them all.
+    pub places: i32,
+}
+
+/// What "Replace with the glossary's form" would do, or did.
+#[derive(Debug, Serialize, TS, ToSchema)]
+#[serde(rename_all = "camelCase")]
+#[ts(export)]
+pub struct GlossaryFix {
+    pub lines: Vec<GlossaryFixLine>,
+    /// Entries (not lines) a proposal was written for; 0 when only listing.
+    pub created: i32,
+    /// Lines left to a person: the case is not sure.
+    pub unsure: i32,
 }
 
 /// A term's story lines.

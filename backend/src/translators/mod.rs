@@ -40,6 +40,7 @@ pub fn router() -> OpenApiRouter<AppState> {
         .routes(routes!(routes::dev_login))
         .routes(routes!(routes::glossary))
         .routes(routes!(routes::glossary_lines))
+        .routes(routes!(routes::fix_glossary_variant))
         .routes(routes!(routes::refresh_glossary))
         .routes(routes!(
             glossary::suggest::list_suggestions,

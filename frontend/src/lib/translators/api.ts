@@ -23,6 +23,7 @@ import type { GameHere } from "#/types/generated/GameHere";
 import type { GameObject } from "#/types/generated/GameObject";
 import type { GameTag } from "#/types/generated/GameTag";
 import type { Glossary } from "#/types/generated/Glossary";
+import type { GlossaryFix } from "#/types/generated/GlossaryFix";
 import type { GlossaryLines } from "#/types/generated/GlossaryLines";
 import type { GlossarySuggestion } from "#/types/generated/GlossarySuggestion";
 import type { KeyPlaces } from "#/types/generated/KeyPlaces";
@@ -316,6 +317,19 @@ export const getGlossaryLinesFn = createServerFn({ method: "GET" })
 /** A glossary term's story lines (only those lacking its form with `missing`). */
 export function glossaryLinesQueryOptions(id: number, missing: boolean) {
     return queryOptions({ queryKey: [...TRANSLATORS_QUERY_ROOT, "glossary", "lines", id, missing], queryFn: () => getGlossaryLinesFn({ data: { id, missing } }), staleTime: 5 * 60_000 });
+}
+
+/** "Replace with the glossary's form" for one of a term's game variants (by its stem): the lines it would change, and with `apply` my proposals written for them. */
+export const fixGlossaryVariantFn = createServerFn({ method: "POST" })
+    .inputValidator((d: { id: number; stem: string; apply: boolean }) => d)
+    .handler(async ({ data }): Promise<GlossaryFix> => {
+        const res = await send(`/translators/glossary/${data.id}/fix`, "POST", { stem: data.stem, apply: data.apply });
+        return (await res.json()) as GlossaryFix;
+    });
+
+/** What "Replace with the glossary's form" would do for a variant (not written yet). */
+export function glossaryFixQueryOptions(id: number, stem: string) {
+    return queryOptions({ queryKey: [...TRANSLATORS_QUERY_ROOT, "glossary", "fix", id, stem], queryFn: () => fixGlossaryVariantFn({ data: { id, stem, apply: false } }), staleTime: 0 });
 }
 
 export const getNamesFn = createServerFn({ method: "GET" }).handler(async (): Promise<NameRu[]> => {

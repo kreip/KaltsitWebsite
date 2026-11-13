@@ -796,6 +796,8 @@ pub async fn set_approval(
     if !apply_approval(&state, &me, &input).await? {
         return Err(ApiError::BadRequest("this line has no such variant".into()));
     }
+    // An approved line counts as checked for the glossary: its numbers follow.
+    super::super::glossary::recount_later(state.db.clone());
     Ok(StatusCode::NO_CONTENT)
 }
 
@@ -836,6 +838,7 @@ pub async fn approve_batch(
             Err(e) => return Err(e),
         }
     }
+    super::super::glossary::recount_later(state.db.clone());
     Ok(Json(super::dto::ApprovalBatchResult { approved, skipped }))
 }
 
@@ -956,6 +959,7 @@ pub async fn decide_proposals(
             skipped += 1;
         }
     }
+    super::super::glossary::recount_later(state.db.clone());
     Ok(Json(super::dto::ApprovalBatchResult {
         approved: done,
         skipped,

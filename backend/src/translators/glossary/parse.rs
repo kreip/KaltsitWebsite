@@ -124,6 +124,9 @@ pub struct Term {
     pub cn: Option<String>,
     pub case_sensitive: bool,
     pub from_sova: bool,
+    /// Unix seconds of the last change of its Russian in the sheet, when known
+    /// (set from the stored copy; the parser leaves it None).
+    pub changed_at: Option<i64>,
 }
 
 fn cell(row: &[Data], i: usize) -> String {
@@ -188,15 +191,30 @@ fn pairs(en: &str, ru: &str, split_commas: bool) -> Vec<(String, String)> {
     out
 }
 
+/// The workbook is not the glossary the site knows.
+#[derive(Debug, thiserror::Error)]
+pub enum ParseError {
+    /// None of the sheets has a known name; the names found.
+    #[error("no known sheet; found: {0}")]
+    NoSheets(String),
+    /// The known sheets have rows but no terms: the English and Russian columns moved.
+    #[error("no terms on the sheets: {0}")]
+    NoTerms(String),
+}
+
 /// Read every term from the xlsx bytes.
 pub fn parse(xlsx: &[u8]) -> anyhow::Result<Vec<Term>> {
     let mut book: Xlsx<_> = Xlsx::new(Cursor::new(xlsx))?;
     let mut out = Vec::new();
+    let mut known: Vec<String> = Vec::new();
+    let mut rows_seen = 0usize;
     for sheet in book.sheet_names() {
         let Some(rule) = rule_for(&sheet) else {
             continue;
         };
+        known.push(sheet.trim().to_owned());
         let range = book.worksheet_range(&sheet)?;
+        rows_seen += range.rows().count().saturating_sub(1);
         let first_row = range.start().map_or(0, |(r, _)| r);
         for (i, row) in range.rows().enumerate().skip(1) {
             let en = cell(row, 0);
@@ -252,6 +270,12 @@ pub fn parse(xlsx: &[u8]) -> anyhow::Result<Vec<Term>> {
                 }
             }
         }
+    }
+    if known.is_empty() {
+        return Err(ParseError::NoSheets(book.sheet_names().join(", ")).into());
+    }
+    if out.is_empty() && rows_seen > 0 {
+        return Err(ParseError::NoTerms(known.join(", ")).into());
     }
     Ok(out)
 }

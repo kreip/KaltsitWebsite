@@ -15,15 +15,15 @@
  */
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
-import { Check, ExternalLink, List, RefreshCw, Trash2, Undo2, X } from "lucide-react";
+import { Check, ExternalLink, List, RefreshCw, Replace, Trash2, Undo2, X } from "lucide-react";
 import type React from "react";
-import { useEffect, useId, useMemo, useRef, useState } from "react";
+import { Fragment, useEffect, useId, useMemo, useRef, useState } from "react";
 import { SearchField } from "#/components/SearchField";
 import { Alert, AlertDescription } from "#/components/ui/alert";
 import { Badge } from "#/components/ui/badge";
 import { Button } from "#/components/ui/button";
 import { Collapsible, CollapsiblePanel, CollapsibleTrigger } from "#/components/ui/collapsible";
-import { Dialog, DialogDescription, DialogHeader, DialogPanel, DialogPopup, DialogTitle, DialogTrigger } from "#/components/ui/dialog";
+import { Dialog, DialogDescription, DialogFooter, DialogHeader, DialogPanel, DialogPopup, DialogTitle, DialogTrigger } from "#/components/ui/dialog";
 import { Empty, EmptyHeader, EmptyTitle } from "#/components/ui/empty";
 import { Label } from "#/components/ui/label";
 import { LoadFailed } from "#/components/ui/load-failed";
@@ -35,14 +35,16 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "#
 import { toastManager } from "#/components/ui/toast";
 import { useFormatters, useT } from "#/lib/i18n";
 import type { TypedT } from "#/lib/i18n/messages";
-import { decideSuggestionFn, deleteSuggestionFn, glossaryLinesQueryOptions, glossaryQueryOptions, refreshGlossaryFn, suggestionsQueryOptions, translatorsMeQueryOptions } from "#/lib/translators/api";
+import { decideSuggestionFn, deleteSuggestionFn, EDIT_QUERY_ROOTS, fixGlossaryVariantFn, glossaryFixQueryOptions, glossaryLinesQueryOptions, glossaryQueryOptions, refreshGlossaryFn, suggestionsQueryOptions, translatorsMeQueryOptions } from "#/lib/translators/api";
+import type { GameVariant } from "#/types/generated/GameVariant";
 import type { Glossary } from "#/types/generated/Glossary";
 import type { GlossarySuggestion } from "#/types/generated/GlossarySuggestion";
 import type { GlossaryTerm } from "#/types/generated/GlossaryTerm";
 import type { TranslatorsMe } from "#/types/generated/TranslatorsMe";
-import { isLead } from "./LineEdits";
+import { diffLabels, isLead } from "./LineEdits";
 import { StoryText } from "./StoryText";
 import { useStoryNames } from "./storyNames";
+import { TextDiff } from "./TextDiff";
 import type { messages } from "./translators.messages";
 
 type T = TypedT<typeof messages>;
@@ -88,6 +90,14 @@ function consistency(term: GlossaryTerm): number | null {
     return term.fromSova || term.checkedLines === 0 ? null : term.foundLines / term.checkedLines;
 }
 
+/** Why the download failed, in words: the backend keeps a code (`offline`, `forbidden`, `changed:<what>`, `other:<message>`). */
+function errorWords(error: string, t: T): string {
+    if (error === "offline") return t("glossary.error.offline");
+    if (error === "forbidden") return t("glossary.error.forbidden");
+    if (error.startsWith("changed:")) return t("glossary.error.changed", { what: error.slice("changed:".length) });
+    return t("glossary.error.other", { message: error.replace(/^other:/, "") });
+}
+
 function Freshness({ data, t }: { data: Glossary; t: T }): React.ReactElement {
     const f = useFormatters();
     const when = (s: number) => f.date(s * 1000, { dateStyle: "medium", timeStyle: "short" });
@@ -97,7 +107,7 @@ function Freshness({ data, t }: { data: Glossary; t: T }): React.ReactElement {
             {data.lastError && data.attemptedAt !== null ? (
                 <Alert variant="warning">
                     <AlertDescription>
-                        {t("glossary.failed", { date: when(data.attemptedAt) })} <span className="text-muted-foreground">{data.lastError}</span>
+                        {t("glossary.failed", { date: when(data.attemptedAt) })} {errorWords(data.lastError, t)}
                     </AlertDescription>
                 </Alert>
             ) : null}
@@ -115,23 +125,144 @@ function Notes({ term }: { term: GlossaryTerm }): React.ReactElement {
     );
 }
 
+/** A variant as the game writes it; for a term of several words the whole phrase, the words that are not the glossary's marked. */
+function VariantWords({ v }: { v: GameVariant }): React.ReactElement {
+    if (v.wrong.length === 0) return <span className={v.glossary ? "font-medium" : undefined}>{v.ru}</span>;
+    // The words' positions are what tells them apart (a name may repeat a word), so they key the list.
+    const words = v.ru.split(" ").map((w, i) => ({ w, i }));
+    return (
+        <span>
+            {words.map(({ w, i }) => (
+                <Fragment key={i}>
+                    {i > 0 ? " " : null}
+                    {v.wrong.includes(i) ? <mark className="rounded-sm bg-warning/20 text-foreground">{w}</mark> : <span>{w}</span>}
+                </Fragment>
+            ))}
+        </span>
+    );
+}
+
+/** "Replace with the glossary's form": the lines a variant stands in, what each would get, and the button that writes the proposals. */
+function FixDialog({ term, variant, onDone, t }: { term: GlossaryTerm; variant: GameVariant; onDone: () => void; t: T }): React.ReactElement {
+    const queryClient = useQueryClient();
+    const nameOf = useStoryNames();
+    const me = useQuery(translatorsMeQueryOptions());
+    const nickname = me.data?.nickname ?? t("nickname.fallback");
+    const preview = useQuery(glossaryFixQueryOptions(term.id, variant.stem));
+    const apply = useMutation({
+        mutationFn: () => fixGlossaryVariantFn({ data: { id: term.id, stem: variant.stem, apply: true } }),
+        onSuccess: (data) => {
+            toastManager.add({ title: t("glossary.fix.done", { count: data.created }), type: "success" });
+            for (const root of EDIT_QUERY_ROOTS) queryClient.invalidateQueries({ queryKey: root });
+            queryClient.invalidateQueries({ queryKey: [...glossaryQueryOptions().queryKey] });
+            onDone();
+        },
+        onError: () => toastManager.add({ title: t("glossary.fix.failed"), type: "error" }),
+    });
+    const sure = preview.data?.lines.filter((l) => l.result !== null) ?? [];
+    const entries = new Set(sure.map((l) => `${l.storyId}:${l.en}`)).size;
+    const prose = "whitespace-normal py-1.5 align-top leading-snug";
+    return (
+        <>
+            <DialogHeader>
+                <DialogTitle>{t("glossary.fix.title", { from: variant.ru, to: term.ru })}</DialogTitle>
+                <DialogDescription>{t("glossary.fix.description")}</DialogDescription>
+            </DialogHeader>
+            <DialogPanel>
+                {preview.isError ? (
+                    <LoadFailed layout="inline" message={t("glossary.lines.load")} onRetry={() => preview.refetch()} />
+                ) : !preview.data ? (
+                    <Skeleton className="h-40 w-full" />
+                ) : preview.data.lines.length === 0 ? (
+                    <p className="text-muted-foreground text-sm">{t("glossary.lines.empty")}</p>
+                ) : (
+                    <div className="flex flex-col gap-2">
+                        <p className="text-subtle-foreground text-xs">{t("glossary.fix.summary", { sure: sure.length, unsure: preview.data.unsure })}</p>
+                        <div className="max-h-[60vh] overflow-y-auto">
+                            <Table aria-label={t("glossary.fix.table")} className="wrap-anywhere text-xs">
+                                <TableHeader>
+                                    <TableRow>
+                                        <TableHead className="w-48">{t("edits.col.where")}</TableHead>
+                                        <TableHead>{t("edits.col.was")}</TableHead>
+                                        <TableHead>{t("glossary.fix.col.result")}</TableHead>
+                                        <TableHead>{t("table.en")}</TableHead>
+                                    </TableRow>
+                                </TableHeader>
+                                <TableBody>
+                                    {preview.data.lines.map((l) => {
+                                        const n = nameOf(l.storyId);
+                                        return (
+                                            <TableRow key={`${l.storyId}-${l.ord}`}>
+                                                <TableCell className={prose}>
+                                                    {n ? (
+                                                        <Link to="/translators" search={{ group: n.groupId, story: l.storyId }} hash={`n-${l.ord + 1}`} className="underline-offset-4 hover:underline">
+                                                            {t("places.item", { group: n.group, story: n.story, n: l.ord + 1 })}
+                                                        </Link>
+                                                    ) : (
+                                                        t("places.itemBare", { story: l.storyId, n: l.ord + 1 })
+                                                    )}
+                                                    {l.places > 1 ? <span className="text-subtle-foreground"> · {t("where.places", { count: l.places })}</span> : null}
+                                                    {l.approved ? <span className="text-subtle-foreground"> · {t("glossary.fix.approved")}</span> : null}
+                                                </TableCell>
+                                                <TableCell className={prose}>
+                                                    <StoryText text={l.text} nickname={nickname} />
+                                                </TableCell>
+                                                <TableCell className={prose}>{l.result !== null ? <TextDiff before={l.text} after={l.result} labels={diffLabels(t)} /> : <span className="text-warning-foreground">{t("glossary.fix.byHand")}</span>}</TableCell>
+                                                <TableCell className={`${prose} text-muted-foreground`}>
+                                                    <StoryText text={l.en} nickname={nickname} />
+                                                </TableCell>
+                                            </TableRow>
+                                        );
+                                    })}
+                                </TableBody>
+                            </Table>
+                        </div>
+                    </div>
+                )}
+            </DialogPanel>
+            <DialogFooter>
+                <Button onClick={() => apply.mutate()} disabled={apply.isPending || entries === 0}>
+                    {apply.isPending ? <Spinner /> : <Replace aria-hidden="true" />}
+                    {t("glossary.fix.apply", { count: entries })}
+                </Button>
+            </DialogFooter>
+        </>
+    );
+}
+
 function GameVariants({ term, t }: { term: GlossaryTerm; t: T }): React.ReactElement {
     const f = useFormatters();
+    const [fixing, setFixing] = useState<GameVariant | null>(null);
     if (term.gameVariants.length === 0) return <span className="text-subtle-foreground">—</span>;
     return (
         <ul className="flex flex-col gap-0.5 text-xs">
             {term.gameVariants.map((v) => (
-                <li key={v.ru} className="flex items-center gap-1 whitespace-nowrap">
-                    <span className={v.glossary ? "font-medium" : undefined}>{v.ru}</span>
+                <li key={v.ru} className="group/variant flex items-center gap-1 whitespace-nowrap">
+                    <VariantWords v={v} />
                     <span className="text-subtle-foreground tabular-nums">{f.number(v.lines)}</span>
                     {v.glossary ? (
                         <span className="inline-flex text-success-foreground" title={t("glossary.variantGlossary")}>
                             <Check className="size-3.5" aria-hidden="true" />
                             <span className="sr-only">{t("glossary.variantGlossary")}</span>
                         </span>
-                    ) : null}
+                    ) : (
+                        <>
+                            <span className="inline-flex text-warning-foreground" title={t("glossary.variantOther")}>
+                                <X className="size-3.5" aria-hidden="true" />
+                                <span className="sr-only">{t("glossary.variantOther")}</span>
+                            </span>
+                            {v.stem ? (
+                                <Button variant="ghost" size="xs" className="h-5 px-1 text-muted-foreground opacity-0 focus-visible:opacity-100 group-hover/variant:opacity-100" title={t("glossary.fix.button")} aria-label={t("glossary.fix.button")} onClick={() => setFixing(v)}>
+                                    <Replace aria-hidden="true" />
+                                </Button>
+                            ) : null}
+                        </>
+                    )}
                 </li>
             ))}
+            <Dialog open={fixing !== null} onOpenChange={(open) => !open && setFixing(null)}>
+                <DialogPopup className="max-w-5xl">{fixing ? <FixDialog term={term} variant={fixing} onDone={() => setFixing(null)} t={t} /> : null}</DialogPopup>
+            </Dialog>
         </ul>
     );
 }
@@ -179,7 +310,7 @@ function TermLines({ term, t }: { term: GlossaryTerm; t: T }): React.ReactElemen
                                             ) : (
                                                 t("places.itemBare", { story: l.storyId, n: l.ord + 1 })
                                             )}
-                                            {l.found === true ? <Check className="size-3.5 text-success-foreground" aria-label={t("terms.found")} /> : null}
+                                            {l.found === true && l.verified ? <span className="text-subtle-foreground">{t("terms.verified")}</span> : l.found === true ? <Check className="size-3.5 text-success-foreground" aria-label={t("terms.found")} /> : null}
                                             {l.found === false ? (
                                                 <span className="inline-flex items-center gap-0.5 text-warning-foreground">
                                                     <X className="size-3.5" aria-hidden="true" />

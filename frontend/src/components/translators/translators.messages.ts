@@ -838,6 +838,82 @@ export const messages = {
         text: "Couldn't load the lines.",
         description: "Load failure of a term's lines.",
     },
+    "terms.verified": {
+        text: "approved",
+        description: "Mark beside a glossary term on a line approved after the term last changed: checked by the team, not marked.",
+    },
+    "terms.verifiedHint": {
+        text: "The line is approved: counted as checked for this term.",
+        description: "Tooltip of the 'approved' mark beside a glossary term.",
+    },
+    "terms.changedAfterApproval": {
+        text: "the glossary changed after the approval",
+        description: "Mark beside a glossary term whose form is missing on an approved line because the glossary changed the term after the approval.",
+    },
+    "glossary.error.offline": {
+        text: "No connection to Google.",
+        description: "Why the glossary download failed: the sheet's server could not be reached.",
+    },
+    "glossary.error.forbidden": {
+        text: "The sheet is closed for viewing: it must be shared as “anyone with the link can view”.",
+        description: "Why the glossary download failed: Google answered its sign-in page instead of the workbook.",
+    },
+    "glossary.error.changed": {
+        text: "The sheet has changed: {what}.",
+        description: "Why the glossary download failed; what is the backend's note (no known sheet, or a sheet without terms — the columns moved).",
+    },
+    "glossary.error.other": {
+        text: "{message}",
+        description: "Why the glossary download failed, as the backend put it.",
+    },
+    "glossary.variantOther": {
+        text: "Not the glossary's form",
+        description: "Marks a game's word (or phrase) that is not the glossary's form.",
+    },
+    "glossary.fix.button": {
+        text: "Replace with the glossary's form",
+        description: "Button beside a game variant that is not the glossary's form: opens the dialog that writes proposals with the form put in.",
+    },
+    "glossary.fix.title": {
+        text: "“{from}” → “{to}”",
+        description: "Heading of the replace dialog: the game's variant and the glossary's form.",
+    },
+    "glossary.fix.description": {
+        text: "A proposal for every line below gets the glossary's form in the same case; the translators approve them as usual. A line whose case is not sure is left to you.",
+        description: "Line under the replace dialog's heading.",
+    },
+    "glossary.fix.summary": {
+        text: "{sure, plural, one {# line} other {# lines}} ready; {unsure} to check by hand",
+        description: "Counts above the replace dialog's table.",
+    },
+    "glossary.fix.table": {
+        text: "Lines to replace in",
+        description: "Accessible name of the replace dialog's table.",
+    },
+    "glossary.fix.col.result": {
+        text: "Will be",
+        description: "Column of the replace dialog: the text with the glossary's form put in.",
+    },
+    "glossary.fix.byHand": {
+        text: "check by hand",
+        description: "In the replace dialog: the case of this line cannot be worked out for sure, no proposal is written.",
+    },
+    "glossary.fix.approved": {
+        text: "approved",
+        description: "In the replace dialog: the entry is approved already (the proposal will be a newer one).",
+    },
+    "glossary.fix.apply": {
+        text: "Write {count, plural, one {# proposal} other {# proposals}}",
+        description: "Button of the replace dialog that writes the proposals (one per entry).",
+    },
+    "glossary.fix.done": {
+        text: "{count, plural, one {# proposal} other {# proposals}} written",
+        description: "Toast after the replace dialog wrote the proposals.",
+    },
+    "glossary.fix.failed": {
+        text: "Couldn't write the proposals.",
+        description: "Toast when the replace dialog's request failed.",
+    },
     "glossary.lines.empty": {
         text: "No lines.",
         description: "Shown when a term has no lines (or none without the form).",

@@ -13885,6 +13885,66 @@
         ]
       }
     },
+    "/api/translators/glossary/{id}/fix": {
+      "post": {
+        "tags": [
+          "translators"
+        ],
+        "summary": "Put the glossary's form into every line of a term that writes it another\nway (one of the \"As in the game\" variants), in the same case, as the\ncaller's proposals — one per entry, for every place of it. Without\n`apply` only lists them; a line whose case is not sure is left to a\nperson. Members only.",
+        "operationId": "fix_glossary_variant",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "The term.",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GlossaryFixInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "The lines, each with the text it would get, and how many proposals were written.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GlossaryFix"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        },
+        "security": [
+          {
+            "bearer_auth": []
+          }
+        ]
+      }
+    },
     "/api/translators/glossary/{id}/lines": {
       "get": {
         "tags": [
@@ -26232,7 +26292,19 @@
           },
           "ru": {
             "type": "string",
-            "description": "The word as the game writes it most often."
+            "description": "The word (or, for a term of several words, the phrase) as the game writes it most often."
+          },
+          "stem": {
+            "type": "string",
+            "description": "The stem(s) the lines are gathered by: names the variant to \"Replace with the glossary's form\"."
+          },
+          "wrong": {
+            "type": "array",
+            "items": {
+              "type": "integer",
+              "format": "int32"
+            },
+            "description": "For a phrase: the positions (0-based) of the words that are not the glossary's."
           }
         }
       },
@@ -26363,13 +26435,103 @@
           }
         }
       },
+      "GlossaryFix": {
+        "type": "object",
+        "description": "What \"Replace with the glossary's form\" would do, or did.",
+        "required": [
+          "lines",
+          "created",
+          "unsure"
+        ],
+        "properties": {
+          "created": {
+            "type": "integer",
+            "format": "int32",
+            "description": "Entries (not lines) a proposal was written for; 0 when only listing."
+          },
+          "lines": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/GlossaryFixLine"
+            }
+          },
+          "unsure": {
+            "type": "integer",
+            "format": "int32",
+            "description": "Lines left to a person: the case is not sure."
+          }
+        }
+      },
+      "GlossaryFixInput": {
+        "type": "object",
+        "description": "\"Replace with the glossary's form\" for one of a term's game variants.",
+        "required": [
+          "stem"
+        ],
+        "properties": {
+          "apply": {
+            "type": "boolean",
+            "description": "Write the proposals (else only list what would be written)."
+          },
+          "stem": {
+            "type": "string",
+            "description": "The variant's stem(s), as `GameVariant.stem`."
+          }
+        }
+      },
+      "GlossaryFixLine": {
+        "type": "object",
+        "description": "One line the glossary's form would be put into.",
+        "required": [
+          "storyId",
+          "ord",
+          "en",
+          "text",
+          "approved",
+          "places"
+        ],
+        "properties": {
+          "approved": {
+            "type": "boolean",
+            "description": "The entry is approved already (a proposal is still written, as a newer one)."
+          },
+          "en": {
+            "type": "string"
+          },
+          "ord": {
+            "type": "integer",
+            "format": "int32",
+            "description": "0-based order in its story."
+          },
+          "places": {
+            "type": "integer",
+            "format": "int32",
+            "description": "Story lines of the same entry: one proposal covers them all."
+          },
+          "result": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The text with the glossary's form in the same case; null when the case is not sure (\"check by hand\")."
+          },
+          "storyId": {
+            "type": "string"
+          },
+          "text": {
+            "type": "string",
+            "description": "The Russian the line stands with now (the approved text, else the game's)."
+          }
+        }
+      },
       "GlossaryLine": {
         "type": "object",
         "description": "One story line holding a glossary term.",
         "required": [
           "storyId",
           "ord",
-          "en"
+          "en",
+          "verified"
         ],
         "properties": {
           "en": {
@@ -26395,6 +26557,10 @@
           },
           "storyId": {
             "type": "string"
+          },
+          "verified": {
+            "type": "boolean",
+            "description": "Approved after the glossary last changed the term: counted as holding the form."
           }
         }
       },
@@ -28260,9 +28426,15 @@
           "matched",
           "sheet",
           "ru",
-          "fromSova"
+          "fromSova",
+          "verified",
+          "changedAfterApproval"
         ],
         "properties": {
+          "changedAfterApproval": {
+            "type": "boolean",
+            "description": "The line is approved, but the glossary changed the term since: checked again, with a note."
+          },
           "found": {
             "type": [
               "boolean",
@@ -28305,6 +28477,10 @@
           "termId": {
             "type": "integer",
             "format": "int32"
+          },
+          "verified": {
+            "type": "boolean",
+            "description": "The line was approved after the glossary last changed the term: checked by the team, not marked."
           }
         }
       },

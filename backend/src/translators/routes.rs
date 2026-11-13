@@ -6,8 +6,9 @@ use axum::http::StatusCode;
 use uuid::Uuid;
 
 use super::dto::{
-    Glossary, GlossaryLine, GlossaryLines, GlossaryLinesQuery, GlossaryTerm, LineTerm, MissingTerm,
-    RecommendRuleInput, TranslatorStoryLines, TranslatorsMe, VariantGlossary,
+    Glossary, GlossaryFix, GlossaryFixInput, GlossaryFixLine, GlossaryLine, GlossaryLines,
+    GlossaryLinesQuery, GlossaryTerm, LineTerm, MissingTerm, RecommendRuleInput,
+    TranslatorStoryLines, TranslatorsMe, VariantGlossary,
 };
 use std::sync::Mutex;
 use std::sync::atomic::{AtomicBool, Ordering};
@@ -223,11 +224,40 @@ pub async fn mark_glossary(
 ) -> Result<(), ApiError> {
     let stored = glossary::load(&state.db).await?;
     let terms: Vec<_> = stored.iter().map(glossary::StoredTerm::as_term).collect();
-    // Per line: the checked terms (not Sova's sheet) by the English they matched.
+    let by_key: std::collections::HashMap<&str, &edits::dto::KeyEdits> =
+        edits.iter().map(|e| (e.edit_key.as_str(), e)).collect();
+    // What each line was approved with and when (the entry, or a one-place proposal here), if it was.
+    let approved: Vec<Option<(String, i64)>> = lines
+        .iter()
+        .zip(places)
+        .map(|(line, here)| {
+            let e = by_key.get(line.edit_key.as_str())?;
+            e.approval
+                .as_ref()
+                .map(|a| (a.text.clone(), a.at))
+                .or_else(|| {
+                    e.proposals
+                        .iter()
+                        .find(|p| {
+                            p.context
+                                && p.place.story_id == here.story_id
+                                && (p.place.line, p.place.part) == (here.line, here.part)
+                        })
+                        .and_then(|p| p.approved_at.map(|at| (p.text.clone(), at)))
+                })
+        })
+        .collect();
+    // Per line: the checked terms (not Sova's sheet, not verified by an approval) by the English they matched.
     let mut checked: Vec<Vec<(String, Vec<usize>)>> = vec![Vec::new(); lines.len()];
     if !stored.is_empty() {
         let finder = glossary::matcher::Finder::new(&terms);
-        for (line, groups) in lines.iter_mut().zip(checked.iter_mut()) {
+        for ((line, groups), approved) in lines.iter_mut().zip(checked.iter_mut()).zip(&approved) {
+            let approved_at = approved.as_ref().map(|a| a.1);
+            // The Russian the line stands with: the approved text, else the game's.
+            let text = approved
+                .as_ref()
+                .map(|a| a.0.clone())
+                .or_else(|| line.ru_game.clone());
             let mut seen = std::collections::HashSet::new();
             for found in finder.find(&line.en) {
                 let matched = line.en[found.start..found.end].to_owned();
@@ -236,13 +266,14 @@ pub async fn mark_glossary(
                         continue;
                     }
                     let term = &terms[t];
-                    if !term.from_sova {
+                    let verified = !term.from_sova && glossary::verified(term, approved_at);
+                    if !term.from_sova && !verified {
                         match groups.iter_mut().find(|g| g.0 == matched) {
                             Some(g) => g.1.push(t),
                             None => groups.push((matched.clone(), vec![t])),
                         }
                     }
-                    let checked = !term.from_sova && line.ru_game.is_some();
+                    let checked = !term.from_sova && !verified && text.is_some();
                     line.terms.push(LineTerm {
                         term_id: stored[t].id,
                         matched: matched.clone(),
@@ -253,19 +284,18 @@ pub async fn mark_glossary(
                         note: term.note.clone(),
                         from_sova: term.from_sova,
                         found: checked.then(|| {
-                            glossary::matcher::term_found(
-                                line.ru_game.as_deref().unwrap_or(""),
-                                term,
-                            )
+                            glossary::matcher::term_found(text.as_deref().unwrap_or(""), term)
                         }),
+                        verified,
+                        changed_after_approval: !term.from_sova
+                            && approved_at.is_some()
+                            && !verified,
                     });
                 }
             }
         }
     }
     // Every variant of every line against the line's glossary terms.
-    let by_key: std::collections::HashMap<&str, &edits::dto::KeyEdits> =
-        edits.iter().map(|e| (e.edit_key.as_str(), e)).collect();
     for ((line, groups), here) in lines.iter_mut().zip(&checked).zip(places) {
         if groups.is_empty() {
             continue;
@@ -402,44 +432,203 @@ pub async fn glossary_lines(
         .iter()
         .position(|t| t.id == id)
         .ok_or(ApiError::NotFound)?;
-    // Candidates by a plain substring, then the glossary's own matching (word
-    // edges, case, longer terms first) decides.
-    let rows: Vec<(String, i32, String, Option<String>)> = sqlx::query_as(
-        "SELECT story_id, ord, en, ru_game FROM translators.story_lines
-         WHERE server = $1 AND strpos(lower(en), lower($2)) > 0 ORDER BY story_id, ord",
-    )
-    .bind(SERVER)
-    .bind(&stored[at].key)
-    .fetch_all(&state.db)
-    .await?;
     let terms: Vec<_> = stored.iter().map(glossary::StoredTerm::as_term).collect();
-    let finder = glossary::matcher::Finder::new(&terms);
     let term = &terms[at];
     let mut total = 0;
     let mut lines = Vec::new();
-    for (story_id, ord, en, ru_game) in rows {
-        if !finder.find(&en).iter().any(|f| f.terms.contains(&at)) {
-            continue;
-        }
+    for row in term_lines(&state.db, &terms, at).await? {
+        let verified = !term.from_sova && glossary::verified(term, row.approved_at);
         let found = (!term.from_sova)
-            .then_some(ru_game.as_deref())
+            .then_some(row.text())
             .flatten()
-            .map(|ru| glossary::matcher::term_found(ru, term));
+            .map(|ru| verified || glossary::matcher::term_found(ru, term));
         if query.missing && found != Some(false) {
             continue;
         }
         total += 1;
         if lines.len() < SHOWN {
             lines.push(GlossaryLine {
-                story_id,
-                ord,
-                en,
-                ru_game,
+                story_id: row.story_id,
+                ord: row.ord,
+                en: row.en,
+                ru_game: row.ru_game,
                 found,
+                verified,
             });
         }
     }
     Ok(Json(GlossaryLines { total, lines }))
+}
+
+/// One story line of a term, with the text it stands with and its approval.
+struct TermLine {
+    story_id: String,
+    line: i32,
+    part: i16,
+    ord: i32,
+    edit_key: String,
+    en: String,
+    ru_game: Option<String>,
+    approved: Option<String>,
+    approved_at: Option<i64>,
+}
+
+impl TermLine {
+    /// The approved text, else the game's.
+    fn text(&self) -> Option<&str> {
+        self.approved.as_deref().or(self.ru_game.as_deref())
+    }
+}
+
+/// The story lines whose English holds the term `at` of `terms`, in story
+/// order. Candidates by a plain substring, then the glossary's own matching
+/// (word edges, case, longer terms first) decides.
+async fn term_lines(
+    pool: &sqlx::PgPool,
+    terms: &[glossary::parse::Term],
+    at: usize,
+) -> Result<Vec<TermLine>, ApiError> {
+    type Row = (
+        String,
+        i32,
+        i16,
+        i32,
+        String,
+        String,
+        Option<String>,
+        Option<String>,
+        Option<chrono::DateTime<chrono::Utc>>,
+    );
+    let rows: Vec<Row> = sqlx::query_as(
+        "SELECT l.story_id, l.line, l.part, l.ord, l.edit_key, l.en, l.ru_game,
+                COALESCE(a.text, p.text), COALESCE(a.approved_at, p.approved_at)
+         FROM translators.story_lines l
+         LEFT JOIN translators.approvals a ON a.edit_key = l.edit_key AND a.outdated_at IS NULL
+         LEFT JOIN translators.proposals p ON p.context AND p.story_id = l.story_id AND p.line = l.line
+              AND p.part = l.part AND p.approved_at IS NOT NULL AND p.deleted_at IS NULL AND p.rejected_at IS NULL
+         WHERE l.server = $1 AND strpos(lower(l.en), lower($2)) > 0 ORDER BY l.story_id, l.ord",
+    )
+    .bind(SERVER)
+    .bind(&terms[at].key)
+    .fetch_all(pool)
+    .await?;
+    let finder = glossary::matcher::Finder::new(terms);
+    Ok(rows
+        .into_iter()
+        .filter(|r| finder.find(&r.5).iter().any(|f| f.terms.contains(&at)))
+        .map(
+            |(story_id, line, part, ord, edit_key, en, ru_game, approved, approved_at)| TermLine {
+                story_id,
+                line,
+                part,
+                ord,
+                edit_key,
+                en,
+                ru_game,
+                approved,
+                approved_at: approved_at.map(|t| t.timestamp()),
+            },
+        )
+        .collect())
+}
+
+/// Put the glossary's form into every line of a term that writes it another
+/// way (one of the "As in the game" variants), in the same case, as the
+/// caller's proposals — one per entry, for every place of it. Without
+/// `apply` only lists them; a line whose case is not sure is left to a
+/// person. Members only.
+#[utoipa::path(
+    post,
+    path = "/translators/glossary/{id}/fix",
+    tag = "translators",
+    security(("bearer_auth" = [])),
+    params(("id" = i32, Path, description = "The term.")),
+    request_body = GlossaryFixInput,
+    responses(
+        (status = 200, description = "The lines, each with the text it would get, and how many proposals were written.", body = GlossaryFix),
+        (status = 401, response = crate::app::openapi::responses::Unauthorized),
+        (status = 403, response = crate::app::openapi::responses::Forbidden),
+        (status = 404, response = crate::app::openapi::responses::NotFound),
+        (status = 500, response = crate::app::openapi::responses::InternalError)
+    )
+)]
+pub async fn fix_glossary_variant(
+    State(state): State<AppState>,
+    auth: MaybeAuthUser,
+    Path(id): Path<i32>,
+    Json(input): Json<GlossaryFixInput>,
+) -> Result<Json<GlossaryFix>, ApiError> {
+    let me = require_member(&state, &auth).await?;
+    let stored = glossary::load(&state.db).await?;
+    let at = stored
+        .iter()
+        .position(|t| t.id == id)
+        .ok_or(ApiError::NotFound)?;
+    let terms: Vec<_> = stored.iter().map(glossary::StoredTerm::as_term).collect();
+    let term = &terms[at];
+    let rows = term_lines(&state.db, &terms, at).await?;
+    let fixes = glossary::fix::plan(
+        term,
+        &input.stem,
+        &rows
+            .iter()
+            .map(|r| (r.text(), glossary::verified(term, r.approved_at)))
+            .collect::<Vec<_>>(),
+    );
+    let keys: Vec<String> = rows
+        .iter()
+        .map(|r| r.edit_key.clone())
+        .collect::<std::collections::HashSet<_>>()
+        .into_iter()
+        .collect();
+    let counts = edits::db::place_counts(&state.db, &keys).await?;
+    let mut lines = Vec::new();
+    let mut unsure = 0;
+    // One proposal per entry: the first sure line of it.
+    let mut per_key: std::collections::HashMap<&str, (&TermLine, String)> =
+        std::collections::HashMap::new();
+    for (row, fix) in rows.iter().zip(&fixes) {
+        let Some(fix) = fix else { continue };
+        let Some(text) = row.text() else { continue };
+        if fix.is_none() {
+            unsure += 1;
+        } else if let Some(result) = fix {
+            per_key
+                .entry(row.edit_key.as_str())
+                .or_insert((row, result.clone()));
+        }
+        lines.push(GlossaryFixLine {
+            story_id: row.story_id.clone(),
+            ord: row.ord,
+            en: row.en.clone(),
+            text: text.to_owned(),
+            result: fix.clone(),
+            approved: row.approved_at.is_some(),
+            places: counts.get(&row.edit_key).copied().unwrap_or(1).max(1),
+        });
+    }
+    let mut created = 0;
+    if input.apply {
+        for (key, (row, result)) in per_key {
+            let Some(text) = edits::status::clean_text(&result) else {
+                continue;
+            };
+            let place = edits::dto::EditPlace {
+                story_id: row.story_id.clone(),
+                line: row.line,
+                part: row.part,
+                edit_key: None,
+            };
+            edits::db::upsert_proposal(&state.db, key, &place, &text, "own", false, None, me.id)
+                .await?;
+            created += 1;
+        }
+    }
+    Ok(Json(GlossaryFix {
+        lines,
+        created,
+        unsure,
+    }))
 }
 
 /// Download the glossary again from the team's sheet, in the background.
