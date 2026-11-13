@@ -4,45 +4,32 @@ import type { GameVariant } from "./GameVariant";
 /**
  * One glossary entry for the Glossary tab.
  */
-export type GlossaryTerm = {
-    id: number;
-    sheet: string;
-    /**
-     * 1-based row in the sheet.
-     */
-    row: number;
-    /**
-     * The English cell as written.
-     */
-    en: string;
-    /**
-     * The English the site searches for.
-     */
-    key: string;
-    qualifier: string | null;
-    ru: string;
-    ruPlural: string | null;
-    note: string | null;
-    synonyms: string | null;
-    comment: string | null;
-    cn: string | null;
-    caseSensitive: boolean;
-    fromSova: boolean;
-    /**
-     * Story lines whose English holds the key.
-     */
-    storyLines: number;
-    /**
-     * The Russian words the game uses for it, most lines first (up to 5).
-     */
-    gameVariants: Array<GameVariant>;
-    /**
-     * Its lines that have a Russian to check, and of those, the lines holding the glossary's form.
-     */
-    checkedLines: number;
-    foundLines: number;
-    /**
-     * Its Chinese from the game's speaker names, when it is a speaker.
-     */
-    cnGame: string | null;
-};
+export type GlossaryTerm = { id: number, sheet: string, 
+/**
+ * 1-based row in the sheet.
+ */
+row: number, 
+/**
+ * The English cell as written.
+ */
+en: string, 
+/**
+ * The English the site searches for.
+ */
+key: string, qualifier: string | null, ru: string, ruPlural: string | null, note: string | null, synonyms: string | null, comment: string | null, cn: string | null, caseSensitive: boolean, fromSova: boolean, 
+/**
+ * Story lines whose English holds the key.
+ */
+storyLines: number, 
+/**
+ * The Russian words the game uses for it, most lines first (up to 5).
+ */
+gameVariants: Array<GameVariant>, 
+/**
+ * Its lines that have a Russian to check, and of those, the lines holding the glossary's form.
+ */
+checkedLines: number, foundLines: number, 
+/**
+ * Its Chinese from the game's speaker names, when it is a speaker.
+ */
+cnGame: string | null, };

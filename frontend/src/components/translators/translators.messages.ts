@@ -2504,7 +2504,7 @@ export const messages = {
     },
     "problem.noHighlight": {
         text: "no highlight",
-        description: "Error: the original has a tag (colour, term) the Russian lacks; the text is whole.",
+        description: "Error: the original has a colour tag the Russian lacks and the RichTextFix plugin does not put back (it colours numbers again); the text is whole. A term <$…> never counts: the game shows it plain.",
     },
     "problem.newlines": {
         text: "line breaks differ",
@@ -2528,10 +2528,10 @@ export const messages = {
     },
     "checks.noHighlight": {
         text: "no highlight",
-        description: "Mark on a variant: a tag of the English missing (the game shows it without its colour or term).",
+        description: "Mark on a variant: a colour tag of the English missing that the plugin does not put back (the game shows the text without its colour).",
     },
     "checks.noHighlightHint": {
-        text: "The English has a tag (colour, term, italics) this text lacks; the text is whole, the game shows it without the highlight.",
+        text: "The English has a tag (colour, italics) this text lacks, and the plugin will not put it back: it colours numbers again, not words. The text is whole.",
         description: "Hint of the no highlight mark.",
     },
     "overview.counts": {

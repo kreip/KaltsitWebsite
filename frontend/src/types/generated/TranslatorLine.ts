@@ -5,87 +5,81 @@ import type { VariantGlossary } from "./VariantGlossary";
 /**
  * One displayed text of a story with its Russian and the hints.
  */
-export type TranslatorLine = {
-    /**
-     * 1-based line in the EN script.
-     */
-    line: number;
-    /**
-     * The option number of a decision (1-based), else 0.
-     */
-    part: number;
-    /**
-     * `dialog`, `narration`, `subtitle`, `sticker` or `option`.
-     */
-    kind: string;
-    speakerEn: string;
-    speakerRu: string | null;
-    en: string;
-    /**
-     * The Russian the game shows now.
-     */
-    ruGame: string | null;
-    /**
-     * The Russian the game showed before the last import that changed it (a new pack), if one did.
-     */
-    ruGameBefore: string | null;
-    /**
-     * Unix seconds of that import.
-     */
-    ruGameChangedAt: number | null;
-    /**
-     * `plugin:story` or the dictionary file it came from.
-     */
-    ruGameSource: string | null;
-    /**
-     * `exact`, `normalized`, `lines` or `plugin`.
-     */
-    ruGameMatch: string | null;
-    /**
-     * `story` when the text is in the plugin's catalog, `ambiguous:story` when the plugin leaves it in English.
-     */
-    pluginRole: string | null;
-    /**
-     * The dictionary's value when the plugin's differs.
-     */
-    ruDict: string | null;
-    speakerCn: string | null;
-    cn: string | null;
-    /**
-     * Sova's translation: signed-in translators only.
-     */
-    sova: string | null;
-    /**
-     * The AI's translation: signed-in translators only.
-     */
-    ai: string | null;
-    /**
-     * Glossary terms found in the English, in order.
-     */
-    terms: Array<LineTerm>;
-    /**
-     * The dictionary entry an edit of this line changes (its English).
-     */
-    editKey: string;
-    /**
-     * False for a line with nothing to translate (only punctuation).
-     */
-    editable: boolean;
-    /**
-     * A proposal for this place only is offered (every story line).
-     */
-    contextAllowed: boolean;
-    /**
-     * Story lines holding the same entry, this one included.
-     */
-    places: number;
-    /**
-     * `unchecked`, `proposed`, `approved` or `outdated`.
-     */
-    status: string;
-    /**
-     * The variants whose Russian lacks a glossary term's form (a variant not
-     * listed holds them all): `game`, `sova`, `ai`, `approved`, `proposal:<id>`.
-     */
-    variantGlossary: Array<VariantGlossary>;
-};
+export type TranslatorLine = { 
+/**
+ * 1-based line in the EN script.
+ */
+line: number, 
+/**
+ * The option number of a decision (1-based), else 0.
+ */
+part: number, 
+/**
+ * `dialog`, `narration`, `subtitle`, `sticker` or `option`.
+ */
+kind: string, speakerEn: string, speakerRu: string | null, en: string, 
+/**
+ * The Russian the game shows now.
+ */
+ruGame: string | null, 
+/**
+ * The Russian the game showed before the last import that changed it (a new pack), if one did.
+ */
+ruGameBefore: string | null, 
+/**
+ * Unix seconds of that import.
+ */
+ruGameChangedAt: number | null, 
+/**
+ * `plugin:story` or the dictionary file it came from.
+ */
+ruGameSource: string | null, 
+/**
+ * `exact`, `normalized`, `lines` or `plugin`.
+ */
+ruGameMatch: string | null, 
+/**
+ * `story` when the text is in the plugin's catalog, `ambiguous:story` when the plugin leaves it in English.
+ */
+pluginRole: string | null, 
+/**
+ * The dictionary's value when the plugin's differs.
+ */
+ruDict: string | null, speakerCn: string | null, cn: string | null, 
+/**
+ * Sova's translation: signed-in translators only.
+ */
+sova: string | null, 
+/**
+ * The AI's translation: signed-in translators only.
+ */
+ai: string | null, 
+/**
+ * Glossary terms found in the English, in order.
+ */
+terms: Array<LineTerm>, 
+/**
+ * The dictionary entry an edit of this line changes (its English).
+ */
+editKey: string, 
+/**
+ * False for a line with nothing to translate (only punctuation).
+ */
+editable: boolean, 
+/**
+ * A proposal for this place only is offered (every story line).
+ */
+contextAllowed: boolean, 
+/**
+ * Story lines holding the same entry, this one included.
+ */
+places: number, 
+/**
+ * `unchecked`, `proposed`, `approved` or `outdated`.
+ */
+status: string, 
+/**
+ * The variants whose Russian lacks a glossary term's form (a variant not
+ * listed holds them all): `game`, `sova`, `ai`, `approved`, `proposal:<id>`.
+ */
+variantGlossary: Array<VariantGlossary>, };

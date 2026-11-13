@@ -74,7 +74,9 @@ describe("tags", () => {
     const en = "Deals <@ba.vup>120%</> damage to {0} targets";
     it("tell a broken tag from a missing highlight, as the backend does", () => {
         expect(tagHealth(en, "Наносит <@ba.vup>120%</> урона {0} целям")).toEqual({ broken: false, noHighlight: false });
-        expect(tagHealth(en, "Наносит 120% урона {0} целям")).toEqual({ broken: false, noHighlight: true });
+        // The highlight dropped, but the plugin colours the number again; a word's highlight it cannot put back.
+        expect(tagHealth(en, "Наносит 120% урона {0} целям")).toEqual({ broken: false, noHighlight: false });
+        expect(tagHealth("<@ba.vup>Stealth</> for {0}", "Невидимость на {0}")).toEqual({ broken: false, noHighlight: true });
         expect(tagHealth(en, "Наносит <@ba.vup>120% урона {0} целям")).toEqual({ broken: true, noHighlight: false });
         expect(tagHealth(en, "Наносит <@ba.vup120%</> урона {0} целям")).toEqual({ broken: true, noHighlight: false });
         expect(tagHealth(en, "Наносит <@ba.vup>120%</> урона целям")).toEqual({ broken: true, noHighlight: false });
@@ -83,7 +85,7 @@ describe("tags", () => {
     });
 
     it("name a line's problems, none once approved", () => {
-        const l = line({ en, ruGame: "Наносит 120% урона {0} целям" });
+        const l = line({ en: "<@ba.vup>Stealth</> for {0}", ruGame: "Невидимость на {0}" });
         const checks = new Map([["game", checkVariant(l.ruGame ?? "", "game", l, null)]]);
         expect([...lineProblems(false, checks)]).toEqual(["noHighlight"]);
         expect([...lineProblems(true, checks)]).toEqual([]);

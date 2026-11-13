@@ -4,10 +4,8 @@ import type { EditRow } from "./EditRow";
 /**
  * "My edits".
  */
-export type EditRows = {
-    all: boolean;
-    /**
-     * Newest first, up to 2,000.
-     */
-    rows: Array<EditRow>;
-};
+export type EditRows = { all: boolean, 
+/**
+ * Newest first, up to 2,000.
+ */
+rows: Array<EditRow>, };

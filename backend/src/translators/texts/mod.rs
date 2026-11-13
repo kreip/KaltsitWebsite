@@ -9,6 +9,7 @@
 pub mod db;
 pub mod dto;
 pub mod gamedata;
+pub mod plugin_styles;
 pub mod problems;
 pub mod routes;
 pub mod tags;

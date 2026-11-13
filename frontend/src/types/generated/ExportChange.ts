@@ -3,20 +3,16 @@
 /**
  * One line changed in a corrected copy.
  */
-export type ExportChange = {
-    file: string;
-    /**
-     * 1-based line in the file; for an entry added at the end, its new line.
-     */
-    line: number;
-    key: string;
-    /**
-     * The value before; empty for an added entry.
-     */
-    before: string;
-    after: string;
-    /**
-     * Who approved it (`approved`) or proposed it (`review`).
-     */
-    by: string;
-};
+export type ExportChange = { file: string, 
+/**
+ * 1-based line in the file; for an entry added at the end, its new line.
+ */
+line: number, key: string, 
+/**
+ * The value before; empty for an added entry.
+ */
+before: string, after: string, 
+/**
+ * Who approved it (`approved`) or proposed it (`review`).
+ */
+by: string, };

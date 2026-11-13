@@ -3,16 +3,8 @@
 /**
  * A pack version and what went out in it.
  */
-export type Release = {
-    id: number;
-    version: string;
-    note: string | null;
-    by: string | null;
-    at: number;
-    /**
-     * Entries marked: dictionary lines, plugin lines, one-place lines.
-     */
-    dictionary: number;
-    plugin: number;
-    context: number;
-};
+export type Release = { id: number, version: string, note: string | null, by: string | null, at: number, 
+/**
+ * Entries marked: dictionary lines, plugin lines, one-place lines.
+ */
+dictionary: number, plugin: number, context: number, };

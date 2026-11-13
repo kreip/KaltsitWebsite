@@ -6,67 +6,62 @@ import type { ExportSkipped } from "./ExportSkipped";
 /**
  * What an export wrote and what to know before putting it in the game.
  */
-export type ExportReport = {
-    mode: string;
-    format: string;
-    /**
-     * Unix seconds.
-     */
-    at: number;
-    by: string;
-    /**
-     * Lines changed or added in the dictionaries (the copies, or 00_translators.txt).
-     */
-    written: number;
-    /**
-     * Each changed line of the copies.
-     */
-    changes: Array<ExportChange>;
-    /**
-     * Left out: keys XUnity cannot read back.
-     */
-    skipped: Array<ExportSkipped>;
-    /**
-     * Rows of `plugin_strings.tsv`.
-     */
-    pluginRows: number;
-    /**
-     * Rows of `story_lines.tsv`, and of them proposals for one place.
-     */
-    storyRows: number;
-    contextRows: number;
-    /**
-     * Rows of `only_here.tsv`: a separate translation asked for one place
-     * of the game data, for the pack's maintainer to decide.
-     */
-    onlyHereRows: number;
-    /**
-     * `file` format: the files the game loads after ours, which win on the same key.
-     */
-    loadedAfter: Array<string>;
-    /**
-     * Of those, the ones holding exported keys, and how many.
-     */
-    overriddenBy: Array<ExportFileKeys>;
-    /**
-     * `patch` format: values replaced in each changed copy.
-     */
-    replaced: Array<ExportFileKeys>;
-    /**
-     * `patch` format: entries none of the files had, written to `14_new.txt`.
-     */
-    appended: number;
-    /**
-     * `review` mode: entries with more than one proposal (the most agreed is exported).
-     */
-    withAlternatives: number;
-    /**
-     * The archive's name.
-     */
-    archive: string;
-    /**
-     * The list (`only` empty): the archive of exactly this export is being
-     * packed; download it with this token (for 30 minutes).
-     */
-    archiveToken: string | null;
-};
+export type ExportReport = { mode: string, format: string, 
+/**
+ * Unix seconds.
+ */
+at: number, by: string, 
+/**
+ * Lines changed or added in the dictionaries (the copies, or 00_translators.txt).
+ */
+written: number, 
+/**
+ * Each changed line of the copies.
+ */
+changes: Array<ExportChange>, 
+/**
+ * Left out: keys XUnity cannot read back.
+ */
+skipped: Array<ExportSkipped>, 
+/**
+ * Rows of `plugin_strings.tsv`.
+ */
+pluginRows: number, 
+/**
+ * Rows of `story_lines.tsv`, and of them proposals for one place.
+ */
+storyRows: number, contextRows: number, 
+/**
+ * Rows of `only_here.tsv`: a separate translation asked for one place
+ * of the game data, for the pack's maintainer to decide.
+ */
+onlyHereRows: number, 
+/**
+ * `file` format: the files the game loads after ours, which win on the same key.
+ */
+loadedAfter: Array<string>, 
+/**
+ * Of those, the ones holding exported keys, and how many.
+ */
+overriddenBy: Array<ExportFileKeys>, 
+/**
+ * `patch` format: values replaced in each changed copy.
+ */
+replaced: Array<ExportFileKeys>, 
+/**
+ * `patch` format: entries none of the files had, written to `14_new.txt`.
+ */
+appended: number, 
+/**
+ * `review` mode: entries with more than one proposal (the most agreed is exported).
+ */
+withAlternatives: number, 
+/**
+ * The archive's name.
+ */
+archive: string, 
+/**
+ * The list (`only` empty): the archive of exactly this export is being
+ * packed; download it with this token (for 30 minutes).
+ */
+archiveToken: string | null, };

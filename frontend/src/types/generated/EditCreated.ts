@@ -3,4 +3,4 @@
 /**
  * The id of what was created.
  */
-export type EditCreated = { id: number };
+export type EditCreated = { id: number, };

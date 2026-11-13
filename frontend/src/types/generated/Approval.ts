@@ -4,20 +4,16 @@ import type { EditPerson } from "./EditPerson";
 /**
  * The lead's decision for an entry.
  */
-export type Approval = {
-    /**
-     * `game` (checked and kept, never exported), `proposal`, `sova` or `ai`.
-     */
-    variant: string;
-    /**
-     * The approved proposal; null for the other variants.
-     */
-    proposalId: number | null;
-    text: string;
-    by: EditPerson;
-    at: number;
-    /**
-     * The pack version this text went out in, if it has.
-     */
-    releasedIn: string | null;
-};
+export type Approval = { 
+/**
+ * `game` (checked and kept, never exported), `proposal`, `sova` or `ai`.
+ */
+variant: string, 
+/**
+ * The approved proposal; null for the other variants.
+ */
+proposalId: number | null, text: string, by: EditPerson, at: number, 
+/**
+ * The pack version this text went out in, if it has.
+ */
+releasedIn: string | null, };

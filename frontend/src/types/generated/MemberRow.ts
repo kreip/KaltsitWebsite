@@ -4,15 +4,12 @@ import type { EditPerson } from "./EditPerson";
 /**
  * A member of the section.
  */
-export type MemberRow = {
-    user: EditPerson;
-    uid: string;
-    /**
-     * `user`, `translator` or `admin`.
-     */
-    role: string;
-    /**
-     * Unix seconds.
-     */
-    addedAt: number;
-};
+export type MemberRow = { user: EditPerson, uid: string, 
+/**
+ * `user`, `translator` or `admin`.
+ */
+role: string, 
+/**
+ * Unix seconds.
+ */
+addedAt: number, };

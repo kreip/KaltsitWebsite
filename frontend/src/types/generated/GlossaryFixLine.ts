@@ -3,27 +3,24 @@
 /**
  * One line the glossary's form would be put into.
  */
-export type GlossaryFixLine = {
-    storyId: string;
-    /**
-     * 0-based order in its story.
-     */
-    ord: number;
-    en: string;
-    /**
-     * The Russian the line stands with now (the approved text, else the game's).
-     */
-    text: string;
-    /**
-     * The text with the glossary's form in the same case; null when the case is not sure ("check by hand").
-     */
-    result: string | null;
-    /**
-     * The entry is approved already (a proposal is still written, as a newer one).
-     */
-    approved: boolean;
-    /**
-     * Story lines of the same entry: one proposal covers them all.
-     */
-    places: number;
-};
+export type GlossaryFixLine = { storyId: string, 
+/**
+ * 0-based order in its story.
+ */
+ord: number, en: string, 
+/**
+ * The Russian the line stands with now (the approved text, else the game's).
+ */
+text: string, 
+/**
+ * The text with the glossary's form in the same case; null when the case is not sure ("check by hand").
+ */
+result: string | null, 
+/**
+ * The entry is approved already (a proposal is still written, as a newer one).
+ */
+approved: boolean, 
+/**
+ * Story lines of the same entry: one proposal covers them all.
+ */
+places: number, };

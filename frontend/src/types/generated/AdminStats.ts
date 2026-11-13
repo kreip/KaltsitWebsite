@@ -6,4 +6,4 @@ import type { SectionStats } from "./SectionStats";
 /**
  * The admin panel's statistics.
  */
-export type AdminStats = { week: EditCounts; total: EditCounts; people: Array<PersonStats>; sections: Array<SectionStats> };
+export type AdminStats = { week: EditCounts, total: EditCounts, people: Array<PersonStats>, sections: Array<SectionStats>, };

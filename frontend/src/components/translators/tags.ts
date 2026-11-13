@@ -87,7 +87,7 @@ export function colorOf(open: string): string | null {
     return /=\s*["']?([#A-Za-z0-9]+)/.exec(open)?.[1] ?? null;
 }
 
-/** How a span looks, in the tables and in the editor alike: the ink of a game style, a term's dotted underline, Unity's own. */
+/** How a span looks, in the tables and in the editor alike: the ink of a game style, Unity's own; a term as plain text, the way the game shows it (its explanation is in the hint). */
 export interface ISpanLook {
     color?: string;
     /** Tailwind classes. */
@@ -96,7 +96,7 @@ export interface ISpanLook {
 
 export function spanLook(tag: INamed): ISpanLook {
     if (tag.type === "style") return { color: inkForTag(tag.name) };
-    if (tag.type === "term") return { color: inkForTag(tag.name), className: "underline decoration-dotted underline-offset-2" };
+    if (tag.type === "term") return { className: "cursor-help" };
     if (tag.type === "color") return { color: colorOf(tag.open) ?? undefined };
     if (tag.type === "inline") return { className: tag.name === "b" ? "font-semibold" : tag.name === "u" ? "underline" : "italic" };
     return {};

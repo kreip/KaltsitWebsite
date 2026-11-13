@@ -3,11 +3,8 @@
 /**
  * One file of an export.
  */
-export type ExportFile = {
-    name: string;
-    /**
-     * Size in bytes (UTF-8).
-     */
-    size: number;
-    content: string;
-};
+export type ExportFile = { name: string, 
+/**
+ * Size in bytes (UTF-8).
+ */
+size: number, content: string, };

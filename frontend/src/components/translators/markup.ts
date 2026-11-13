@@ -14,6 +14,8 @@
  * with nothing to close stays text; a span never closed has an empty closer.
  */
 
+import { PLUGIN_STYLES } from "./pluginStyles";
+
 export type SpanType = "style" | "term" | "paragraph" | "inline" | "color" | "size";
 
 export interface IMarkSpan {
@@ -207,17 +209,131 @@ function health(text: string): IHealth {
     return out;
 }
 
+/** A span of the original with its text's place in the plain text (tags removed, substitutions kept). */
+interface IPlainSpan {
+    span: IMarkSpan;
+    start: number;
+    end: number;
+}
+
+/** The plain text of nodes and where each span stands in it. */
+function plainSpans(nodes: readonly MarkNode[]): { plain: string; spans: IPlainSpan[] } {
+    const spans: IPlainSpan[] = [];
+    let plain = "";
+    const visit = (list: readonly MarkNode[]) => {
+        for (const n of list) {
+            if (n.kind === "text") plain += n.value;
+            else if (n.kind === "token") plain += n.raw;
+            else {
+                const start = plain.length;
+                visit(n.children);
+                spans.push({ span: n, start, end: plain.length });
+            }
+        }
+    };
+    visit(nodes);
+    return { plain, spans };
+}
+
+/** A number as the plugin finds one to colour again: `230%`, `1.25`, full-width digits too. */
+const NUMBER = /[0-9０-９]+(?:[.．][0-9０-９]+)?[%％]?/g;
+
+function isAsciiWord(c: string | undefined): boolean {
+    return c !== undefined && /[0-9A-Za-z]/.test(c);
+}
+
+/** Where `value` stands in `text`, as the plugin looks: an ASCII word only whole. */
+function findAll(text: string, value: string): [number, number][] {
+    const out: [number, number][] = [];
+    if (!value) return out;
+    let from = 0;
+    while (from <= text.length - value.length) {
+        const at = text.indexOf(value, from);
+        if (at < 0) break;
+        const end = at + value.length;
+        const before = at > 0 && isAsciiWord(value[0]) && isAsciiWord(text[at - 1]);
+        const after = end < text.length && isAsciiWord(value[value.length - 1]) && isAsciiWord(text[end]);
+        if (!before && !after) out.push([at, end]);
+        from = end;
+    }
+    return out;
+}
+
+/** Where a number (or a substitution standing for one) is in `text`, by its digits. */
+function findNumbers(text: string, value: string): [number, number][] {
+    const key = value.normalize("NFKC");
+    const out: [number, number][] = [];
+    for (const m of text.matchAll(new RegExp(`${TOKEN_SOURCE}|${NUMBER.source}`, "g"))) if (m[0].normalize("NFKC") === key) out.push([m.index, m.index + m[0].length]);
+    return out;
+}
+
+/**
+ * Whether the RichTextFix plugin puts the span's style back into a plain
+ * translation (its `RichTextStyleRestorer`): the style covers the whole
+ * text; or the span's text stands in the translation as it is (a number,
+ * `SP`) as many times as in the original and only inside the span; or a
+ * number (a substitution counts as one) of the span stands in both as many
+ * times. A game style the plugin does not know is dropped before that.
+ */
+function pluginRestores(s: IPlainSpan, plain: string, translation: string): boolean {
+    if (s.span.type === "paragraph") return false;
+    // The game shows a term's words plain (no colour, no underline): nothing to lose.
+    if (s.span.type === "term") return true;
+    if (s.span.type === "style" && !PLUGIN_STYLES.has(s.span.name.slice(1))) return false;
+    const text = plain.slice(s.start, s.end).trim();
+    if (!text) return false;
+    if (text === plain.trim()) return true;
+    const inside = (hits: [number, number][]) => hits.length > 0 && hits.every(([a, b]) => a >= s.start && b <= s.end);
+    const literal = findAll(plain, text);
+    if (inside(literal) && literal.length === findAll(translation, text).length) return true;
+    const numbers = new Set((text.match(new RegExp(`${TOKEN_SOURCE}|${NUMBER.source}`, "g")) ?? []).map((n) => n));
+    for (const n of numbers) {
+        const hits = findNumbers(plain, n);
+        if (inside(hits) && hits.length === findNumbers(translation, n).length) return true;
+    }
+    return false;
+}
+
+/**
+ * The original's spans whose highlight the game would show without, given
+ * the translation: the translation lacks the tag and the plugin would not
+ * put it back. A translation with tags of its own gets only whole-text
+ * styles back from the plugin; a plain one, what `pluginRestores` says. A
+ * term `<$…>` is never one: the game shows its words plain.
+ */
+export function lostHighlights(original: string, translation: string): string[] {
+    const { plain, spans } = plainSpans(parseMarkup(original));
+    if (spans.length === 0) return [];
+    const ruTags = tagCounts(translation);
+    const wholeText = (s: IPlainSpan) => plain.slice(s.start, s.end).trim() === plain.trim() && plain.trim() !== "";
+    if (ruTags.size > 0) {
+        // Per name: the spans the translation lacks, the whole-text ones (put back) not counted.
+        const out: string[] = [];
+        const byName = new Map<string, IPlainSpan[]>();
+        for (const s of spans) byName.set(s.span.name, [...(byName.get(s.span.name) ?? []), s]);
+        for (const [name, list] of byName) {
+            if (name.startsWith("$")) continue;
+            const missing = list.length - (ruTags.get(name) ?? 0);
+            const lost = missing - list.filter(wholeText).length;
+            for (let i = 0; i < lost; i++) out.push(name);
+        }
+        return out;
+    }
+    return spans.filter((s) => !pluginRestores(s, plain, translation)).map((s) => s.span.name);
+}
+
 /**
  * A translation's tags against the original's (the backend's
  * `texts/problems.rs` says the same): `broken` — a tag left open or broken,
  * a closer with nothing to close, a substitution `{…}` lost or added, a tag
- * the original lacks; `noHighlight` — only a tag of the original missing, the
- * text otherwise whole.
+ * the original lacks; `noHighlight` — a tag of the original missing that the
+ * RichTextFix plugin would not put back (`lostHighlights`), the text
+ * otherwise whole.
  */
 export function tagHealth(original: string, translation: string): { broken: boolean; noHighlight: boolean } {
     const e = health(original);
     const r = health(translation);
     const diff = tagDiff(original, translation);
     const broken = r.unclosed > e.unclosed || r.garbage > e.garbage || r.tokens.join("\u0000") !== e.tokens.join("\u0000") || diff.extra.length > 0;
-    return { broken, noHighlight: !broken && diff.missing.length > 0 };
+    return { broken, noHighlight: !broken && lostHighlights(original, translation).length > 0 };
 }
