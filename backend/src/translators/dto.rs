@@ -135,17 +135,25 @@ pub struct TranslatorStoryLines {
     pub reads: Vec<super::edits::dto::StoryRead>,
 }
 
-/// The import's state (service key only; not used by the page).
-#[derive(Debug, Serialize, ToSchema)]
+/// The import's state (the service key's route, and the admin panel's).
+#[derive(Debug, Serialize, TS, ToSchema)]
 #[serde(rename_all = "camelCase")]
+#[ts(export)]
 pub struct ImportStatus {
     pub running: bool,
+    /// The running import's step: `starting`, `reading`, `storing`, `glossary`, `problems`.
+    pub phase: Option<String>,
+    /// Unix seconds the running import started at.
+    #[ts(type = "number | null")]
+    pub started_at: Option<i64>,
     /// Why the last run failed, while this process remembers it.
     pub error: Option<String>,
     /// Unix seconds of the last finished import.
+    #[ts(type = "number | null")]
     pub last_finished_at: Option<i64>,
     /// The last finished import's summary (`ImportSummary`).
     #[schema(value_type = Object)]
+    #[ts(type = "{ lines?: number; texts?: number; textPlaces?: number; millis?: number } | null")]
     pub last: Option<serde_json::Value>,
 }
 

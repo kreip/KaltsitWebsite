@@ -10,3 +10,6 @@ SPEC-*.md
 # рабочие файлы
 PROGRESS-*.md
 __pycache__/
+
+# локальные инструменты (Python): не в репозитории
+local-tools/

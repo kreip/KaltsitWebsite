@@ -12816,6 +12816,77 @@
         ]
       }
     },
+    "/api/translators/admin/import": {
+      "get": {
+        "tags": [
+          "translators"
+        ],
+        "summary": "The import's state for the admin panel: running (its step and start), the last error, the last summary.",
+        "operationId": "admin_import_status",
+        "responses": {
+          "200": {
+            "description": "The import's state.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ImportStatus"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        },
+        "security": [
+          {
+            "bearer_auth": []
+          }
+        ]
+      },
+      "post": {
+        "tags": [
+          "translators"
+        ],
+        "summary": "Start the import from the admin panel (what `translators/import.sh` does\nwith the service key): in the background, re-runnable. Admins only.",
+        "operationId": "admin_run_import",
+        "responses": {
+          "200": {
+            "description": "The import's state right after the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ImportStatus"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        },
+        "security": [
+          {
+            "bearer_auth": []
+          }
+        ]
+      }
+    },
     "/api/translators/admin/members": {
       "get": {
         "tags": [
@@ -13033,6 +13104,41 @@
           },
           "404": {
             "$ref": "#/components/responses/NotFound"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        },
+        "security": [
+          {
+            "bearer_auth": []
+          }
+        ]
+      }
+    },
+    "/api/translators/admin/site-texts": {
+      "post": {
+        "tags": [
+          "translators"
+        ],
+        "summary": "Load the site's Russian around the section (`site-ru.json`) into the\nsite's translations again: keys with no Russian yet, and the section's\nmenu item. Admins only.",
+        "operationId": "refresh_site_texts",
+        "responses": {
+          "200": {
+            "description": "How many keys the file has, were written, and are unknown to the catalog.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SiteTextsLoaded"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
           },
           "500": {
             "$ref": "#/components/responses/InternalError"
@@ -14628,6 +14734,56 @@
         "responses": {
           "204": {
             "description": "Deleted."
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        },
+        "security": [
+          {
+            "bearer_auth": []
+          }
+        ]
+      }
+    },
+    "/api/translators/proposals/{id}/levels": {
+      "post": {
+        "tags": [
+          "translators"
+        ],
+        "summary": "\"Apply to the levels\": the caller's proposal for a skill's description\ntemplate, with each level's numbers put in, as their proposals for the\nlevel entries (\"dealing 230% ATK …\"); one per entry, the tags dropped\nwhere the entry has none. An entry whose numbers do not fit the template,\nor whose text would be the game's Russian, is skipped. Members only.",
+        "operationId": "apply_levels",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "My proposal for the template.",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "How many level entries got a proposal, and how many were skipped.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LevelsApplied"
+                }
+              }
+            }
           },
           "401": {
             "$ref": "#/components/responses/Unauthorized"
@@ -27583,7 +27739,7 @@
       },
       "ImportStatus": {
         "type": "object",
-        "description": "The import's state (service key only; not used by the page).",
+        "description": "The import's state (the service key's route, and the admin panel's).",
         "required": [
           "running",
           "last"
@@ -27608,8 +27764,23 @@
             "format": "int64",
             "description": "Unix seconds of the last finished import."
           },
+          "phase": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The running import's step: `starting`, `reading`, `storing`, `glossary`, `problems`."
+          },
           "running": {
             "type": "boolean"
+          },
+          "startedAt": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64",
+            "description": "Unix seconds the running import started at."
           }
         }
       },
@@ -28377,6 +28548,26 @@
           "max",
           "module"
         ]
+      },
+      "LevelsApplied": {
+        "type": "object",
+        "description": "What \"Apply to the levels\" did.",
+        "required": [
+          "created",
+          "skipped"
+        ],
+        "properties": {
+          "created": {
+            "type": "integer",
+            "format": "int32",
+            "description": "Level entries that got (or had rewritten) my proposal."
+          },
+          "skipped": {
+            "type": "integer",
+            "format": "int32",
+            "description": "Entries whose numbers do not fit the template or whose text would be the game's Russian."
+          }
+        }
       },
       "LineDisposition": {
         "type": "string",
@@ -35636,6 +35827,32 @@
           }
         }
       },
+      "SiteTextsLoaded": {
+        "type": "object",
+        "description": "What a load did.",
+        "required": [
+          "total",
+          "written",
+          "unknown"
+        ],
+        "properties": {
+          "total": {
+            "type": "integer",
+            "format": "int32",
+            "description": "Keys in the file."
+          },
+          "unknown": {
+            "type": "integer",
+            "format": "int32",
+            "description": "Keys the site's catalog does not know yet (the frontend's `i18n:sync` has not run)."
+          },
+          "written": {
+            "type": "integer",
+            "format": "int32",
+            "description": "Keys written now (new Russian, or the section's own keys)."
+          }
+        }
+      },
       "SkillCategory": {
         "type": "string",
         "description": "`sustained`: the skill's DPS is the DPS (no skill, passive, or permanent).\n`burst`: a timed or ammo window that recharges. `instant`: a zero-duration\nactivation; the formulas for these already average the hit over its charge.",
@@ -39016,6 +39233,10 @@
             ],
             "format": "int32"
           },
+          "note": {
+            "type": "string",
+            "description": "What tells it from the others at the field (`ObjectLine::note`); empty when nothing is known."
+          },
           "objectEn": {
             "type": [
               "string",
@@ -40209,7 +40430,8 @@
           "contextAllowed",
           "places",
           "status",
-          "variantGlossary"
+          "variantGlossary",
+          "levelTexts"
         ],
         "properties": {
           "ai": {
@@ -40243,6 +40465,11 @@
           "kind": {
             "type": "string",
             "description": "`dialog`, `narration`, `subtitle`, `sticker` or `option`."
+          },
+          "levelTexts": {
+            "type": "integer",
+            "format": "int32",
+            "description": "A skill's description template: how many dictionary entries carry its\nlevels' numbers (\"Apply to the levels\" fills them from a proposal)."
           },
           "line": {
             "type": "integer",

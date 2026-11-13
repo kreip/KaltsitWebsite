@@ -689,9 +689,16 @@ pub async fn run_import(
     if auth.user_id != "service" {
         return Err(ApiError::Forbidden);
     }
+    start_import(&state)?;
+    import_status_body(&state).await.map(Json)
+}
+
+/// Start the import in the background unless one runs; the sources must be configured.
+pub fn start_import(state: &AppState) -> Result<(), ApiError> {
     let sources = Sources::from_env().map_err(ApiError::BadRequest)?;
     if !IMPORT_RUNNING.swap(true, Ordering::SeqCst) {
         *lock_error() = None;
+        *lock_phase() = Some(("starting".to_owned(), chrono::Utc::now().timestamp()));
         let state2 = state.clone();
         tokio::spawn(async move {
             let result = import_now(&state2, sources).await;
@@ -700,10 +707,11 @@ pub async fn run_import(
                 tracing::error!(error = %e, cause = ?e, "translators import failed");
                 *lock_error() = Some(e.to_string());
             }
+            *lock_phase() = None;
             IMPORT_RUNNING.store(false, Ordering::SeqCst);
         });
     }
-    import_status(State(state), auth).await
+    Ok(())
 }
 
 /// Whether an import is running, the last error, and the last finished import's summary.
@@ -726,22 +734,44 @@ pub async fn import_status(
     if auth.user_id != "service" {
         return Err(ApiError::Forbidden);
     }
+    import_status_body(&state).await.map(Json)
+}
+
+pub async fn import_status_body(state: &AppState) -> Result<ImportStatus, ApiError> {
     let last = db::last_import_summary(&state.db, SERVER).await?;
-    Ok(Json(ImportStatus {
+    let phase = lock_phase().clone();
+    Ok(ImportStatus {
         running: IMPORT_RUNNING.load(Ordering::SeqCst),
+        phase: phase.as_ref().map(|p| p.0.clone()),
+        started_at: phase.map(|p| p.1),
         error: lock_error().clone(),
         last_finished_at: last.as_ref().map(|(t, _)| t.timestamp()),
         last: last.map(|(_, s)| s),
-    }))
+    })
 }
 
 static IMPORT_RUNNING: AtomicBool = AtomicBool::new(false);
 static IMPORT_ERROR: Mutex<Option<String>> = Mutex::new(None);
+/// The running import's step and when it started (unix seconds).
+static IMPORT_PHASE: Mutex<Option<(String, i64)>> = Mutex::new(None);
 
 fn lock_error() -> std::sync::MutexGuard<'static, Option<String>> {
     IMPORT_ERROR
         .lock()
         .unwrap_or_else(std::sync::PoisonError::into_inner)
+}
+
+fn lock_phase() -> std::sync::MutexGuard<'static, Option<(String, i64)>> {
+    IMPORT_PHASE
+        .lock()
+        .unwrap_or_else(std::sync::PoisonError::into_inner)
+}
+
+/// Name the running import's step (`reading`, `storing`, `glossary`, `problems`).
+fn phase(name: &str) {
+    if let Some(p) = lock_phase().as_mut() {
+        p.0 = name.to_owned();
+    }
 }
 
 async fn import_now(state: &AppState, sources: Sources) -> Result<(), ApiError> {
@@ -777,15 +807,18 @@ async fn import_now(state: &AppState, sources: Sources) -> Result<(), ApiError> 
             game.library.extend(st.avg_tag.clone());
         }
     }
+    phase("reading");
     let built =
         tokio::task::spawn_blocking(move || import::build(&sources, &assets_dir, &stories, &game))
             .await
             .map_err(|e| ApiError::Internal(e.into()))??;
     let summary = &built.summary;
+    phase("storing");
     import::store(&state.db, SERVER, started_at, &built).await?;
     edits::db::mark_outdated(&state.db).await?;
     // The glossary rides along: a failed download keeps the stored copy, and
     // the counts are redone over the new lines either way.
+    phase("glossary");
     if glossary::refresh(&state.db, &state.http_client)
         .await
         .is_err()
@@ -795,6 +828,7 @@ async fn import_now(state: &AppState, sources: Sources) -> Result<(), ApiError> 
             .map_err(ApiError::Internal)?;
     }
     // What is wrong with each text, for the search's status filter.
+    phase("problems");
     super::texts::problems::refresh(&state.db, SERVER).await?;
     tracing::info!(
         lines = summary.lines,

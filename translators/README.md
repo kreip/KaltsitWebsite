@@ -37,7 +37,7 @@ Tables: Postgres schema `translators` (own migrations, `translators._migrations`
 
 2. Build and start: `docker compose up -d --build`
 3. Import (re-runnable, about 3 minutes; replaces the section's rows, reads the sources only):
-   `./translators/import.sh`
+   `./translators/import.sh`, or "Run import" on the Admin tab
 4. Open http://localhost:3000/translators
 
 ## Development sign-in
@@ -48,14 +48,25 @@ regular game-account sign-in is not touched.
 
 ## Russian
 
-The section speaks the site's language. `python3 translators/i18n-ru.py --enable`
-loads the section's Russian (`frontend/src/components/translators/translators.ru.json`)
-into the site's translations and switches the `ru` locale on: the header's language
-switch then offers Русский, and the pages live under `/ru/…`. It also loads
-`translators/site-ru.json` (the header, menus, sign-in dialog and shared buttons: what
-stands around the section), only where a key has no Russian yet, so a translation made
-in the admin panel is never overwritten. The site's other texts stay English until they
-are translated there.
+The section speaks the site's language. Its own Russian ships with the page
+(`frontend/src/components/translators/translators.ru.json`); the site runs in Russian once the
+`ru` locale is switched on in the admin panel (the header's language switch then offers
+Русский, the pages live under `/ru/…`). The Russian of what stands around the section (the
+header, the menus, the sign-in dialog, the shared buttons: `backend/src/translators/site-ru.json`)
+is loaded into the site's translations by the backend itself at every start — only keys with
+no Russian yet, so a translation made in the admin panel is never overwritten, except the
+section's own menu item — and again by "Refresh site texts" on the Admin tab. A key the
+site's catalog does not know yet (the frontend's `bun run i18n:sync` has not run) is skipped
+and counted. The admin panel's value of a section key wins over the shipped file only when it
+differs from the English source. The site's other texts stay English until they are
+translated in the admin panel.
+
+## Deploying
+
+No Python, no scripts: the backend applies the section's migrations and loads the site texts
+at start; then one import (the Admin tab's "Run import", or `./translators/import.sh` with the
+service key) and "Refresh glossary" on the Glossary tab. `./translators/role.sh <uid> admin`
+makes the first admin; everything else is the Admin tab.
 
 ## Members and roles
 
@@ -64,7 +75,8 @@ Only members (`translators.members`) see the section. One role per member:
 - `user` — sees the section, proposes, agrees, remarks;
 - `translator` — also approves and rejects proposals, exports the approved lines for the game;
 - `admin` — all of it, marks the approved lines as released in a pack version, and the
-  **Admin** tab: requests for access, the members with their roles, the statistics.
+  **Admin** tab: requests for access, the members with their roles, the statistics, "Run
+  import" (with its step and the last run's summary) and "Refresh site texts".
 
 A signed-in user of the site who is not a member sees "Request access"; an admin accepts the
 request with a role (or declines it) on the Admin tab, changes a member's role or removes a
@@ -83,13 +95,7 @@ keyed by) for the story, the game data by section (operators, enemies, stages, i
 archives) and every other entry of the pack's dictionaries and the plugin's catalog,
 with the game data places of each (`translators.text_places`: operator › skill 2 ›
 description). `GET /api/translators/texts` searches it by a part of the English or the
-Russian (any case, ё = е), with filters by section and state. From the command line:
-
-    python3 translators/search.py ursus
-    python3 translators/search.py урсус --section operators --limit 5
-    python3 translators/search.py sp --whole --status unchecked
-
-It prints how many texts match, the database time and the first results.
+Russian (any case, ё = е), with filters by section and state.
 
 The page's **Search** tab (`/translators?tab=search&q=…`) is the same search with the
 story table's actions in the results (`GET /api/translators/search`). A text that stands
@@ -166,8 +172,7 @@ a story paragraph `<p=1>…</>` (all closed by `</>`), Unity's `<i>`, `<b>`, `<u
 `<color=…>`, `<size=…>`; a substitution `{@nickname}`, `{0}`, `{atk:0%}` is a token; anything
 else in angle brackets is text (`<Roadblock>`). The import lists every style and term with
 the game's colour or the term's name and explanation, in the pack's Russian too
-(`translators.tags`, `GET /api/translators/tags`);
-`python3 translators/tools/tags.py > translators/out/tags.md` prints the list.
+(`translators.tags`, `GET /api/translators/tags`).
 
 A table never shows a tag spelled out: a style in its ink, a term as plain text (the
 game shows it so) with the game's explanation on hover. In the editor a substitution is a chip (removed whole, inserted
@@ -181,8 +186,8 @@ original's tags a translation lacks or adds; the same test marks every variant.
 decompiling): into a plain translation the plugin puts back a style that covers the whole
 text, a style whose text stands in the translation as it is (a number, `SP`), and a
 style's colour on its numbers (a substitution counts as one) found as many times; it never
-puts back words, a style it does not know (`translators/tools/plugin_styles.py` keeps its
-list from the DLL; the names are matched case-sensitively) or anything into a translation
+puts back words, a style it does not know (`pluginStyles.ts` / `plugin_styles.rs`, the
+plugin's own list; the names are matched case-sensitively) or anything into a translation
 that has tags of its own (whole-text styles aside). A term `<$…>` is never a lost
 highlight: the game shows its words plain.
 

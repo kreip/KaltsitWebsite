@@ -16,6 +16,7 @@ pub mod export;
 pub mod glossary;
 pub mod import;
 pub mod routes;
+pub mod site_texts;
 pub mod texts;
 
 use utoipa_axum::router::OpenApiRouter;
@@ -59,6 +60,8 @@ pub fn router() -> OpenApiRouter<AppState> {
         .routes(routes!(admin::list_members))
         .routes(routes!(admin::set_role, admin::remove_member))
         .routes(routes!(admin::stats))
+        .routes(routes!(admin::admin_run_import, admin::admin_import_status))
+        .routes(routes!(admin::refresh_site_texts))
         .merge(edits::router())
         .merge(texts::router())
 }

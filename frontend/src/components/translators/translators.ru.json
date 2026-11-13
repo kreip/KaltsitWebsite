@@ -656,5 +656,20 @@
     "levels.hint": "В словаре {count, plural, one {# строка} few {# строки} many {# строк} other {# строки}} этого навыка с подставленными числами по уровням: сохраните, затем «Применить к уровням».",
     "levels.apply": "Применить к уровням ({count})",
     "levels.done": "Предложения по уровням: создано {created}, пропущено {skipped}",
-    "levels.failed": "Не удалось применить к уровням."
+    "levels.failed": "Не удалось применить к уровням.",
+    "admin.service": "Обслуживание",
+    "admin.import.run": "Запустить импорт",
+    "admin.import.running": "Импорт…",
+    "admin.import.phase": "{phase} · {seconds} с",
+    "admin.import.phase.starting": "запуск",
+    "admin.import.phase.reading": "чтение сценариев, словарей и данных игры",
+    "admin.import.phase.storing": "запись реплик и текстов",
+    "admin.import.phase.glossary": "скачивание глоссария и подсчёт",
+    "admin.import.phase.problems": "подсчёт ошибок текстов",
+    "admin.import.error": "Последний импорт не удался: {error}",
+    "admin.import.last": "Последний импорт {date}: реплик {lines}, текстов {texts}, {seconds} с",
+    "admin.import.hint": "Заново собирает реплики и тексты раздела из EN-сценариев, словарей пака и arktr; можно повторять, около 3 минут. Правки сохраняются.",
+    "admin.siteTexts.refresh": "Обновить тексты сайта",
+    "admin.siteTexts.hint": "Русский шапки, меню и общих кнопок, поставляемый с разделом: записывается там, где у сайта ещё нет русского (перевод из админки не перезаписывается), пункт меню раздела — всегда. Делается и при каждом запуске.",
+    "admin.siteTexts.done": "Тексты сайта: записано {written} из {total}; {unknown} неизвестны каталогу сайта"
 }

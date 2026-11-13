@@ -5,7 +5,7 @@
  * and each section's progress.
  */
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Check, Trash2, X } from "lucide-react";
+import { Check, Languages, Play, Trash2, X } from "lucide-react";
 import type React from "react";
 import { useState } from "react";
 import { AlertDialog, AlertDialogClose, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogPopup, AlertDialogTitle } from "#/components/ui/alert-dialog";
@@ -15,13 +15,15 @@ import { LoadFailed } from "#/components/ui/load-failed";
 import { Meter } from "#/components/ui/meter";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "#/components/ui/select";
 import { Skeleton } from "#/components/ui/skeleton";
+import { Spinner } from "#/components/ui/spinner";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "#/components/ui/table";
 import { toastManager } from "#/components/ui/toast";
 import { useFormatters, useT } from "#/lib/i18n";
 import type { TypedT } from "#/lib/i18n/messages";
-import { ADMIN_QUERY_ROOT, accessRequestsQueryOptions, adminStatsQueryOptions, decideRequestFn, membersQueryOptions, removeMemberFn, setMemberRoleFn, TRANSLATORS_QUERY_ROOT } from "#/lib/translators/api";
+import { ADMIN_QUERY_ROOT, accessRequestsQueryOptions, adminStatsQueryOptions, decideRequestFn, importStatusQueryOptions, membersQueryOptions, refreshSiteTextsFn, removeMemberFn, setMemberRoleFn, startImportFn, TRANSLATORS_QUERY_ROOT } from "#/lib/translators/api";
 import type { AccessRequest } from "#/types/generated/AccessRequest";
 import type { EditCounts } from "#/types/generated/EditCounts";
+import type { ImportStatus } from "#/types/generated/ImportStatus";
 import type { MemberRow } from "#/types/generated/MemberRow";
 import type { TranslatorsMe } from "#/types/generated/TranslatorsMe";
 import type { messages } from "./translators.messages";
@@ -315,12 +317,66 @@ function Stats({ t }: { t: T }): React.ReactElement {
     );
 }
 
+/** The last import's summary in a line: lines, texts, places, when. */
+function ImportSummary({ status, t }: { status: ImportStatus; t: T }): React.ReactElement | null {
+    const f = useFormatters();
+    const last = status.last as { lines?: number; texts?: number; textPlaces?: number; millis?: number } | null;
+    if (!last || status.lastFinishedAt === null) return null;
+    return <span className="text-muted-foreground text-xs">{t("admin.import.last", { date: f.date(status.lastFinishedAt * 1000, { dateStyle: "medium", timeStyle: "short" }), lines: f.number(last.lines ?? 0), texts: f.number(last.texts ?? 0), seconds: Math.round((last.millis ?? 0) / 1000) })}</span>;
+}
+
+/** The import and the site texts: what the deploy used to need scripts for. */
+function Service({ t }: { t: T }): React.ReactElement {
+    const queryClient = useQueryClient();
+    const status = useQuery(importStatusQueryOptions());
+    const start = useMutation({
+        mutationFn: () => startImportFn(),
+        onSuccess: (data) => queryClient.setQueryData(importStatusQueryOptions().queryKey, data),
+        onError: () => toastManager.add({ title: t("admin.failed"), type: "error" }),
+    });
+    const texts = useMutation({
+        mutationFn: () => refreshSiteTextsFn(),
+        onSuccess: (r) => toastManager.add({ title: t("admin.siteTexts.done", { written: r.written, total: r.total, unknown: r.unknown }), type: r.unknown > 0 ? "warning" : "success" }),
+        onError: () => toastManager.add({ title: t("admin.failed"), type: "error" }),
+    });
+    const s = status.data;
+    const running = s?.running ?? false;
+    const elapsed = s?.startedAt ? Math.max(0, Math.round(Date.now() / 1000 - s.startedAt)) : 0;
+    return (
+        <section className="flex flex-col gap-3">
+            <Heading>{t("admin.service")}</Heading>
+            <div className="flex flex-col gap-2">
+                <div className="flex flex-wrap items-center gap-2">
+                    <Button size="sm" onClick={() => start.mutate()} disabled={running || start.isPending || !s}>
+                        {running ? <Spinner /> : <Play aria-hidden="true" />}
+                        {running ? t("admin.import.running") : t("admin.import.run")}
+                    </Button>
+                    {running ? <span className="text-muted-foreground text-xs">{t("admin.import.phase", { phase: t(`admin.import.phase.${s?.phase ?? "starting"}` as "admin.import.phase.starting"), seconds: elapsed })}</span> : null}
+                    {!running && s?.error ? <span className="text-destructive text-xs">{t("admin.import.error", { error: s.error })}</span> : null}
+                    {!running && s ? <ImportSummary status={s} t={t} /> : null}
+                </div>
+                <span className="text-subtle-foreground text-xs">{t("admin.import.hint")}</span>
+            </div>
+            <div className="flex flex-col gap-2">
+                <div className="flex flex-wrap items-center gap-2">
+                    <Button size="sm" variant="outline" onClick={() => texts.mutate()} disabled={texts.isPending}>
+                        {texts.isPending ? <Spinner /> : <Languages aria-hidden="true" />}
+                        {t("admin.siteTexts.refresh")}
+                    </Button>
+                </div>
+                <span className="text-subtle-foreground text-xs">{t("admin.siteTexts.hint")}</span>
+            </div>
+        </section>
+    );
+}
+
 export function AdminTab({ me }: { me: TranslatorsMe }): React.ReactElement {
     const t: T = useT("translators");
     return (
         <div className="flex flex-col gap-8">
             <Requests t={t} />
             <Members me={me} t={t} />
+            <Service t={t} />
             <Stats t={t} />
         </div>
     );

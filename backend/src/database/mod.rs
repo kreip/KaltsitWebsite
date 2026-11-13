@@ -12,8 +12,11 @@ pub async fn init(database_url: &str) -> Result<PgPool, sqlx::Error> {
     let pool = create_pool(database_url).await?;
     crate::core::startup::step("migrations");
     run_migrations(&pool).await?;
-    // Fork: the translators' section keeps its own schema and ledger.
+    // Fork: the translators' section keeps its own schema and ledger, and loads the site's Russian around it.
     crate::translators::db::migrate(&pool).await?;
+    if let Err(e) = crate::translators::site_texts::load(&pool).await {
+        tracing::warn!(error = %e, "translators site texts not loaded");
+    }
     crate::core::startup::step("seed");
     seed(&pool).await?;
     Ok(pool)

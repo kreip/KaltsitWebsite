@@ -26,6 +26,7 @@ import type { Glossary } from "#/types/generated/Glossary";
 import type { GlossaryFix } from "#/types/generated/GlossaryFix";
 import type { GlossaryLines } from "#/types/generated/GlossaryLines";
 import type { GlossarySuggestion } from "#/types/generated/GlossarySuggestion";
+import type { ImportStatus } from "#/types/generated/ImportStatus";
 import type { KeyPlaces } from "#/types/generated/KeyPlaces";
 import type { LevelsApplied } from "#/types/generated/LevelsApplied";
 import type { LineHistory } from "#/types/generated/LineHistory";
@@ -36,6 +37,7 @@ import type { ObjectLines } from "#/types/generated/ObjectLines";
 import type { ProposalVersion } from "#/types/generated/ProposalVersion";
 import type { Release } from "#/types/generated/Release";
 import type { SearchLines } from "#/types/generated/SearchLines";
+import type { SiteTextsLoaded } from "#/types/generated/SiteTextsLoaded";
 import type { StoryProgress } from "#/types/generated/StoryProgress";
 import type { TextSummary } from "#/types/generated/TextSummary";
 import type { TranslatorStoryLines } from "#/types/generated/TranslatorStoryLines";
@@ -577,3 +579,27 @@ export const decideProposalsFn = createServerFn({ method: "POST" })
         const res = await send("/translators/proposals/decisions", "POST", { ids: data.ids, decision: data.decision, reason: data.reason || null });
         return (await res.json()) as ApprovalBatchResult;
     });
+
+// ---- Admin: the import and the site texts.
+
+export const getImportStatusFn = createServerFn({ method: "GET" }).handler(async (): Promise<ImportStatus> => {
+    const res = await send("/translators/admin/import", "GET");
+    return (await res.json()) as ImportStatus;
+});
+
+/** The import's state (polled every 3 s while it runs). */
+export function importStatusQueryOptions() {
+    return queryOptions({ queryKey: [...ADMIN_QUERY_ROOT, "import"], queryFn: () => getImportStatusFn(), refetchInterval: (q) => (q.state.data?.running ? 3_000 : false) });
+}
+
+/** Start the import in the background (an admin). */
+export const startImportFn = createServerFn({ method: "POST" }).handler(async (): Promise<ImportStatus> => {
+    const res = await send("/translators/admin/import", "POST");
+    return (await res.json()) as ImportStatus;
+});
+
+/** Load the site's Russian around the section (site-ru.json) into the site's translations again (an admin). */
+export const refreshSiteTextsFn = createServerFn({ method: "POST" }).handler(async (): Promise<SiteTextsLoaded> => {
+    const res = await send("/translators/admin/site-texts", "POST");
+    return (await res.json()) as SiteTextsLoaded;
+});

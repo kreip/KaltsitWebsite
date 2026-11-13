@@ -2246,6 +2246,51 @@ export const messages = {
         text: "They lose access to the section. Their proposals, votes and remarks stay.",
         description: "Line of the confirmation before removing a member.",
     },
+    "admin.service": {
+        text: "Service",
+        description: "Heading of the Admin tab's section with the import and the site texts.",
+    },
+    "admin.import.run": {
+        text: "Run import",
+        description: "Button that starts the section's import (the story, the dictionaries, the game data) in the background.",
+    },
+    "admin.import.running": {
+        text: "Importing…",
+        description: "The import button while an import runs.",
+    },
+    "admin.import.phase": {
+        text: "{phase} · {seconds} s",
+        description: "Beside the running import: its step and how long it has run.",
+    },
+    "admin.import.phase.starting": { text: "starting", description: "Import step." },
+    "admin.import.phase.reading": { text: "reading the scripts, the dictionaries and the game data", description: "Import step." },
+    "admin.import.phase.storing": { text: "storing the lines and the texts", description: "Import step." },
+    "admin.import.phase.glossary": { text: "downloading the glossary and counting", description: "Import step." },
+    "admin.import.phase.problems": { text: "working out the texts' problems", description: "Import step." },
+    "admin.import.error": {
+        text: "The last import failed: {error}",
+        description: "Beside the import button when the last run failed.",
+    },
+    "admin.import.last": {
+        text: "Last import {date}: {lines} story lines, {texts} texts, {seconds} s",
+        description: "Beside the import button: the last finished import's summary.",
+    },
+    "admin.import.hint": {
+        text: "Rebuilds the section's lines and texts from the EN scripts, the pack's dictionaries and arktr; re-runnable, about 3 minutes. Edits are kept.",
+        description: "Under the import button.",
+    },
+    "admin.siteTexts.refresh": {
+        text: "Refresh site texts",
+        description: "Button that loads the site's Russian around the section (header, menus, shared buttons) into the site's translations again.",
+    },
+    "admin.siteTexts.hint": {
+        text: "The Russian of the header, menus and shared buttons shipped with the section: written where the site has no Russian yet (never over a translation made in the admin panel), the section's menu item always. Done at every start too.",
+        description: "Under the Refresh site texts button.",
+    },
+    "admin.siteTexts.done": {
+        text: "Site texts: {written} of {total} written; {unknown} unknown to the site's catalog",
+        description: "Toast after Refresh site texts; unknown keys appear once the frontend's i18n sync has run.",
+    },
     "admin.stats": {
         text: "Statistics",
         description: "Heading of the admin panel's statistics.",

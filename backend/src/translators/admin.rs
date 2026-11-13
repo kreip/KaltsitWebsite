@@ -593,3 +593,73 @@ pub async fn section_stats(pool: &PgPool) -> Result<Vec<SectionStats>, sqlx::Err
     );
     Ok(out)
 }
+
+/// Start the import from the admin panel (what `translators/import.sh` does
+/// with the service key): in the background, re-runnable. Admins only.
+#[utoipa::path(
+    post,
+    path = "/translators/admin/import",
+    tag = "translators",
+    security(("bearer_auth" = [])),
+    responses(
+        (status = 200, description = "The import's state right after the request.", body = super::dto::ImportStatus),
+        (status = 400, response = crate::app::openapi::responses::BadRequest),
+        (status = 401, response = crate::app::openapi::responses::Unauthorized),
+        (status = 403, response = crate::app::openapi::responses::Forbidden),
+        (status = 500, response = crate::app::openapi::responses::InternalError)
+    )
+)]
+pub async fn admin_run_import(
+    State(state): State<AppState>,
+    auth: MaybeAuthUser,
+) -> Result<Json<super::dto::ImportStatus>, ApiError> {
+    require_admin(&state, &auth).await?;
+    super::routes::start_import(&state)?;
+    super::routes::import_status_body(&state).await.map(Json)
+}
+
+/// The import's state for the admin panel: running (its step and start), the last error, the last summary.
+#[utoipa::path(
+    get,
+    path = "/translators/admin/import",
+    tag = "translators",
+    security(("bearer_auth" = [])),
+    responses(
+        (status = 200, description = "The import's state.", body = super::dto::ImportStatus),
+        (status = 401, response = crate::app::openapi::responses::Unauthorized),
+        (status = 403, response = crate::app::openapi::responses::Forbidden),
+        (status = 500, response = crate::app::openapi::responses::InternalError)
+    )
+)]
+pub async fn admin_import_status(
+    State(state): State<AppState>,
+    auth: MaybeAuthUser,
+) -> Result<Json<super::dto::ImportStatus>, ApiError> {
+    require_admin(&state, &auth).await?;
+    super::routes::import_status_body(&state).await.map(Json)
+}
+
+/// Load the site's Russian around the section (`site-ru.json`) into the
+/// site's translations again: keys with no Russian yet, and the section's
+/// menu item. Admins only.
+#[utoipa::path(
+    post,
+    path = "/translators/admin/site-texts",
+    tag = "translators",
+    security(("bearer_auth" = [])),
+    responses(
+        (status = 200, description = "How many keys the file has, were written, and are unknown to the catalog.", body = super::site_texts::SiteTextsLoaded),
+        (status = 401, response = crate::app::openapi::responses::Unauthorized),
+        (status = 403, response = crate::app::openapi::responses::Forbidden),
+        (status = 500, response = crate::app::openapi::responses::InternalError)
+    )
+)]
+pub async fn refresh_site_texts(
+    State(state): State<AppState>,
+    auth: MaybeAuthUser,
+) -> Result<Json<super::site_texts::SiteTextsLoaded>, ApiError> {
+    require_admin(&state, &auth).await?;
+    let out = super::site_texts::load(&state.db).await?;
+    state.cache.invalidate_by_prefix("i18n:").await;
+    Ok(Json(out))
+}
