@@ -88,8 +88,12 @@ describe("tags", () => {
     it("name a line's problems, none once approved", () => {
         const l = line({ en: "<@ba.vup>Stealth</> for {0}", ruGame: "Невидимость на {0}" });
         const checks = new Map([["game", checkVariant(l.ruGame ?? "", "game", l, null)]]);
-        expect([...lineProblems(false, checks)]).toEqual(["noHighlight"]);
-        expect([...lineProblems(true, checks)]).toEqual([]);
+        expect([...lineProblems(checks.get("game"), false, false, checks)]).toEqual(["noHighlight"]);
+        // Approved with a text that keeps the highlight: nothing wrong.
+        const fixed = checkVariant("<@ba.vup>Невидимость</> на {0}", "approved", l, null);
+        expect([...lineProblems(fixed, true, false, checks)]).toEqual([]);
+        // …unless the glossary changed the term since.
+        expect([...lineProblems(fixed, true, true, checks)]).toEqual(["glossary"]);
     });
 });
 

@@ -190,7 +190,7 @@ function Card({ section, item, me, showVariants, showDiff, t }: ICardProps): Rea
                         <SelectTrigger id={filterId} size="sm">
                             <SelectValue>{() => filterWord(filter, t, problems.find((p) => p.value === filter)?.count)}</SelectValue>
                         </SelectTrigger>
-                        <SelectContent>
+                        <SelectContent alignItemWithTrigger={false}>
                             <SelectItem value="all">{t("filter.all")}</SelectItem>
                             <SelectItem value="proposals">{t("filter.proposals")}</SelectItem>
                             <SelectSeparator />

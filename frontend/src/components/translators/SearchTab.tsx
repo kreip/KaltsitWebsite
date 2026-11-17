@@ -355,7 +355,7 @@ export function SearchTab({ search, onSearch, only, lead }: ISearchTabProps): Re
                             <SelectTrigger id={ids.section} size="sm">
                                 <SelectValue>{() => t(`search.section.${search.section ?? "all"}` as "search.section.all")}</SelectValue>
                             </SelectTrigger>
-                            <SelectContent>
+                            <SelectContent alignItemWithTrigger={false}>
                                 {(["all", ...SEARCH_SECTIONS] as const).map((s) => (
                                     <SelectItem key={s} value={s}>
                                         {t(`search.section.${s}` as "search.section.all")}
@@ -371,7 +371,7 @@ export function SearchTab({ search, onSearch, only, lead }: ISearchTabProps): Re
                         <SelectTrigger id={ids.status} size="sm">
                             <SelectValue>{() => statusWord(search.status ?? "all")}</SelectValue>
                         </SelectTrigger>
-                        <SelectContent>
+                        <SelectContent alignItemWithTrigger={false}>
                             {(["all", ...SEARCH_STATUSES.slice(0, STATES)] as const).map((s) => (
                                 <SelectItem key={s} value={s}>
                                     {statusWord(s)}

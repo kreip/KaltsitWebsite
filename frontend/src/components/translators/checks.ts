@@ -179,21 +179,23 @@ export const PROBLEM_KINDS = ["glossary", "brokenTag", "noHighlight", "newlines"
 export type ProblemKind = (typeof PROBLEM_KINDS)[number];
 
 /**
- * What is wrong with a line as the game shows it — its glossary forms, tags,
- * line breaks, ты / вы — and whether a proposal is noticeably longer. None
- * once the line is approved (it was checked).
+ * What is wrong with the text a line stands with — what its folded row shows:
+ * the approved text once approved, else the game's — its glossary forms,
+ * tags, line breaks, ты / вы; and, until approved, whether a proposal is
+ * noticeably longer. For an approved text the glossary counts only when the
+ * line's terms say a form is missing (a term changed after the approval):
+ * the approval checked the rest.
  */
-export function lineProblems(approved: boolean, checks: ReadonlyMap<string, IVariantCheck>): Set<ProblemKind> {
+export function lineProblems(shown: IVariantCheck | undefined, settled: boolean, glossaryMissing: boolean, checks: ReadonlyMap<string, IVariantCheck>): Set<ProblemKind> {
     const out = new Set<ProblemKind>();
-    if (approved) return out;
-    const game = checks.get("game");
-    if (game) {
-        if (game.glossary.length > 0) out.add("glossary");
-        if (game.brokenTag || game.placeholders.length > 0) out.add("brokenTag");
-        if (game.noHighlight) out.add("noHighlight");
-        if (game.newlines) out.add("newlines");
-        if (game.address) out.add("address");
+    if (shown) {
+        if (settled ? glossaryMissing : shown.glossary.length > 0) out.add("glossary");
+        if (shown.brokenTag || shown.placeholders.length > 0) out.add("brokenTag");
+        if (shown.noHighlight) out.add("noHighlight");
+        if (shown.newlines) out.add("newlines");
+        if (shown.address) out.add("address");
     }
+    if (settled) return out;
     for (const [variant, c] of checks) if (variant.startsWith("proposal:") && c.longer !== null) out.add("longer");
     return out;
 }

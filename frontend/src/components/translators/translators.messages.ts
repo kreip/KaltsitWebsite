@@ -2667,6 +2667,10 @@ export const messages = {
         text: "The glossary has the old word: {terms}. It may need fixing.",
         description: "Toast after a proposal changed one word that no other line holds, but the glossary does.",
     },
+    "problem.allBare": {
+        text: "Errors: all",
+        description: "Status filter option: lines with any error, while the count is not known yet.",
+    },
 } satisfies MessageMap;
 
 export const { keys } = defineMessages({ namespace, messages });

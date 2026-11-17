@@ -197,7 +197,7 @@ export function translatorText(line: TranslatorLine, source: (typeof TRANSLATOR_
 export interface IAnalysis {
     checks: Map<string, IVariantCheck>;
     recommended: string | null;
-    /** What is wrong with the line as the game shows it (none once approved): its row is yellow. */
+    /** What is wrong with the text the line stands with (its folded row shows it): the status filter counts these. */
     problems: Set<ProblemKind>;
 }
 
@@ -222,7 +222,11 @@ export function analyse(line: TranslatorLine, edits: KeyEdits | undefined, place
     add("game", line.ruGame);
     if (edits?.approval) checks.set("approved", checkVariant(edits.approval.text, "approved", line, neighbours));
     const approvedHere = Boolean(edits?.approval) || proposalsAt(edits, place).some((p) => p.context && p.approvedAt !== null);
-    return { checks, recommended: line.editable ? recommend(candidates, approvedHere, rule) : null, problems: lineProblems(line.status === "approved", checks) };
+    // Counted as the folded row shows it: the text the line stands with.
+    const settled = settledText(edits, place);
+    const shown = checks.get(settled ? settled.variant : "game");
+    const glossaryMissing = line.terms.some((term) => term.found === false);
+    return { checks, recommended: line.editable ? recommend(candidates, approvedHere, rule) : null, problems: lineProblems(shown, settled !== null, glossaryMissing, checks) };
 }
 
 export interface IRuCellProps {
@@ -480,8 +484,12 @@ const FILTERS: readonly LineFilter[] = ["all", "proposals", "recommended", "outd
 
 /** The status filter's word for an option: a problem with its count. */
 export function filterWord(value: string, t: T, count?: number): string {
-    if (value === "problems") return t("problem.all", { count: count ?? 0 });
-    if ((PROBLEM_KINDS as readonly string[]).includes(value)) return t("problem.item", { name: t(`problem.${value}` as "problem.glossary"), count: count ?? 0 });
+    // A count not known yet (the search's still loading) is no number, never "(0)".
+    if (value === "problems") return count === undefined ? t("problem.allBare") : t("problem.all", { count });
+    if ((PROBLEM_KINDS as readonly string[]).includes(value)) {
+        const name = t(`problem.${value}` as "problem.glossary");
+        return count === undefined ? name : t("problem.item", { name, count });
+    }
     return t(`filter.${value}` as "filter.all");
 }
 
@@ -558,7 +566,7 @@ export function LinesTable({ storyId, lines, edits, outdated, me, label, showCn,
                         <SelectTrigger id={filterId} size="sm">
                             <SelectValue>{() => filterWord(filter, t, problems.find((p) => p.value === filter)?.count)}</SelectValue>
                         </SelectTrigger>
-                        <SelectContent>
+                        <SelectContent alignItemWithTrigger={false}>
                             {FILTERS.map((f) => (
                                 <SelectItem key={f} value={f}>
                                     {t(`filter.${f}` as "filter.all")}
