@@ -44,7 +44,10 @@ Tables: Postgres schema `translators` (own migrations, `translators._migrations`
 
 Off unless the backend has `TRANSLATORS_DEV_LOGIN=1`. When on, `/translators/dev-login`
 signs in as a local account (`dev-translator`) that is a member of the section. The
-regular game-account sign-in is not touched.
+regular game-account sign-in is not touched. With it on, the Admin tab's Maintenance lists
+**Test edits** — every proposal and approval of `dev-translator` — with tick boxes and "Delete
+selected" (an approved one is withdrawn first), for cleaning the local base after a check
+(`GET /api/translators/admin/test-edits`, `POST …/test-edits/delete`).
 
 ## Russian
 
@@ -173,7 +176,11 @@ names and nouns in `-ия` (Амия: Амии, Амию, Амией), `-а` (М
 form (no "form not found"). The replacement puts the glossary's stem with the game word's
 ending found among those rules, only when the two stems are the same word spelled differently;
 the nominative is never put in for another case ("У Зоя царапина"): a word whose case the rules
-cannot tell is "check by hand". A word in `-ь` (Чэнь), `-о`, `-и`… has no rules: only the
+cannot tell is "check by hand", and so is a word that may also be another glossary word's case
+(«Зои» / «Зое» while «Зоя» is a term: Zoey's name or Зоя's genitive / dative — `fix::may_be_oblique`,
+the glossary's words known while a plan is worked out).
+A stem matches only with an ending after it (or an adjective's suffix and ending: «урсусский» for
+«Урсус»; `matcher::stem_match`): «Доберманн» is not «Доберман». A word in `-ь` (Чэнь), `-о`, `-и`… has no rules: only the
 glossary form's own ending counts, and a word that never declines is put in as it is.
 A failed download is kept as a code (`offline`, `forbidden`, `changed:…`) and worded on the
 page.
@@ -190,6 +197,15 @@ case are first taken back to their nominatives), "check by hand" where the case 
 (`Амии`: genitive, dative or prepositional) — and writes my proposals for the ticked ones. A
 glossary term whose Russian is the old word is named, with a link: the glossary may need
 fixing (the sheet is never written from the site).
+
+Proposals made by either replacement are one **batch** (`translators.proposal_batches`,
+`proposals.batch_id`, migration t022): the Edits list shows it as one row — «Замена «Доберман» →
+«Доберманн» · N записей · мест: M», its states — with "Approve all" / "Reject all" for a
+translator; unfolded, its places are the usual rows (one is taken out by rejecting it, or by its
+author deleting it).
+
+While one types a proposal, the box warns of a glossary term of the English whose form the text
+lacks (`glossaryForm.ts`, the page's copy of the backend's rule).
 
 ## The game's tags
 
@@ -227,7 +243,9 @@ number a `#`) and tells the level by the blackboard's values (`{atk_scale:0%}` �
 `text_places.field = 'skill.level'`, the note the level(s), `of_key` the template's entry.
 The operator's card folds them under the skill's description ("N entries with the levels'
 numbers"); the search names them «Skill 1 › skill level 4». An entry tied to nothing is
-«Interface and other › Not tied» (the file name on hover). On my proposal for a template,
+«Interface and other › Not tied» (the file name on hover). A speaker's name the pack translates
+stands at every scene it speaks in («Story › Speakers › chapter › scene», `text_places.field =
+'speaker'`, the object the story). On my proposal for a template,
 "Apply to the levels" (`POST /api/translators/proposals/{id}/levels`) writes my proposals
 for the level entries with each level's numbers put in, the tags dropped where the entry
 has none.
@@ -328,6 +346,10 @@ Above the list: chips by state with their counts — All, Proposed, Approved, Re
 in a pack (`EditRow.releasedIn`: the version the approved text went out in), and Approved by
 another / Outdated when there are such — and **Compare**: "now" as its changes against "was".
 
+Compare (here, in History, on the tables) marks only the letters of a word changed by a few
+(«Доберман» → «Доберманн»: the «н»); the game's tags are left out of it («tags changed» when
+only they differ).
+
 ## Deciding in the Edits list
 
 On the **Edits** tab a translator (or an admin) decides without opening the line: a click on a
@@ -348,13 +370,18 @@ and every button, in sight without hovering. A second click or Esc folds it; the
 № cell does the same from the keyboard. A link to a line (`#n-…`) opens it. "Open every line" in
 the View menu (`open=1`) shows every row opened, the buttons on hover, as before.
 
+A player's choices (Choice 1–3) open and fold together with the line they answer, the line just
+before them.
+
 An approved line shows only the approved text with one Withdraw (the game's old text and the
 proposals are in its History; "a newer proposal" says one waits).
 
 ## The line's buttons
 
 Each text carries its own buttons: the game's text (in the panel shown on hover), each proposal,
-a translator's and the machine's variant. The main decisions have a word and an icon —
+a translator's and the machine's variant. "Approve" on a text with errors (a glossary form missing, a broken tag, no player nickname, a
+lost highlight, line breaks, ты / вы) asks first: «В тексте есть ошибки (N). Всё равно
+утвердить?». The main decisions have a word and an icon —
 **Approve** (✓) and, on a proposal, **Reject** (✗); on the approved one **Withdraw**. A
 translator's or the machine's variant is approved at once. "Approve" on the game's text keeps it
 as in the game and asks first when the line has proposals. Propose, remark, note, history and
@@ -375,7 +402,8 @@ A row is never yellow as a whole: the marks name the problem and a glossary term
 marked. The status filter counts a line by the text it stands with (as its folded row shows it:
 the approved text once approved — then the glossary only when a term changed after the
 approval — else the game's), with counts; a count not known yet shows no number, never "(0)";
-the menu opens under its field. The problems: a glossary form not found, a broken tag (left open or broken, a stray
+the menu opens under its field. The problems (a nickname `{@nickname}` written as a word is «no player nickname», `nickname`, not
+a broken tag): a glossary form not found, a broken tag (left open or broken, a stray
 closer, a substitution `{…}` lost or added, a tag the English lacks), no highlight (the English
 has a tag the Russian lacks, the text whole), line breaks, a proposal noticeably longer than the
 game's text, ты / вы. The page works them out (`checks.ts`, `markup.ts::tagHealth`); for the
