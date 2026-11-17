@@ -5,8 +5,10 @@
  * click on the row (not on a button, a link, a box, not a selection, not a
  * double click that selects a word) opens it — the variants, the proposals,
  * the history and every button — and a second click or Esc folds it again.
- * The chevron in the № cell does the same from the keyboard. "Open every
- * line" in the View menu (`open=1`) shows every row opened, as before.
+ * The chevron in the № cell does the same from the keyboard. A player's
+ * choices open and fold together with the line they answer (the story's
+ * table). "Open every line" in the View menu (`open=1`) shows every row
+ * opened, as before.
  */
 import { ChevronDown, ChevronRight } from "lucide-react";
 import type React from "react";
@@ -29,17 +31,29 @@ export interface IOpenRows {
     rowProps: (id: string, locked?: boolean) => { onClick: (e: React.MouseEvent<HTMLElement>) => void; "data-state"?: "selected"; "data-open"?: "" };
 }
 
-/** Which rows of a table are open, by the row's id; `initial` (the row the address names) starts open. */
-export function useOpenRows(initial: string | null = null): IOpenRows {
+/**
+ * Which rows of a table are open, by the row's id; `initial` (the row the
+ * address names) starts open. `groupOf` names rows that open and fold
+ * together (a player's choices with the line they answer).
+ */
+export function useOpenRows(initial: string | null = null, groupOf?: (id: string) => readonly string[] | undefined): IOpenRows {
     const [open, setOpen] = useState<ReadonlySet<string>>(() => new Set(initial ? [initial] : []));
     const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
-    const toggle = useCallback((id: string) => {
-        setOpen((before) => {
-            const next = new Set(before);
-            if (!next.delete(id)) next.add(id);
-            return next;
-        });
-    }, []);
+    const toggle = useCallback(
+        (id: string) => {
+            const ids = groupOf?.(id) ?? [id];
+            setOpen((before) => {
+                const next = new Set(before);
+                const opening = !before.has(id);
+                for (const x of ids) {
+                    if (opening) next.add(x);
+                    else next.delete(x);
+                }
+                return next;
+            });
+        },
+        [groupOf],
+    );
     // The row the address names, once it changes (a link to another line of the same table).
     useEffect(() => {
         if (initial) setOpen((before) => (before.has(initial) ? before : new Set([...before, initial])));

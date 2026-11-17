@@ -12,7 +12,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useRouterState } from "@tanstack/react-router";
 import { Check, PenLine, X } from "lucide-react";
 import type React from "react";
-import { Fragment, useContext, useId, useMemo, useState } from "react";
+import { Fragment, useCallback, useContext, useId, useMemo, useState } from "react";
 import { Badge } from "#/components/ui/badge";
 import { InfoHint } from "#/components/ui/info-hint";
 import { Label } from "#/components/ui/label";
@@ -530,7 +530,28 @@ export function LinesTable({ storyId, lines, edits, outdated, me, label, showCn,
     // The rows opened by a click; the one the address names (#n-…) starts open.
     const hash = useRouterState({ select: (st) => st.location.hash });
     const hashed = hash.startsWith("n-") ? lines[Number(hash.slice(2)) - 1] : undefined;
-    const opened = useOpenRows(hashed ? `${hashed.line}.${hashed.part}` : null);
+    // A player's choices open with the line they answer: the line before them and every choice of the run.
+    const choiceGroups = useMemo(() => {
+        const out = new Map<string, string[]>();
+        let group: string[] | null = null;
+        lines.forEach((line, i) => {
+            if (line.kind !== "option") {
+                group = null;
+                return;
+            }
+            if (!group) {
+                const before = lines[i - 1];
+                group = before ? [`${before.line}.${before.part}`] : [];
+                for (const id of group) out.set(id, group);
+            }
+            const id = `${line.line}.${line.part}`;
+            group.push(id);
+            out.set(id, group);
+        });
+        return out;
+    }, [lines]);
+    const groupOf = useCallback((id: string) => choiceGroups.get(id), [choiceGroups]);
+    const opened = useOpenRows(hashed ? `${hashed.line}.${hashed.part}` : null, groupOf);
     const all = useContext(OpenAll);
     const [filter, setFilter] = useState<LineFilter>("all");
     const filterId = useId();
