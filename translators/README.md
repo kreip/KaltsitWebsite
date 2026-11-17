@@ -64,8 +64,16 @@ texts" on the Admin tab. The game's word for an operator is «оперативн
 site's menus say so. A key the
 site's catalog does not know yet (the frontend's `bun run i18n:sync` has not run) is skipped
 and counted. The admin panel's value of a section key wins over the shipped file only when it
-differs from the English source. The site's other texts stay English until they are
-translated in the admin panel.
+differs from the English source.
+
+`site-ru.json` holds the whole site's interface (8,200 keys, ~0.75 MB), the game's terms as the
+pack and the glossary write them (классы, АТК / ЗАЩ / СОПР / ХП, ОВ, рассудок, орундум, чистый
+орундум…); the site is called «Мьюлсис» in Russian. Only the changelog's release notes
+(`changelog.note.*`, the developers' history) stay English. The file goes in with the backend
+binary and is written to the database with one SQL statement at start, so the 2 MB limit of
+`/api/admin/i18n/sync` does not apply to it. That limit holds for the English catalog the
+frontend sends with `bun run i18n:sync` (about 2.07 MB of 2 MiB now): the keys must be synced
+before the loader can write their Russian.
 
 ## Deploying
 
