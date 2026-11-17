@@ -4,26 +4,24 @@ import type { GlossaryTerm } from "./GlossaryTerm";
 /**
  * The whole stored glossary and its freshness.
  */
-export type Glossary = {
-    /**
-     * The Google Sheet, to open and edit it.
-     */
-    sheetUrl: string;
-    /**
-     * Unix seconds of the stored copy's download, null when there is none.
-     */
-    fetchedAt: number | null;
-    /**
-     * Unix seconds of the last attempt, successful or not.
-     */
-    attemptedAt: number | null;
-    /**
-     * Why the last attempt failed (the stored copy is older then).
-     */
-    lastError: string | null;
-    /**
-     * A download is running now.
-     */
-    refreshing: boolean;
-    terms: Array<GlossaryTerm>;
-};
+export type Glossary = { 
+/**
+ * The Google Sheet, to open and edit it.
+ */
+sheetUrl: string, 
+/**
+ * Unix seconds of the stored copy's download, null when there is none.
+ */
+fetchedAt: number | null, 
+/**
+ * Unix seconds of the last attempt, successful or not.
+ */
+attemptedAt: number | null, 
+/**
+ * Why the last attempt failed (the stored copy is older then).
+ */
+lastError: string | null, 
+/**
+ * A download is running now.
+ */
+refreshing: boolean, terms: Array<GlossaryTerm>, };

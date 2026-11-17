@@ -6,22 +6,20 @@ import type { WordGlossaryTerm } from "./WordGlossaryTerm";
  * What "Replace the word in other lines" would do, or did. A text outside
  * the story is listed with `storyId = "@text"` and its number as `ord`.
  */
-export type WordReplace = {
-    lines: Array<GlossaryFixLine>;
-    /**
-     * Entries a proposal was written for; 0 when only listing.
-     */
-    created: number;
-    /**
-     * Lines left to a person: the case is not sure.
-     */
-    unsure: number;
-    /**
-     * More texts hold the word than listed.
-     */
-    more: boolean;
-    /**
-     * Glossary terms whose Russian is the old word.
-     */
-    glossary: Array<WordGlossaryTerm>;
-};
+export type WordReplace = { lines: Array<GlossaryFixLine>, 
+/**
+ * Entries a proposal was written for; 0 when only listing.
+ */
+created: number, 
+/**
+ * Lines left to a person: the case is not sure.
+ */
+unsure: number, 
+/**
+ * More texts hold the word than listed.
+ */
+more: boolean, 
+/**
+ * Glossary terms whose Russian is the old word.
+ */
+glossary: Array<WordGlossaryTerm>, };

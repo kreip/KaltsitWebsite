@@ -4,20 +4,16 @@ import type { EditPerson } from "./EditPerson";
 /**
  * A request for access.
  */
-export type AccessRequest = {
-    user: EditPerson;
-    /**
-     * The game uid they signed in with.
-     */
-    uid: string;
-    note: string | null;
-    /**
-     * Unix seconds.
-     */
-    createdAt: number;
-    /**
-     * `open`, `accepted` or `declined`.
-     */
-    status: string;
-    decidedBy: EditPerson | null;
-};
+export type AccessRequest = { user: EditPerson, 
+/**
+ * The game uid they signed in with.
+ */
+uid: string, note: string | null, 
+/**
+ * Unix seconds.
+ */
+createdAt: number, 
+/**
+ * `open`, `accepted` or `declined`.
+ */
+status: string, decidedBy: EditPerson | null, };

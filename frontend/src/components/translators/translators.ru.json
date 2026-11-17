@@ -704,5 +704,6 @@
     "problem.nickname": "нет ника игрока",
     "approve.problemsTitle": "В тексте есть ошибки ({count}). Всё равно утвердить?",
     "approve.problemsHint": "Какие — видно по меткам рядом с текстом.",
-    "approve.anyway": "Всё равно утвердить"
+    "approve.anyway": "Всё равно утвердить",
+    "editor.glossary": "Глоссарий: {terms} — этой формы нет в тексте."
 }

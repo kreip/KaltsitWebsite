@@ -100,7 +100,7 @@ pub fn form_folded(form: &str) -> Vec<String> {
 /// Whether a game word (lower case, `ё` = `е`) is the glossary's word: by
 /// stem or as one of its case forms.
 pub fn is_form_word(word: &str, form: &str) -> bool {
-    word.starts_with(stem(form).as_str()) || inflects(word, form)
+    super::matcher::stem_match(word, &stem(form)) || inflects(word, form)
 }
 
 /// Where a form of `forms.len()` words (`form_folded`) stands in `text`: the

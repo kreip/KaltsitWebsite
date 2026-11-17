@@ -3,17 +3,16 @@
 /**
  * What a load did.
  */
-export type SiteTextsLoaded = {
-    /**
-     * Keys in the file.
-     */
-    total: number;
-    /**
-     * Keys written now (new Russian, the loader's own Russian changed in the file, or the section's own keys).
-     */
-    written: number;
-    /**
-     * Keys the site's catalog does not know yet (the frontend's `i18n:sync` has not run).
-     */
-    unknown: number;
-};
+export type SiteTextsLoaded = { 
+/**
+ * Keys in the file.
+ */
+total: number, 
+/**
+ * Keys written now (new Russian, the loader's own Russian changed in the file, or the section's own keys).
+ */
+written: number, 
+/**
+ * Keys the site's catalog does not know yet (the frontend's `i18n:sync` has not run).
+ */
+unknown: number, };

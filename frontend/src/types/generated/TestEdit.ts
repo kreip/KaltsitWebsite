@@ -4,24 +4,20 @@
  * One edit of the development account: a proposal (its id), or an approval
  * it made of another variant (the entry's md5).
  */
-export type TestEdit = {
-    /**
-     * `proposal` or `approval`.
-     */
-    kind: string;
-    /**
-     * The proposal's id, or the md5 of the approved entry's English.
-     */
-    id: string;
-    en: string;
-    text: string;
-    /**
-     * The story of the place (`@text` outside the story).
-     */
-    storyId: string;
-    /**
-     * A proposal approved (for the entry or its place): deleting withdraws it first.
-     */
-    approved: boolean;
-    at: number;
-};
+export type TestEdit = { 
+/**
+ * `proposal` or `approval`.
+ */
+kind: string, 
+/**
+ * The proposal's id, or the md5 of the approved entry's English.
+ */
+id: string, en: string, text: string, 
+/**
+ * The story of the place (`@text` outside the story).
+ */
+storyId: string, 
+/**
+ * A proposal approved (for the entry or its place): deleting withdraws it first.
+ */
+approved: boolean, at: number, };

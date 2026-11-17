@@ -3,12 +3,8 @@
 /**
  * Proposals made, approved and rejected.
  */
-export type EditCounts = {
-    proposed: number;
-    approved: number;
-    rejected: number;
-    /**
-     * Lines approved with any variant (the game's text, a translator's, the machine's, a proposal).
-     */
-    linesApproved: number;
-};
+export type EditCounts = { proposed: number, approved: number, rejected: number, 
+/**
+ * Lines approved with any variant (the game's text, a translator's, the machine's, a proposal).
+ */
+linesApproved: number, };

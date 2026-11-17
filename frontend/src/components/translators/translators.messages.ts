@@ -2743,6 +2743,10 @@ export const messages = {
         text: "Approve anyway",
         description: "Button of the approve-with-errors confirmation.",
     },
+    "editor.glossary": {
+        text: "Glossary: {terms} — this form is not in the text.",
+        description: "Warning under the proposal box: glossary terms of the English whose Russian form the text lacks.",
+    },
 } satisfies MessageMap;
 
 export const { keys } = defineMessages({ namespace, messages });

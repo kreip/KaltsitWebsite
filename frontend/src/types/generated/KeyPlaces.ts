@@ -4,11 +4,8 @@ import type { KeyPlace } from "./KeyPlace";
 /**
  * Every place of the entry at a place.
  */
-export type KeyPlaces = {
-    editKey: string;
-    total: number;
-    /**
-     * Up to 500: the story's in story order, then the game data's.
-     */
-    places: Array<KeyPlace>;
-};
+export type KeyPlaces = { editKey: string, total: number, 
+/**
+ * Up to 500: the story's in story order, then the game data's.
+ */
+places: Array<KeyPlace>, };

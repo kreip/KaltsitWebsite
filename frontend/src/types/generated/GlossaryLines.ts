@@ -4,13 +4,12 @@ import type { GlossaryLine } from "./GlossaryLine";
 /**
  * A term's story lines.
  */
-export type GlossaryLines = {
-    /**
-     * Every line holding the term (with `missing`: those without the form).
-     */
-    total: number;
-    /**
-     * Up to 200, in story order.
-     */
-    lines: Array<GlossaryLine>;
-};
+export type GlossaryLines = { 
+/**
+ * Every line holding the term (with `missing`: those without the form).
+ */
+total: number, 
+/**
+ * Up to 200, in story order.
+ */
+lines: Array<GlossaryLine>, };

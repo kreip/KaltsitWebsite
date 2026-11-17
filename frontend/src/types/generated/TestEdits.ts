@@ -4,10 +4,8 @@ import type { TestEdit } from "./TestEdit";
 /**
  * The development account's edits, for cleaning them away locally.
  */
-export type TestEdits = {
-    /**
-     * The development sign-in is on (`TRANSLATORS_DEV_LOGIN=1`); off on the real site.
-     */
-    enabled: boolean;
-    items: Array<TestEdit>;
-};
+export type TestEdits = { 
+/**
+ * The development sign-in is on (`TRANSLATORS_DEV_LOGIN=1`); off on the real site.
+ */
+enabled: boolean, items: Array<TestEdit>, };

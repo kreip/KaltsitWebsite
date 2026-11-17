@@ -5,19 +5,16 @@ import type { EditPerson } from "./EditPerson";
 /**
  * One person's share.
  */
-export type PersonStats = {
-    person: EditPerson;
-    /**
-     * The role, when a member.
-     */
-    role: string | null;
-    /**
-     * Their proposals: the last 7 days and in all.
-     */
-    week: EditCounts;
-    total: EditCounts;
-    /**
-     * Approvals and rejections they made, in all.
-     */
-    decisions: number;
-};
+export type PersonStats = { person: EditPerson, 
+/**
+ * The role, when a member.
+ */
+role: string | null, 
+/**
+ * Their proposals: the last 7 days and in all.
+ */
+week: EditCounts, total: EditCounts, 
+/**
+ * Approvals and rejections they made, in all.
+ */
+decisions: number, };

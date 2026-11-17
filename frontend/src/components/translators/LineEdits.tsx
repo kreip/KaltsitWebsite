@@ -37,10 +37,12 @@ import type { EditPerson } from "#/types/generated/EditPerson";
 import type { EditPlace } from "#/types/generated/EditPlace";
 import type { GameHere } from "#/types/generated/GameHere";
 import type { KeyEdits } from "#/types/generated/KeyEdits";
+import type { LineTerm } from "#/types/generated/LineTerm";
 import type { OutdatedEdit } from "#/types/generated/OutdatedEdit";
 import type { Proposal } from "#/types/generated/Proposal";
 import type { TranslatorLine } from "#/types/generated/TranslatorLine";
 import type { TranslatorsMe } from "#/types/generated/TranslatorsMe";
+import { missingTerms } from "./glossaryForm";
 import { tagDiff, tagPairs, tokensIn } from "./markup";
 import { GamePlace } from "./PlaceWords";
 import { StoryText } from "./StoryText";
@@ -1058,6 +1060,18 @@ interface IEditorProps {
 }
 
 /** The in-row editor of my proposal: Ctrl+Enter saves, Esc cancels; a substitution is one chip, a tag a span as in the game (TokenEditor.tsx). */
+/** Under the proposal box while one types: the glossary terms of the English whose form the text lacks. */
+export function GlossaryWarning({ text, terms, t }: { text: string; terms: readonly LineTerm[]; t: T }): React.ReactElement | null {
+    const missing = missingTerms(text, terms);
+    if (missing.length === 0) return null;
+    return (
+        <output className="flex items-start gap-1 text-warning-foreground text-xs">
+            <X className="mt-0.5 size-3 shrink-0" aria-hidden="true" />
+            {t("editor.glossary", { terms: missing.map((m) => `${m.en} → ${m.ru}`).join(", ") })}
+        </output>
+    );
+}
+
 export function ProposalEditor({ line, place, initial, source, context, here = null, nickname, onClose, t }: IEditorProps): React.ReactElement {
     const id = useId();
     const hintId = useId();
@@ -1093,6 +1107,7 @@ export function ProposalEditor({ line, place, initial, source, context, here = n
             </label>
             <TokenEditor id={id} initial={initial} nickname={nickname} palette={tools.palette} tags={tools.tags} lookup={tools.lookup} onChange={setText} onSubmit={submit} onCancel={onClose} labels={tools.labels} describedBy={hintId} />
             <TagsWarning en={line.en} text={text} words={tools.words} t={t} />
+            <GlossaryWarning text={text} terms={line.terms} t={t} />
             <span id={hintId} className="text-subtle-foreground text-xs">
                 {t("save.proposalOnly")}
             </span>

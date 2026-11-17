@@ -4,4 +4,4 @@ import type { EditPerson } from "./EditPerson";
 /**
  * A member who has read a story, and when.
  */
-export type StoryRead = { by: EditPerson; at: number };
+export type StoryRead = { by: EditPerson, at: number, };

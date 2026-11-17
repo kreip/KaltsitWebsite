@@ -3,4 +3,4 @@
 /**
  * One line of a replacement list, as `GlossaryFixLine` names it.
  */
-export type LinePick = { storyId: string; ord: number };
+export type LinePick = { storyId: string, ord: number, };

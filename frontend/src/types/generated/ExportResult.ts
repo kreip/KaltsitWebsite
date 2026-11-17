@@ -5,4 +5,4 @@ import type { ExportReport } from "./ExportReport";
 /**
  * The export's files and its report.
  */
-export type ExportResult = { files: Array<ExportFile>; report: ExportReport };
+export type ExportResult = { files: Array<ExportFile>, report: ExportReport, };

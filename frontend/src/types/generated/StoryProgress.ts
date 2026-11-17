@@ -4,4 +4,4 @@
  * A story's progress: its lines that can be edited, approved ones, ones
  * waiting for a decision (proposals, not approved) and outdated ones.
  */
-export type StoryProgress = { storyId: string; total: number; approved: number; waiting: number; outdated: number };
+export type StoryProgress = { storyId: string, total: number, approved: number, waiting: number, outdated: number, };

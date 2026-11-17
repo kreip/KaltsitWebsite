@@ -17,8 +17,8 @@ use super::parse::Term;
 /// Endings cut from a Russian word, longest first.
 const ENDINGS: &[&str] = &[
     "ами", "ями", "ого", "его", "ому", "ему", "ыми", "ими", "ой", "ей", "ом", "ем", "ам", "ям",
-    "ах", "ях", "ов", "ев", "ий", "ый", "ая", "яя", "ое", "ее", "ую", "юю", "ы", "и", "а", "я",
-    "у", "ю", "е", "о", "ь", "й",
+    "ах", "ях", "ов", "ев", "ий", "ый", "ая", "яя", "ое", "ее", "ую", "юю", "ых", "их", "ые", "ие",
+    "ым", "им", "ы", "и", "а", "я", "у", "ю", "е", "о", "ь", "й",
 ];
 
 fn words(s: &str) -> Vec<String> {
@@ -62,6 +62,24 @@ pub fn stem(word: &str) -> String {
     word.to_owned()
 }
 
+/// Suffixes of an adjective made of a name («Урсус» → «урсусский»), before its ending.
+const ADJECTIVE: &[&str] = &["овск", "евск", "инск", "ск", "ов", "ев", "ин"];
+
+/// Whether a word (lower case, `ё` = `е`) is `stem` with an ending — none,
+/// one of the endings, or an adjective's suffix and ending («урсусский»).
+/// Anything else is another word: «доберманн» is not «доберман».
+pub fn stem_match(word: &str, stem: &str) -> bool {
+    let Some(rest) = word.strip_prefix(stem) else {
+        return false;
+    };
+    rest.is_empty()
+        || ENDINGS.contains(&rest)
+        || ADJECTIVE.iter().any(|a| {
+            rest.strip_prefix(a)
+                .is_some_and(|e| ENDINGS.contains(&e) || e == "ий" || e == "ый")
+        })
+}
+
 /// Whether `text` holds `form`, word by word in a row: by stem, or as one of
 /// the word's case forms (`paradigm`).
 pub fn has_form(text: &str, form: &str) -> bool {
@@ -78,7 +96,7 @@ pub fn has_form(text: &str, form: &str) -> bool {
     text_words.windows(forms.len()).any(|win| {
         win.iter()
             .zip(forms.iter().zip(&stems))
-            .all(|(w, (f, s))| w.starts_with(s.as_str()) || inflects(w, f))
+            .all(|(w, (f, s))| stem_match(w, s) || inflects(w, f))
     })
 }
 
@@ -332,6 +350,11 @@ mod tests {
         assert!(has_form("Ёжик", "ежик"));
         assert!(!has_form("Айленд Родос", "Родос Айленд"));
         assert!(!has_form("Ничего нет", "Амия"));
+        // Another word with the stem inside it is not the form.
+        assert!(!has_form("Это Доберманн.", "Доберман"));
+        assert!(has_form("С Доберманом.", "Доберман"));
+        assert!(has_form("Урсусский ребёнок.", "Урсус"));
+        assert!(has_form("Из урсусской армии.", "Урсус"));
     }
 
     #[test]
