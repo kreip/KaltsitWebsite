@@ -86,26 +86,78 @@ pub fn is_consonant(c: char) -> bool {
     "бвгджзклмнпрстфхцчшщ".contains(c)
 }
 
-const ENDS_IA: &[&str] = &["я", "и", "ю", "ей", "ею"];
-const ENDS_YA: &[&str] = &["я", "и", "е", "ю", "ей", "ею"];
-const ENDS_A: &[&str] = &["а", "ы", "е", "у", "ой", "ою"];
-/// After г к х ж ш ч щ: `и`, not `ы`; after a hushing letter `ей` too.
-const ENDS_A_SOFT: &[&str] = &["а", "и", "е", "у", "ой", "ою", "ей", "ею"];
-const ENDS_CONSONANT: &[&str] = &["", "а", "у", "ом", "е"];
-const ENDS_CONSONANT_HUSHING: &[&str] = &["", "а", "у", "ом", "ем", "е"];
-const ENDS_YI: &[&str] = &["ый", "ого", "ому", "ым", "ом"];
-const ENDS_OE: &[&str] = &["ое", "ого", "ому", "ым", "ом"];
-const ENDS_AYA: &[&str] = &["ая", "ой", "ую", "ою"];
-const ENDS_AYA_HUSHING: &[&str] = &["ая", "ей", "ую", "ею", "ой"];
+/// The singular endings of a word by case — nominative, genitive, dative,
+/// accusative, instrumental, prepositional — each with the endings accepted
+/// for it, the usual one first.
+pub type Cases = [&'static [&'static str]; 6];
 
-/// The singular case forms of a glossary word (lower case, `ё` = `е`) by
-/// simple rules: its stem (what stays) and the endings, the nominative's
-/// first. Names and nouns in `-ия` (Амия: Амии, Амию, Амией), `-а`
+const CASES_IA: Cases = [&["я"], &["и"], &["и"], &["ю"], &["ей", "ею"], &["и"]];
+const CASES_YA: Cases = [&["я"], &["и"], &["е"], &["ю"], &["ей", "ею"], &["е"]];
+const CASES_A: Cases = [&["а"], &["ы"], &["е"], &["у"], &["ой", "ою"], &["е"]];
+/// After г к х: `и`, not `ы`.
+const CASES_A_VELAR: Cases = [&["а"], &["и"], &["е"], &["у"], &["ой", "ою"], &["е"]];
+/// After ж ш ч щ: `и`, and `ей` as well as `ой`.
+const CASES_A_HUSHING: Cases = [
+    &["а"],
+    &["и"],
+    &["е"],
+    &["у"],
+    &["ей", "ею", "ой", "ою"],
+    &["е"],
+];
+/// A man's name or a noun in a consonant; the accusative as a person's (= genitive).
+const CASES_CONSONANT: Cases = [&[""], &["а"], &["у"], &["а"], &["ом"], &["е"]];
+const CASES_CONSONANT_HUSHING: Cases = [&[""], &["а"], &["у"], &["а"], &["ем", "ом"], &["е"]];
+const CASES_YI: Cases = [&["ый"], &["ого"], &["ому"], &["ого", "ый"], &["ым"], &["ом"]];
+const CASES_OE: Cases = [&["ое"], &["ого"], &["ому"], &["ое"], &["ым"], &["ом"]];
+const CASES_AYA: Cases = [&["ая"], &["ой"], &["ой"], &["ую"], &["ой", "ою"], &["ой"]];
+const CASES_AYA_HUSHING: Cases = [
+    &["ая"],
+    &["ей", "ой"],
+    &["ей", "ой"],
+    &["ую"],
+    &["ей", "ею", "ой"],
+    &["ей", "ой"],
+];
+
+/// A word's stem (what stays, lower case) and its endings by case.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Paradigm {
+    pub stem: String,
+    pub cases: &'static Cases,
+}
+
+impl Paradigm {
+    /// Every ending of the word, the nominative's first.
+    pub fn endings(&self) -> Vec<&'static str> {
+        let mut out: Vec<&'static str> = Vec::new();
+        for e in self.cases.iter().flat_map(|c| c.iter().copied()) {
+            if !out.contains(&e) {
+                out.push(e);
+            }
+        }
+        out
+    }
+
+    pub fn nominative(&self) -> &'static str {
+        self.cases[0][0]
+    }
+
+    /// The cases `word` (lower case, `ё` = `е`) may stand in; empty when it is not a form of this word.
+    pub fn cases_of(&self, word: &str) -> Vec<usize> {
+        word.strip_prefix(self.stem.as_str())
+            .map(|e| (0..6).filter(|&i| self.cases[i].contains(&e)).collect())
+            .unwrap_or_default()
+    }
+}
+
+/// The singular case forms of a word (lower case, `ё` = `е`) by simple
+/// rules. Names and nouns in `-ия` (Амия: Амии, Амию, Амией), `-а`
 /// (Маргарита: Маргариты, Маргарите, Маргариту, Маргаритой), `-я` (Зоя: Зои,
 /// Зое, Зою, Зоей), a consonant (Рэндолл: Рэндолла, Рэндоллу, Рэндоллом,
 /// Рэндолле); adjectives in `-ый`, `-ое`, `-ая`. None for any other word
 /// (`-ь` may not decline at all — Чэнь; `-о`, `-и`, `-ий`…).
-pub fn paradigm(word: &str) -> Option<(String, &'static [&'static str])> {
+pub fn paradigm(word: &str) -> Option<Paradigm> {
     let chars: Vec<char> = word.chars().collect();
     let n = chars.len();
     if n < 2 || !chars.iter().all(|c| c.is_alphabetic()) {
@@ -113,36 +165,45 @@ pub fn paradigm(word: &str) -> Option<(String, &'static [&'static str])> {
     }
     let keep = |k: usize| chars[..n - k].iter().collect::<String>();
     let at = |k: usize| chars[n - 1 - k];
-    let hushing = |c: char| "жшчщц".contains(c);
-    let velar = |c: char| "гкхжшчщ".contains(c);
+    let hushing = |c: char| "жшчщ".contains(c);
+    let make = |k: usize, cases: &'static Cases| {
+        Some(Paradigm {
+            stem: keep(k),
+            cases,
+        })
+    };
     let last = at(0);
     let end2: String = chars[n - 2..].iter().collect();
     if n >= 4 {
         match end2.as_str() {
-            "ый" => return Some((keep(2), ENDS_YI)),
-            "ое" => return Some((keep(2), ENDS_OE)),
-            "ая" if hushing(at(2)) => return Some((keep(2), ENDS_AYA_HUSHING)),
-            "ая" => return Some((keep(2), ENDS_AYA)),
+            "ый" => return make(2, &CASES_YI),
+            "ое" => return make(2, &CASES_OE),
+            "ая" if hushing(at(2)) => return make(2, &CASES_AYA_HUSHING),
+            "ая" => return make(2, &CASES_AYA),
             _ => {}
         }
     }
     match last {
-        'я' if at(1) == 'и' => Some((keep(1), ENDS_IA)),
-        'я' => Some((keep(1), ENDS_YA)),
-        'а' if velar(at(1)) => Some((keep(1), ENDS_A_SOFT)),
-        'а' => Some((keep(1), ENDS_A)),
-        c if is_consonant(c) && hushing(c) => Some((keep(0), ENDS_CONSONANT_HUSHING)),
-        c if is_consonant(c) => Some((keep(0), ENDS_CONSONANT)),
+        'я' if at(1) == 'и' => make(1, &CASES_IA),
+        'я' => make(1, &CASES_YA),
+        'а' if hushing(at(1)) => make(1, &CASES_A_HUSHING),
+        'а' if "гкх".contains(at(1)) => make(1, &CASES_A_VELAR),
+        'а' => make(1, &CASES_A),
+        c if is_consonant(c) && (hushing(c) || c == 'ц') => make(0, &CASES_CONSONANT_HUSHING),
+        c if is_consonant(c) => make(0, &CASES_CONSONANT),
         _ => None,
     }
 }
 
 /// Whether `word` is a case form of `form` by `paradigm` (both lower case, `ё` = `е`).
 pub fn inflects(word: &str, form: &str) -> bool {
-    paradigm(form).is_some_and(|(stem, ends)| {
-        word.strip_prefix(stem.as_str())
-            .is_some_and(|e| ends.contains(&e))
-    })
+    paradigm(form).is_some_and(|p| !p.cases_of(word).is_empty())
+}
+
+/// A word that keeps one form in every case: no case rules, and it ends in a
+/// vowel other than `а` / `я` (`-о`, `-е`, `-и`, `-у`, `-ю`, `-э`, `-ы`).
+pub fn indeclinable(word: &str) -> bool {
+    paradigm(word).is_none() && word.chars().next_back().is_some_and(|c| "оеиуюэы".contains(c))
 }
 
 /// Whether `text` holds any of a term's Russian forms (variants split by ` / `,

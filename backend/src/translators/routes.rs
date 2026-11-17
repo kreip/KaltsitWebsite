@@ -8,7 +8,8 @@ use uuid::Uuid;
 use super::dto::{
     Glossary, GlossaryFix, GlossaryFixInput, GlossaryFixLine, GlossaryLine, GlossaryLines,
     GlossaryLinesQuery, GlossaryTerm, LineTerm, MissingTerm, RecommendRuleInput,
-    TranslatorStoryLines, TranslatorsMe, VariantGlossary,
+    TranslatorStoryLines, TranslatorsMe, VariantGlossary, WordGlossaryTerm, WordReplace,
+    WordReplaceInput,
 };
 use std::sync::Mutex;
 use std::sync::atomic::{AtomicBool, Ordering};
@@ -634,6 +635,179 @@ pub async fn fix_glossary_variant(
         lines,
         created,
         unsure,
+    }))
+}
+
+/// Texts "Replace the word in other lines" lists at most.
+const WORD_REPLACE_LIMIT: usize = 500;
+
+/// After a proposal changed one word (`Бибек` → `Байбик`): every other text
+/// whose Russian (the approved one, else the game's) holds the old word in
+/// one of its case forms, each with the new word in the same case — only
+/// that word replaced; a word whose case cannot be carried over is "check by
+/// hand". With `apply`, the caller's proposals for the ticked lines, one per
+/// entry. Also names the glossary terms whose Russian is the old word.
+/// Members only.
+#[utoipa::path(
+    post,
+    path = "/translators/replace-word",
+    tag = "translators",
+    security(("bearer_auth" = [])),
+    request_body = WordReplaceInput,
+    responses(
+        (status = 200, description = "The texts, each with what it would get, and how many proposals were written.", body = WordReplace),
+        (status = 400, response = crate::app::openapi::responses::BadRequest),
+        (status = 401, response = crate::app::openapi::responses::Unauthorized),
+        (status = 403, response = crate::app::openapi::responses::Forbidden),
+        (status = 500, response = crate::app::openapi::responses::InternalError)
+    )
+)]
+pub async fn replace_word(
+    State(state): State<AppState>,
+    auth: MaybeAuthUser,
+    Json(input): Json<WordReplaceInput>,
+) -> Result<Json<WordReplace>, ApiError> {
+    type Row = (
+        i64,
+        String,
+        String,
+        String,
+        Option<String>,
+        Option<String>,
+        i32,
+        bool,
+    );
+    let me = require_member(&state, &auth).await?;
+    let from = input.from.trim();
+    let to = input.to.trim();
+    let one_word = |w: &str| w.chars().count() >= 3 && w.chars().all(char::is_alphabetic);
+    if !one_word(from) || !one_word(to) || from.to_lowercase() == to.to_lowercase() {
+        return Err(ApiError::BadRequest("one word to another".into()));
+    }
+    // The proposal may have the words in any case: their nominatives are looked for.
+    let (from, to) = glossary::fix::nominative_pair(from, to);
+    let (from, to) = (from.as_str(), to.as_str());
+    let folded = from.to_lowercase().replace('ё', "е");
+    // What every form of the word starts with: its stem by the case rules, else the stem rule's.
+    let prefix = glossary::matcher::paradigm(&folded)
+        .map(|p| p.stem)
+        .filter(|s| s.chars().count() >= 3)
+        .unwrap_or_else(|| glossary::matcher::stem(&folded));
+    let rows: Vec<Row> = sqlx::query_as(
+        "SELECT t.id, t.edit_key, md5(t.edit_key), t.en, t.ru, a.text, t.places, 'story' = ANY(t.sections)
+         FROM translators.texts t
+         LEFT JOIN translators.approvals a ON a.edit_key = t.edit_key AND a.outdated_at IS NULL
+         WHERE t.server = $1 AND t.fold LIKE '%' || $2 || '%'
+         ORDER BY ('story' = ANY(t.sections)) DESC, t.id",
+    )
+    .bind(SERVER)
+    .bind(&prefix)
+    .persistent(false)
+    .fetch_all(&state.db)
+    .await?;
+    let mut found: Vec<(&Row, String, Option<String>)> = Vec::new();
+    let mut more = false;
+    for row in &rows {
+        if input.skip.as_deref() == Some(row.1.as_str()) {
+            continue;
+        }
+        let Some(text) = row.5.as_deref().or(row.4.as_deref()) else {
+            continue;
+        };
+        let Some(result) = glossary::fix::replace_word(text, from, to) else {
+            continue;
+        };
+        if result.as_deref() == Some(text) {
+            continue;
+        }
+        if found.len() == WORD_REPLACE_LIMIT {
+            more = true;
+            break;
+        }
+        found.push((row, text.to_owned(), result));
+    }
+    // A text of the story is shown (and its proposal made) at its first story line.
+    let story_keys: Vec<String> = found
+        .iter()
+        .filter(|(r, _, _)| r.7)
+        .map(|(r, _, _)| r.1.clone())
+        .collect();
+    let firsts: Vec<(String, String, i32, i16, i32)> = sqlx::query_as(
+        "SELECT DISTINCT ON (edit_key) edit_key, story_id, line, part, ord
+         FROM translators.story_lines WHERE server = $1 AND edit_key = ANY($2)
+         ORDER BY edit_key, story_id, ord",
+    )
+    .bind(SERVER)
+    .bind(&story_keys)
+    .fetch_all(&state.db)
+    .await?;
+    let first: std::collections::HashMap<&str, (&str, i32, i16, i32)> = firsts
+        .iter()
+        .map(|(k, s, l, p, o)| (k.as_str(), (s.as_str(), *l, *p, *o)))
+        .collect();
+    let mut lines = Vec::new();
+    let mut unsure = 0;
+    let mut created = 0;
+    for (row, text, result) in &found {
+        let (id, key, md5, en, _, approved, places, _) = row;
+        let at = first.get(key.as_str());
+        let (story_id, ord) = at.map_or((edits::dto::TEXT_PLACE, i32::try_from(*id).unwrap_or(0)), |&(s, _, _, o)| (s, o));
+        if result.is_none() {
+            unsure += 1;
+        }
+        lines.push(GlossaryFixLine {
+            story_id: story_id.to_owned(),
+            ord,
+            en: en.clone(),
+            text: text.clone(),
+            result: result.clone(),
+            approved: approved.is_some(),
+            places: (*places).max(1),
+        });
+        let picked = input.picked.as_ref().is_none_or(|p| {
+            p.iter().any(|l| l.story_id == story_id && l.ord == ord)
+        });
+        let (true, true, Some(result)) = (input.apply, picked, result) else {
+            continue;
+        };
+        let Some(clean) = edits::status::clean_text(result) else {
+            continue;
+        };
+        let place = match at {
+            Some(&(s, line, part, _)) => edits::dto::EditPlace {
+                story_id: s.to_owned(),
+                line,
+                part,
+                edit_key: None,
+            },
+            None => edits::dto::EditPlace::text_by_md5(key, md5),
+        };
+        edits::db::upsert_proposal(&state.db, key, &place, &clean, "own", false, None, me.id)
+            .await?;
+        created += 1;
+    }
+    // The glossary's terms whose Russian is the old word, unless they already say the new one.
+    let to_folded = to.to_lowercase().replace('ё', "е");
+    let glossary_terms: Vec<WordGlossaryTerm> = glossary::load(&state.db)
+        .await?
+        .iter()
+        .map(glossary::StoredTerm::as_term)
+        .filter(|t| {
+            let words = glossary::fix::form_folded(&t.ru);
+            words.iter().any(|w| glossary::fix::is_word_of(w, &folded))
+                && !words.iter().any(|w| glossary::fix::is_word_of(w, &to_folded))
+        })
+        .map(|t| WordGlossaryTerm {
+            en: t.key.clone(),
+            ru: t.ru.clone(),
+        })
+        .collect();
+    Ok(Json(WordReplace {
+        lines,
+        created,
+        unsure,
+        more,
+        glossary: glossary_terms,
     }))
 }
 

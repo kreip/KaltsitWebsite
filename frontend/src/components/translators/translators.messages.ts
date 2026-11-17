@@ -2639,6 +2639,34 @@ export const messages = {
         text: "Off: a line shows its text and what is wrong; a click on it shows the rest.",
         description: "View menu: the hint under Open every line.",
     },
+    "replaceWord.offer": {
+        text: "Replace “{from}” → “{to}” in {count, plural, one {# more line} other {# more lines}}?",
+        description: "Toast after a proposal changed one word for another: the other texts hold the old word too.",
+    },
+    "replaceWord.show": {
+        text: "Show",
+        description: "Toast button: opens the dialog listing the lines with the word replaced.",
+    },
+    "replaceWord.description": {
+        text: "Each line below gets the new word in the same case as a proposal of yours; only that word changes. A line whose case is not sure is left to you.",
+        description: "Line under the heading of the replace-the-word dialog.",
+    },
+    "replaceWord.more": {
+        text: "The first {count} lines: the word stands in more.",
+        description: "Replace-the-word dialog: the list stops at a limit.",
+    },
+    "replaceWord.glossary": {
+        text: "The glossary has the old word; it may need fixing:",
+        description: "Replace-the-word dialog: glossary terms whose Russian is the old word, each a link to the Glossary tab.",
+    },
+    "replaceWord.glossaryToo": {
+        text: "The glossary has the old word: {terms}. It may need fixing.",
+        description: "Toast after a proposal changed one word: the glossary terms with the old word.",
+    },
+    "replaceWord.glossaryOnly": {
+        text: "The glossary has the old word: {terms}. It may need fixing.",
+        description: "Toast after a proposal changed one word that no other line holds, but the glossary does.",
+    },
 } satisfies MessageMap;
 
 export const { keys } = defineMessages({ namespace, messages });

@@ -14942,6 +14942,54 @@
         ]
       }
     },
+    "/api/translators/replace-word": {
+      "post": {
+        "tags": [
+          "translators"
+        ],
+        "summary": "After a proposal changed one word (`Бибек` → `Байбик`): every other text\nwhose Russian (the approved one, else the game's) holds the old word in\none of its case forms, each with the new word in the same case — only\nthat word replaced; a word whose case cannot be carried over is \"check by\nhand\". With `apply`, the caller's proposals for the ticked lines, one per\nentry. Also names the glossary terms whose Russian is the old word.\nMembers only.",
+        "operationId": "replace_word",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/WordReplaceInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "The texts, each with what it would get, and how many proposals were written.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WordReplace"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        },
+        "security": [
+          {
+            "bearer_auth": []
+          }
+        ]
+      }
+    },
     "/api/translators/search": {
       "get": {
         "tags": [
@@ -26629,6 +26677,16 @@
             "type": "boolean",
             "description": "Write the proposals (else only list what would be written)."
           },
+          "picked": {
+            "type": [
+              "array",
+              "null"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/LinePick"
+            },
+            "description": "With `apply`: only these lines (the ticked ones); absent — every sure line."
+          },
           "stem": {
             "type": "string",
             "description": "The variant's stem(s), as `GameVariant.stem`."
@@ -28606,6 +28664,23 @@
               "null"
             ],
             "description": "The Russian the game shows now."
+          }
+        }
+      },
+      "LinePick": {
+        "type": "object",
+        "description": "One line of a replacement list, as `GlossaryFixLine` names it.",
+        "required": [
+          "storyId",
+          "ord"
+        ],
+        "properties": {
+          "ord": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "storyId": {
+            "type": "string"
           }
         }
       },
@@ -42074,6 +42149,101 @@
                 "UNKNOWN"
               ]
             }
+          }
+        }
+      },
+      "WordGlossaryTerm": {
+        "type": "object",
+        "description": "A glossary term whose Russian is the old word: the glossary may need fixing.",
+        "required": [
+          "en",
+          "ru"
+        ],
+        "properties": {
+          "en": {
+            "type": "string"
+          },
+          "ru": {
+            "type": "string"
+          }
+        }
+      },
+      "WordReplace": {
+        "type": "object",
+        "description": "What \"Replace the word in other lines\" would do, or did. A text outside\nthe story is listed with `storyId = \"@text\"` and its number as `ord`.",
+        "required": [
+          "lines",
+          "created",
+          "unsure",
+          "more",
+          "glossary"
+        ],
+        "properties": {
+          "created": {
+            "type": "integer",
+            "format": "int32",
+            "description": "Entries a proposal was written for; 0 when only listing."
+          },
+          "glossary": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/WordGlossaryTerm"
+            },
+            "description": "Glossary terms whose Russian is the old word."
+          },
+          "lines": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/GlossaryFixLine"
+            }
+          },
+          "more": {
+            "type": "boolean",
+            "description": "More texts hold the word than listed."
+          },
+          "unsure": {
+            "type": "integer",
+            "format": "int32",
+            "description": "Lines left to a person: the case is not sure."
+          }
+        }
+      },
+      "WordReplaceInput": {
+        "type": "object",
+        "description": "\"Replace the word in other lines\": a proposal changed one word\n(`Бибек` → `Байбик`); the other texts holding the old word, each with the\nnew one in the same case.",
+        "required": [
+          "from",
+          "to"
+        ],
+        "properties": {
+          "apply": {
+            "type": "boolean",
+            "description": "Write the proposals (else only list what would be written)."
+          },
+          "from": {
+            "type": "string",
+            "description": "The old word, as the line had it (any case form: the nominative is best)."
+          },
+          "picked": {
+            "type": [
+              "array",
+              "null"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/LinePick"
+            },
+            "description": "With `apply`: only these lines (the ticked ones)."
+          },
+          "skip": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The entry the proposal was made for: left out."
+          },
+          "to": {
+            "type": "string",
+            "description": "The new word, in the same case as `from`."
           }
         }
       },

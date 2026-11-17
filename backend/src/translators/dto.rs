@@ -252,6 +252,53 @@ pub struct LinePick {
     pub ord: i32,
 }
 
+/// "Replace the word in other lines": a proposal changed one word
+/// (`Бибек` → `Байбик`); the other texts holding the old word, each with the
+/// new one in the same case.
+#[derive(Debug, serde::Deserialize, ToSchema)]
+#[serde(rename_all = "camelCase")]
+pub struct WordReplaceInput {
+    /// The old word, as the line had it (any case form: the nominative is best).
+    pub from: String,
+    /// The new word, in the same case as `from`.
+    pub to: String,
+    /// Write the proposals (else only list what would be written).
+    #[serde(default)]
+    pub apply: bool,
+    /// With `apply`: only these lines (the ticked ones).
+    #[serde(default)]
+    pub picked: Option<Vec<LinePick>>,
+    /// The entry the proposal was made for: left out.
+    #[serde(default)]
+    pub skip: Option<String>,
+}
+
+/// A glossary term whose Russian is the old word: the glossary may need fixing.
+#[derive(Debug, Serialize, TS, ToSchema)]
+#[serde(rename_all = "camelCase")]
+#[ts(export)]
+pub struct WordGlossaryTerm {
+    pub en: String,
+    pub ru: String,
+}
+
+/// What "Replace the word in other lines" would do, or did. A text outside
+/// the story is listed with `storyId = "@text"` and its number as `ord`.
+#[derive(Debug, Serialize, TS, ToSchema)]
+#[serde(rename_all = "camelCase")]
+#[ts(export)]
+pub struct WordReplace {
+    pub lines: Vec<GlossaryFixLine>,
+    /// Entries a proposal was written for; 0 when only listing.
+    pub created: i32,
+    /// Lines left to a person: the case is not sure.
+    pub unsure: i32,
+    /// More texts hold the word than listed.
+    pub more: bool,
+    /// Glossary terms whose Russian is the old word.
+    pub glossary: Vec<WordGlossaryTerm>,
+}
+
 /// One line the glossary's form would be put into.
 #[derive(Debug, Serialize, TS, ToSchema)]
 #[serde(rename_all = "camelCase")]

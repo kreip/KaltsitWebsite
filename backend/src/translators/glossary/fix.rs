@@ -215,10 +215,11 @@ fn end_alike(a: &str, b: &str) -> bool {
 pub fn fix_word(word: &str, form: &str) -> Option<String> {
     let lower = fold(word);
     let form_lower = fold(form);
-    if let Some((form_stem, ends)) = paradigm(&form_lower) {
+    if let Some(p) = paradigm(&form_lower) {
+        let form_stem = p.stem.clone();
         let kept: String = form.chars().take(form_stem.chars().count()).collect();
-        let nominative = ends[0];
-        let mut ends = ends.to_vec();
+        let nominative = p.nominative();
+        let mut ends = p.endings();
         ends.sort_by_key(|e| std::cmp::Reverse(e.chars().count()));
         for e in ends {
             let Some(base) = lower.strip_suffix(e) else {
@@ -245,6 +246,122 @@ pub fn fix_word(word: &str, form: &str) -> Option<String> {
         return Some(with_case(form, word));
     }
     None
+}
+
+/// A form of `from` (`word`, as written in a line) put as `to` in the same
+/// case: the cases `word` may stand in by `from`'s rules, each given `to`'s
+/// usual ending; None when they disagree (`Амии` is the genitive, the dative
+/// or the prepositional: `Маргариты` or `Маргарите`), when `word` is no form
+/// of `from`, or when `to` has no case rules (unless it keeps one form, or
+/// `word` is the nominative).
+pub fn carry_case(word: &str, from: &str, to: &str) -> Option<String> {
+    let w = fold(word);
+    let f = fold(from);
+    let target = fold(to);
+    let cases: Vec<usize> = if w == f {
+        vec![0]
+    } else {
+        paradigm(&f)?.cases_of(&w)
+    };
+    let to_p = paradigm(&target);
+    let mut out: Option<String> = None;
+    for case in cases {
+        let form = match &to_p {
+            Some(p) => {
+                let kept: String = to.chars().take(p.stem.chars().count()).collect();
+                format!("{kept}{}", p.cases[case][0])
+            }
+            None if case == 0 || super::matcher::indeclinable(&target) => to.to_owned(),
+            None => return None,
+        };
+        match &out {
+            Some(o) if *o != form => return None,
+            _ => out = Some(form),
+        }
+    }
+    out.map(|o| with_case(&o, word))
+}
+
+/// The nominatives `word` (lower case) may be a case form of by the case
+/// rules, the word itself first, then a man's name, then `-а`, then `-я`.
+fn nominatives(word: &str) -> Vec<(String, Vec<usize>)> {
+    const CUT: &[&str] = &[
+        "", "ою", "ой", "ею", "ей", "ом", "ем", "а", "я", "ы", "и", "е", "у", "ю",
+    ];
+    let mut out: Vec<(String, Vec<usize>)> = Vec::new();
+    let mut add = |n: String| {
+        if out.iter().any(|(o, _)| *o == n) {
+            return;
+        }
+        if let Some(p) = paradigm(&n) {
+            let cases = p.cases_of(word);
+            if !cases.is_empty() {
+                out.push((n, cases));
+            }
+        }
+    };
+    add(word.to_owned());
+    for nominative in ["", "а", "я"] {
+        for e in CUT {
+            if let Some(base) = word.strip_suffix(e)
+                && base.chars().count() >= 2
+            {
+                add(format!("{base}{nominative}"));
+            }
+        }
+    }
+    out
+}
+
+/// The old and the new word of a proposal (`Бибеку` → `Байбику`, the same
+/// case) as nominatives (`Бибек`, `Байбик`), written as they were: the pair
+/// whose case rules let both stand in a common case, in the order of
+/// `nominatives`. Words without case rules are taken as they are.
+pub fn nominative_pair(from: &str, to: &str) -> (String, String) {
+    let (f, t) = (fold(from), fold(to));
+    for (nf, cf) in nominatives(&f) {
+        for (nt, ct) in nominatives(&t) {
+            if cf.iter().any(|c| ct.contains(c)) {
+                return (with_case(&nf, from), with_case(&nt, to));
+            }
+        }
+    }
+    (from.to_owned(), to.to_owned())
+}
+
+/// Whether a line's word (lower case, `ё` = `е`) is a form of `from`: the
+/// word itself or one of its singular case forms (`paradigm`).
+pub fn is_word_of(word: &str, from: &str) -> bool {
+    word == from || inflects(word, from)
+}
+
+/// `text` with every form of the word `from` replaced by `to` in the same
+/// case (only those words; everything else as it is). None when no word of
+/// `text` is a form of `from`; Some(None) when one of them cannot be carried
+/// over for sure ("check by hand").
+pub fn replace_word(text: &str, from: &str, to: &str) -> Option<Option<String>> {
+    let from_folded = fold(from);
+    let mut out = String::with_capacity(text.len());
+    let mut last = 0;
+    let mut found = false;
+    for (s, e) in word_spans(text) {
+        let word = &text[s..e];
+        if !is_word_of(&fold(word), &from_folded) {
+            continue;
+        }
+        found = true;
+        let Some(put) = carry_case(word, from, to) else {
+            return Some(None);
+        };
+        out.push_str(&text[last..s]);
+        out.push_str(&put);
+        last = e;
+    }
+    if !found {
+        return None;
+    }
+    out.push_str(&text[last..]);
+    Some(Some(out))
 }
 
 /// `text` with the words of `hit` that are not the glossary's replaced by
@@ -334,6 +451,48 @@ mod tests {
         assert_eq!(fix_word("апреля", "Эйприл"), None);
         // A vowel stem against a consonant one: not sure.
         assert_eq!(fix_word("Чени", "Чэнь"), None);
+    }
+
+    #[test]
+    fn a_word_is_replaced_in_its_case() {
+        assert_eq!(carry_case("Бибеку", "Бибек", "Байбик").as_deref(), Some("Байбику"));
+        assert_eq!(carry_case("Бибеком", "Бибек", "Байбик").as_deref(), Some("Байбиком"));
+        assert_eq!(carry_case("БИБЕК", "Бибек", "Байбик").as_deref(), Some("БАЙБИК"));
+        // Genitive, dative or prepositional: the target tells them apart, a person decides.
+        assert_eq!(carry_case("Амии", "Амия", "Маргарита"), None);
+        assert_eq!(carry_case("Амию", "Амия", "Маргарита").as_deref(), Some("Маргариту"));
+        assert_eq!(carry_case("Зое", "Зоя", "Майя").as_deref(), Some("Майе"));
+        // A target without case rules: only the nominative, or one that never declines.
+        assert_eq!(carry_case("Бибека", "Бибек", "Чэнь"), None);
+        assert_eq!(carry_case("Бибек", "Бибек", "Чэнь").as_deref(), Some("Чэнь"));
+        assert_eq!(carry_case("Бибека", "Бибек", "Сато").as_deref(), Some("Сато"));
+        assert_eq!(
+            replace_word("Скажи Бибеку, что Бибек прав.", "Бибек", "Байбик"),
+            Some(Some("Скажи Байбику, что Байбик прав.".into()))
+        );
+        assert_eq!(replace_word("Никого нет.", "Бибек", "Байбик"), None);
+        assert_eq!(
+            nominative_pair("Бибеку", "Байбику"),
+            ("Бибек".to_owned(), "Байбик".to_owned())
+        );
+        assert_eq!(
+            nominative_pair("Бибек", "Байбик"),
+            ("Бибек".to_owned(), "Байбик".to_owned())
+        );
+        assert_eq!(
+            nominative_pair("Амии", "Маргариты"),
+            ("Амия".to_owned(), "Маргарита".to_owned())
+        );
+        assert_eq!(
+            nominative_pair("Чэнь", "Чен"),
+            ("Чэнь".to_owned(), "Чен".to_owned())
+        );
+        assert_eq!(replace_word("У Амии всё.", "Амия", "Маргарита"), Some(None));
+        // Only the word: quotes, tags and the rest stay as written.
+        assert_eq!(
+            replace_word("<i>„Бибек“</i>, — сказал он.", "Бибек", "Байбик"),
+            Some(Some("<i>„Байбик“</i>, — сказал он.".into()))
+        );
     }
 
     #[test]

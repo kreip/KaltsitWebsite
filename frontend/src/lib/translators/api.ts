@@ -43,6 +43,7 @@ import type { StoryProgress } from "#/types/generated/StoryProgress";
 import type { TextSummary } from "#/types/generated/TextSummary";
 import type { TranslatorStoryLines } from "#/types/generated/TranslatorStoryLines";
 import type { TranslatorsMe } from "#/types/generated/TranslatorsMe";
+import type { WordReplace } from "#/types/generated/WordReplace";
 
 /** Every query of the section starts with this, so one invalidation refreshes them all (sign-in, sign-out). */
 export const TRANSLATORS_QUERY_ROOT = ["translators"] as const;
@@ -338,6 +339,19 @@ export const fixGlossaryVariantFn = createServerFn({ method: "POST" })
         const res = await send(`/translators/glossary/${data.id}/fix`, "POST", { stem: data.stem, apply: data.apply, picked: data.picked });
         return (await res.json()) as GlossaryFix;
     });
+
+/** "Replace the word in other lines" after a proposal changed one word: the texts holding the old word, and with `apply` my proposals for the ticked ones. */
+export const replaceWordFn = createServerFn({ method: "POST" })
+    .inputValidator((d: { from: string; to: string; skip: string | null; apply: boolean; picked?: LinePick[] }) => d)
+    .handler(async ({ data }): Promise<WordReplace> => {
+        const res = await send("/translators/replace-word", "POST", data);
+        return (await res.json()) as WordReplace;
+    });
+
+/** What "Replace the word in other lines" would do (not written yet). */
+export function replaceWordQueryOptions(from: string, to: string, skip: string | null) {
+    return queryOptions({ queryKey: [...TRANSLATORS_QUERY_ROOT, "replace-word", from, to, skip], queryFn: () => replaceWordFn({ data: { from, to, skip, apply: false } }), staleTime: 0 });
+}
 
 /** What "Replace with the glossary's form" would do for a variant (not written yet). */
 export function glossaryFixQueryOptions(id: number, stem: string) {

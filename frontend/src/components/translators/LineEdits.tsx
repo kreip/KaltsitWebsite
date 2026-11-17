@@ -50,6 +50,8 @@ import { type ITagButton, type ITokenLabels, type TagLookup, TokenEditor } from 
 import { spanLook, tagOf, tagWords, useGameTags } from "./tags";
 import type { messages } from "./translators.messages";
 import { editorLabel, fromWords, TRANSLATOR_SOURCES, translatorName } from "./translatorVariants";
+import { WordReplaceOffer } from "./WordReplace";
+import { wordSwap } from "./wordSwap";
 
 type T = TypedT<typeof messages>;
 
@@ -1065,7 +1067,15 @@ export function ProposalEditor({ line, place, initial, source, context, here = n
     const canSave = clean.length > 0 && !sameAsGame && !save.isPending;
     const several = line.places > CONFIRM_PLACES;
 
-    const done = { onSuccess: onClose };
+    const offer = useContext(WordReplaceOffer);
+    const done = {
+        onSuccess: () => {
+            onClose();
+            // One word changed for another (Бибек → Байбик): offer it in the other lines.
+            const swap = wordSwap(initial, text);
+            if (swap && offer) offer({ ...swap, skip: line.editKey });
+        },
+    };
     const submit = () => {
         if (!canSave) return;
         if (several && !context) setAsking(true);
