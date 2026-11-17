@@ -2731,6 +2731,18 @@ export const messages = {
         text: "no player nickname",
         description: "Status filter option: the nickname {@nickname} written as a word.",
     },
+    "approve.problemsTitle": {
+        text: "The text has errors ({count}). Approve anyway?",
+        description: "Confirmation before approving a text with errors (glossary, tags, ты / вы…).",
+    },
+    "approve.problemsHint": {
+        text: "The marks beside the text name them.",
+        description: "Line of the approve-with-errors confirmation.",
+    },
+    "approve.anyway": {
+        text: "Approve anyway",
+        description: "Button of the approve-with-errors confirmation.",
+    },
 } satisfies MessageMap;
 
 export const { keys } = defineMessages({ namespace, messages });

@@ -336,6 +336,8 @@ interface IApproveProps {
     approved: boolean;
     /** The game's text with proposals: "Approve" (keep as in the game) asks first. */
     confirmProposals?: number;
+    /** Errors in the text (glossary, tags, ты / вы…): "Approve" asks first. */
+    problems?: number;
     t: T;
 }
 
@@ -354,26 +356,26 @@ function MainButton({ icon, label, onClick, disabled, destructive = false }: { i
  * one. On the game's text it means "keep as in the game" and asks first when
  * the line has proposals. Nothing for a user.
  */
-export function ApproveButton({ place, variant, proposalId, me, approved, confirmProposals = 0, t }: IApproveProps): React.ReactElement | null {
+export function ApproveButton({ place, variant, proposalId, me, approved, confirmProposals = 0, problems = 0, t }: IApproveProps): React.ReactElement | null {
     const [asking, setAsking] = useState(false);
     const set = useEditMutation((approve: boolean) => setApprovalFn({ data: { place, variant, proposalId: proposalId ?? null, approve } }), t("approve.failed"));
     if (!isLead(me)) return null;
     if (approved) return <MainButton icon={<Undo2 className="size-3" aria-hidden="true" />} label={t("approve.withdraw")} disabled={set.isPending} onClick={() => set.mutate(false)} />;
     return (
         <>
-            <MainButton icon={<Check className="size-3" aria-hidden="true" />} label={t("approve.button")} disabled={set.isPending} onClick={() => (confirmProposals > 0 ? setAsking(true) : set.mutate(true))} />
+            <MainButton icon={<Check className="size-3" aria-hidden="true" />} label={t("approve.button")} disabled={set.isPending} onClick={() => (confirmProposals > 0 || problems > 0 ? setAsking(true) : set.mutate(true))} />
             {asking ? (
                 <AlertDialog open={asking} onOpenChange={setAsking}>
                     <AlertDialogPopup>
                         <AlertDialogHeader>
-                            <AlertDialogTitle>{t("approve.gameTitle")}</AlertDialogTitle>
-                            <AlertDialogDescription>{t("approve.gameHint", { count: confirmProposals })}</AlertDialogDescription>
+                            <AlertDialogTitle>{problems > 0 ? t("approve.problemsTitle", { count: problems }) : t("approve.gameTitle")}</AlertDialogTitle>
+                            <AlertDialogDescription>{[problems > 0 ? t("approve.problemsHint") : null, confirmProposals > 0 ? t("approve.gameHint", { count: confirmProposals }) : null].filter(Boolean).join(" ")}</AlertDialogDescription>
                         </AlertDialogHeader>
                         <AlertDialogFooter>
                             <AlertDialogClose render={<Button variant="ghost" />}>{t("editor.cancel")}</AlertDialogClose>
                             <Button onClick={() => set.mutate(true, { onSuccess: () => setAsking(false) })} disabled={set.isPending}>
                                 {set.isPending ? <Spinner /> : <Check aria-hidden="true" />}
-                                {t("approve.gameKeep")}
+                                {problems > 0 ? t("approve.anyway") : t("approve.gameKeep")}
                             </Button>
                         </AlertDialogFooter>
                     </AlertDialogPopup>
@@ -580,9 +582,11 @@ interface IProposalsProps extends ICommentsProps {
     levelTexts?: number;
     /** Only this proposal (the one approved for this place). */
     only?: number;
+    /** A proposal's errors: its "Approve" asks first when any. */
+    problems?: (p: Proposal) => number;
 }
 
-export function Proposals({ edits, place, me, nickname, onEdit, marks, compare = false, ruGame = null, levelTexts = 0, only, t }: IProposalsProps): React.ReactElement | null {
+export function Proposals({ edits, place, me, nickname, onEdit, marks, compare = false, ruGame = null, levelTexts = 0, only, problems, t }: IProposalsProps): React.ReactElement | null {
     const f = useFormatters();
     const locale = useLocale();
     const remove = useEditMutation((id: number) => deleteProposalFn({ data: { id } }), t("edit.failedDelete"));
@@ -637,7 +641,7 @@ export function Proposals({ edits, place, me, nickname, onEdit, marks, compare =
                                                     <ApproveButton place={place} variant="proposal" proposalId={p.id} me={me} approved t={t} />
                                                 ) : (
                                                     <>
-                                                        <ApproveButton place={place} variant="proposal" proposalId={p.id} me={me} approved={false} t={t} />
+                                                        <ApproveButton place={place} variant="proposal" proposalId={p.id} me={me} approved={false} problems={problems?.(p) ?? 0} t={t} />
                                                         <RejectButton proposalId={p.id} me={me} t={t} />
                                                     </>
                                                 )

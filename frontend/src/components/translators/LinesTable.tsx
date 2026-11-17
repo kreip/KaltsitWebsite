@@ -32,7 +32,7 @@ import type { StoryCommand } from "#/types/generated/StoryCommand";
 import type { TranslatorLine } from "#/types/generated/TranslatorLine";
 import type { TranslatorsMe } from "#/types/generated/TranslatorsMe";
 import { BulkApprove, type IBulkLine } from "./BulkApprove";
-import { type Address, checkVariant, type ICandidate, type IVariantCheck, lineProblems, neighbourAddress, PROBLEM_KINDS, type ProblemKind, type RecommendRule, recommend } from "./checks";
+import { type Address, checkVariant, type ICandidate, type IVariantCheck, lineProblems, neighbourAddress, PROBLEM_KINDS, type ProblemKind, problemCount, type RecommendRule, recommend } from "./checks";
 import {
     ActionRow,
     ActionsShown,
@@ -311,7 +311,7 @@ function FullRuCell({ line, analysis, place, nickname, showVariants, showDiff, e
         return (
             <ActionRow
                 className={votes.length > 0 ? undefined : onHover}
-                main={isLead(me) && approved !== variant ? <ApproveButton place={place} variant={variant} me={me} approved={false} t={t} /> : undefined}
+                main={isLead(me) && approved !== variant ? <ApproveButton place={place} variant={variant} me={me} approved={false} problems={problemCount(checks.get(variant))} t={t} /> : undefined}
                 secondary={
                     <>
                         {!editor ? <IconAction icon={<PenLine aria-hidden="true" />} label={t("action.proposeThis")} onClick={() => onEditor({ kind: "proposal", text, source: variant, context: false })} /> : null}
@@ -331,7 +331,7 @@ function FullRuCell({ line, analysis, place, nickname, showVariants, showDiff, e
                 line={line}
                 onOpen={onEditor}
                 onHistory={() => setHistory(true)}
-                main={!settled && line.ruGame && line.editable && approved !== "game" && isLead(me) ? <ApproveButton place={place} variant="game" me={me} approved={false} confirmProposals={proposalCount} t={t} /> : undefined}
+                main={!settled && line.ruGame && line.editable && approved !== "game" && isLead(me) ? <ApproveButton place={place} variant="game" me={me} approved={false} confirmProposals={proposalCount} problems={problemCount(checks.get("game"))} t={t} /> : undefined}
                 agree={!settled && line.ruGame && line.editable && (edits?.gameAgreements.length ?? 0) === 0 ? <AgreeButton place={place} variant="game" people={edits?.gameAgreements ?? []} me={me} inBar t={t} /> : undefined}
                 proposeFrom={settled?.text}
                 bare={Boolean(settled)}
