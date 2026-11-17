@@ -3,24 +3,31 @@
 /**
  * A glossary term found in a line's English.
  */
-export type LineTerm = { termId: number, 
-/**
- * The text as it stands in the English line.
- */
-matched: string, sheet: string, ru: string, ruPlural: string | null, qualifier: string | null, note: string | null, 
-/**
- * From the sheet copied from Sova's glossary: a variant, never marked as not found.
- */
-fromSova: boolean, 
-/**
- * Whether the line's Russian holds the glossary form (by stem, ё = е); null when not checked.
- */
-found: boolean | null, 
-/**
- * The line was approved after the glossary last changed the term: checked by the team, not marked.
- */
-verified: boolean, 
-/**
- * The line is approved, but the glossary changed the term since: checked again, with a note.
- */
-changedAfterApproval: boolean, };
+export type LineTerm = {
+    termId: number;
+    /**
+     * The text as it stands in the English line.
+     */
+    matched: string;
+    sheet: string;
+    ru: string;
+    ruPlural: string | null;
+    qualifier: string | null;
+    note: string | null;
+    /**
+     * From the sheet copied from Sova's glossary: a variant, never marked as not found.
+     */
+    fromSova: boolean;
+    /**
+     * Whether the line's Russian holds the glossary form (by stem, ё = е); null when not checked.
+     */
+    found: boolean | null;
+    /**
+     * The line was approved after the glossary last changed the term: checked by the team, not marked.
+     */
+    verified: boolean;
+    /**
+     * The line is approved, but the glossary changed the term since: checked again, with a note.
+     */
+    changedAfterApproval: boolean;
+};

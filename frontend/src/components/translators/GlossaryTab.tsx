@@ -150,7 +150,7 @@ function FixDialog({ term, variant, onDone, t }: { term: GlossaryTerm; variant: 
     const nickname = me.data?.nickname ?? t("nickname.fallback");
     const preview = useQuery(glossaryFixQueryOptions(term.id, variant.stem));
     const apply = useMutation({
-        mutationFn: (picked: LinePick[]) => fixGlossaryVariantFn({ data: { id: term.id, stem: variant.stem, apply: true, picked } }),
+        mutationFn: (picked: LinePick[]) => fixGlossaryVariantFn({ data: { id: term.id, stem: variant.stem, apply: true, picked, from: variant.ru } }),
         onSuccess: (data) => {
             toastManager.add({ title: t("glossary.fix.done", { count: data.created }), type: "success" });
             for (const root of EDIT_QUERY_ROOTS) queryClient.invalidateQueries({ queryKey: root });

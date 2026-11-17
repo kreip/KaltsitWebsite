@@ -6,25 +6,27 @@ import type { SearchLine } from "./SearchLine";
 /**
  * A page of the search screen.
  */
-export type SearchLines = { 
-/**
- * Every text that matches.
- */
-total: number, 
-/**
- * The objects whose name answers the query, the best first (up to 8);
- * on the first page only.
- */
-objects: Array<ObjectHit>, rows: Array<SearchLine>, 
-/**
- * What was proposed, approved and said for the rows' entries (by `editKey`).
- */
-edits: Array<KeyEdits>, 
-/**
- * How long the search took in the database, in milliseconds.
- */
-millis: number, 
-/**
- * How many texts the list holds; 0 before the first import builds it.
- */
-indexed: number, };
+export type SearchLines = {
+    /**
+     * Every text that matches.
+     */
+    total: number;
+    /**
+     * The objects whose name answers the query, the best first (up to 8);
+     * on the first page only.
+     */
+    objects: Array<ObjectHit>;
+    rows: Array<SearchLine>;
+    /**
+     * What was proposed, approved and said for the rows' entries (by `editKey`).
+     */
+    edits: Array<KeyEdits>;
+    /**
+     * How long the search took in the database, in milliseconds.
+     */
+    millis: number;
+    /**
+     * How many texts the list holds; 0 before the first import builds it.
+     */
+    indexed: number;
+};

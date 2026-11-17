@@ -3,24 +3,26 @@
 /**
  * The import's state (the service key's route, and the admin panel's).
  */
-export type ImportStatus = { running: boolean, 
-/**
- * The running import's step: `starting`, `reading`, `storing`, `glossary`, `problems`.
- */
-phase: string | null, 
-/**
- * Unix seconds the running import started at.
- */
-startedAt: number | null, 
-/**
- * Why the last run failed, while this process remembers it.
- */
-error: string | null, 
-/**
- * Unix seconds of the last finished import.
- */
-lastFinishedAt: number | null, 
-/**
- * The last finished import's summary (`ImportSummary`).
- */
-last: { lines?: number; texts?: number; textPlaces?: number; millis?: number } | null, };
+export type ImportStatus = {
+    running: boolean;
+    /**
+     * The running import's step: `starting`, `reading`, `storing`, `glossary`, `problems`.
+     */
+    phase: string | null;
+    /**
+     * Unix seconds the running import started at.
+     */
+    startedAt: number | null;
+    /**
+     * Why the last run failed, while this process remembers it.
+     */
+    error: string | null;
+    /**
+     * Unix seconds of the last finished import.
+     */
+    lastFinishedAt: number | null;
+    /**
+     * The last finished import's summary (`ImportSummary`).
+     */
+    last: { lines?: number; texts?: number; textPlaces?: number; millis?: number } | null;
+};

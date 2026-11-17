@@ -1241,7 +1241,7 @@ async fn a_long_text_is_edited() {
     assert_eq!(asked[0].ru_game.as_deref(), Some("Амия"));
     assert_eq!(
         backend::translators::export::only_here_place(&asked[0]),
-        "Оператор › Amiya [char_1] › name"
+        "Оперативник › Amiya [char_1] › name"
     );
     for review in [false, true] {
         assert!(

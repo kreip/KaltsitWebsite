@@ -6,54 +6,63 @@ import type { GameHere } from "./GameHere";
 /**
  * A translator's proposed Russian for one dictionary entry.
  */
-export type Proposal = { id: number, editKey: string, text: string, 
-/**
- * `own`, `sova`, `ai` (or `kit`, unused for now).
- */
-source: string, author: EditPerson, 
-/**
- * Unix seconds.
- */
-createdAt: number, 
-/**
- * Unix seconds of the last rewrite, null when never rewritten.
- */
-editedAt: number | null, 
-/**
- * Texts it has had, the current one included.
- */
-versions: number, 
-/**
- * Its text before the last rewrite; null when never rewritten.
- */
-previousText: string | null, 
-/**
- * Who agrees with it.
- */
-agreements: Array<EditPerson>, place: EditPlace, 
-/**
- * For this place only: never exported to the dictionaries.
- */
-context: boolean, 
-/**
- * A one-place proposal outside the story: the place of the game data
- * it asks a separate translation for (the pack's maintainer decides).
- */
-here: GameHere | null, 
-/**
- * Its English is gone from the story since an import.
- */
-outdated: boolean, 
-/**
- * A proposal for one place approved by the lead (for that place only).
- */
-approvedBy: EditPerson | null, approvedAt: number | null, 
-/**
- * A one-place proposal: the pack version its text went out in, if it has.
- */
-releasedIn: string | null, 
-/**
- * Rejected by a translator, with the reason its author sees. A rejected
- * proposal leaves the line; rewriting it clears the rejection.
- */
-rejectedBy: EditPerson | null, rejectedAt: number | null, rejectReason: string | null, };
+export type Proposal = {
+    id: number;
+    editKey: string;
+    text: string;
+    /**
+     * `own`, `sova`, `ai` (or `kit`, unused for now).
+     */
+    source: string;
+    author: EditPerson;
+    /**
+     * Unix seconds.
+     */
+    createdAt: number;
+    /**
+     * Unix seconds of the last rewrite, null when never rewritten.
+     */
+    editedAt: number | null;
+    /**
+     * Texts it has had, the current one included.
+     */
+    versions: number;
+    /**
+     * Its text before the last rewrite; null when never rewritten.
+     */
+    previousText: string | null;
+    /**
+     * Who agrees with it.
+     */
+    agreements: Array<EditPerson>;
+    place: EditPlace;
+    /**
+     * For this place only: never exported to the dictionaries.
+     */
+    context: boolean;
+    /**
+     * A one-place proposal outside the story: the place of the game data
+     * it asks a separate translation for (the pack's maintainer decides).
+     */
+    here: GameHere | null;
+    /**
+     * Its English is gone from the story since an import.
+     */
+    outdated: boolean;
+    /**
+     * A proposal for one place approved by the lead (for that place only).
+     */
+    approvedBy: EditPerson | null;
+    approvedAt: number | null;
+    /**
+     * A one-place proposal: the pack version its text went out in, if it has.
+     */
+    releasedIn: string | null;
+    /**
+     * Rejected by a translator, with the reason its author sees. A rejected
+     * proposal leaves the line; rewriting it clears the rejection.
+     */
+    rejectedBy: EditPerson | null;
+    rejectedAt: number | null;
+    rejectReason: string | null;
+};

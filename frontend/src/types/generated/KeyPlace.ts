@@ -3,33 +3,41 @@
 /**
  * One place holding the entry: a story line, or a field of a game object.
  */
-export type KeyPlace = { 
-/**
- * `story`, else the game data's section (`operators`, `items`...): then
- * the story fields are empty and the object's fields are set.
- */
-section: string, 
-/**
- * The game object's id in the game data, and its English name (a table's name for `other`).
- */
-objectId: string | null, objectEn: string | null, 
-/**
- * `name`, `skill.description`... (as in `TextAt`).
- */
-field: string | null, 
-/**
- * Which one of several, from 1; 0 when there is one.
- */
-idx: number | null, storyId: string, line: number, part: number, 
-/**
- * The line's 0-based order in its story (the table's № minus one).
- */
-ord: number, 
-/**
- * The line before and after it in the story: the game's Russian, else the English.
- */
-before: string | null, after: string | null, 
-/**
- * The text at this place: its English, the game's Russian, the Chinese (story lines, when arktr has it).
- */
-en: string | null, ruGame: string | null, cn: string | null, };
+export type KeyPlace = {
+    /**
+     * `story`, else the game data's section (`operators`, `items`...): then
+     * the story fields are empty and the object's fields are set.
+     */
+    section: string;
+    /**
+     * The game object's id in the game data, and its English name (a table's name for `other`).
+     */
+    objectId: string | null;
+    objectEn: string | null;
+    /**
+     * `name`, `skill.description`... (as in `TextAt`).
+     */
+    field: string | null;
+    /**
+     * Which one of several, from 1; 0 when there is one.
+     */
+    idx: number | null;
+    storyId: string;
+    line: number;
+    part: number;
+    /**
+     * The line's 0-based order in its story (the table's № minus one).
+     */
+    ord: number;
+    /**
+     * The line before and after it in the story: the game's Russian, else the English.
+     */
+    before: string | null;
+    after: string | null;
+    /**
+     * The text at this place: its English, the game's Russian, the Chinese (story lines, when arktr has it).
+     */
+    en: string | null;
+    ruGame: string | null;
+    cn: string | null;
+};

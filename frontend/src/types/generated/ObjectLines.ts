@@ -5,12 +5,16 @@ import type { ObjectLine } from "./ObjectLine";
 /**
  * An object's texts in the order the game shows them.
  */
-export type ObjectLines = { section: string, object: string, 
-/**
- * A stage's code (`0-1`): shown, never translated.
- */
-code: string | null, rows: Array<ObjectLine>, 
-/**
- * What was proposed, approved and said for the rows' entries (by `editKey`).
- */
-edits: Array<KeyEdits>, };
+export type ObjectLines = {
+    section: string;
+    object: string;
+    /**
+     * A stage's code (`0-1`): shown, never translated.
+     */
+    code: string | null;
+    rows: Array<ObjectLine>;
+    /**
+     * What was proposed, approved and said for the rows' entries (by `editKey`).
+     */
+    edits: Array<KeyEdits>;
+};

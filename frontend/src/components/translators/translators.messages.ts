@@ -2751,6 +2751,30 @@ export const messages = {
         text: "tags changed",
         description: "Compare: the texts differ only in their tags (italics, colours), which the comparison does not spell out.",
     },
+    "batch.word": {
+        text: "Replacement “{from}” → “{to}”",
+        description: "Edits list: one row for the proposals a word replacement made at once.",
+    },
+    "batch.glossary": {
+        text: "Glossary form “{from}” → “{to}”",
+        description: 'Edits list: one row for the proposals "Replace with the glossary\'s form" made at once.',
+    },
+    "batch.count": {
+        text: "{entries, plural, one {# entry} other {# entries}} · places: {places}",
+        description: "Edits list, a replacement's row: how many dictionary entries and story places it changes.",
+    },
+    "batch.approve": {
+        text: "Approve all ({count})",
+        description: "Edits list, a replacement's row: approves every waiting proposal of it.",
+    },
+    "batch.reject": {
+        text: "Reject all ({count})",
+        description: "Edits list, a replacement's row: rejects every waiting proposal of it.",
+    },
+    "batch.tick": {
+        text: "Select every waiting place of the replacement",
+        description: "Accessible name of a replacement row's tick box.",
+    },
 } satisfies MessageMap;
 
 export const { keys } = defineMessages({ namespace, messages });

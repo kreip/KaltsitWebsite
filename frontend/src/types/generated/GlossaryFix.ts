@@ -4,12 +4,14 @@ import type { GlossaryFixLine } from "./GlossaryFixLine";
 /**
  * What "Replace with the glossary's form" would do, or did.
  */
-export type GlossaryFix = { lines: Array<GlossaryFixLine>, 
-/**
- * Entries (not lines) a proposal was written for; 0 when only listing.
- */
-created: number, 
-/**
- * Lines left to a person: the case is not sure.
- */
-unsure: number, };
+export type GlossaryFix = {
+    lines: Array<GlossaryFixLine>;
+    /**
+     * Entries (not lines) a proposal was written for; 0 when only listing.
+     */
+    created: number;
+    /**
+     * Lines left to a person: the case is not sure.
+     */
+    unsure: number;
+};

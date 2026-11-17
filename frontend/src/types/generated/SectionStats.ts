@@ -3,8 +3,13 @@
 /**
  * One section's progress: its texts, those with Russian, approved, waiting.
  */
-export type SectionStats = { 
-/**
- * `story`, `operators`, `enemies`, `stages`, `items`, `archives`, `other`.
- */
-section: string, total: number, ru: number, approved: number, waiting: number, };
+export type SectionStats = {
+    /**
+     * `story`, `operators`, `enemies`, `stages`, `items`, `archives`, `other`.
+     */
+    section: string;
+    total: number;
+    ru: number;
+    approved: number;
+    waiting: number;
+};

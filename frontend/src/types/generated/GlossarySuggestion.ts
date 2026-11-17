@@ -4,25 +4,32 @@ import type { EditPerson } from "./EditPerson";
 /**
  * A term suggested for the glossary.
  */
-export type GlossarySuggestion = { id: number, en: string, ru: string, note: string | null, 
-/**
- * The story line it was noticed in, when it was one: the story and the
- * line's 0-based order in it (null once the import no longer has the line).
- */
-storyId: string | null, ord: number | null, 
-/**
- * The English of the line it was noticed in (its start).
- */
-sourceEn: string | null, author: EditPerson, 
-/**
- * Unix seconds.
- */
-createdAt: number, 
-/**
- * `open`, `accepted` or `declined`.
- */
-status: string, 
-/**
- * The lead who decided.
- */
-decidedBy: EditPerson | null, };
+export type GlossarySuggestion = {
+    id: number;
+    en: string;
+    ru: string;
+    note: string | null;
+    /**
+     * The story line it was noticed in, when it was one: the story and the
+     * line's 0-based order in it (null once the import no longer has the line).
+     */
+    storyId: string | null;
+    ord: number | null;
+    /**
+     * The English of the line it was noticed in (its start).
+     */
+    sourceEn: string | null;
+    author: EditPerson;
+    /**
+     * Unix seconds.
+     */
+    createdAt: number;
+    /**
+     * `open`, `accepted` or `declined`.
+     */
+    status: string;
+    /**
+     * The lead who decided.
+     */
+    decidedBy: EditPerson | null;
+};

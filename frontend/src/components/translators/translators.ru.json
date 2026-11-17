@@ -706,5 +706,11 @@
     "approve.problemsHint": "Какие — видно по меткам рядом с текстом.",
     "approve.anyway": "Всё равно утвердить",
     "editor.glossary": "Глоссарий: {terms} — этой формы нет в тексте.",
-    "diff.tags": "изменены теги"
+    "diff.tags": "изменены теги",
+    "batch.word": "Замена «{from}» → «{to}»",
+    "batch.glossary": "Форма глоссария «{from}» → «{to}»",
+    "batch.count": "{entries, plural, one {# запись} few {# записи} many {# записей} other {# записи}} · мест: {places}",
+    "batch.approve": "Утвердить всё ({count})",
+    "batch.reject": "Отклонить всё ({count})",
+    "batch.tick": "Выбрать все ждущие места замены"
 }

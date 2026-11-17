@@ -617,6 +617,7 @@ pub async fn fix_glossary_variant(
         });
     }
     let mut created = 0;
+    let mut ids: Vec<i64> = Vec::new();
     if input.apply {
         for (key, (row, result)) in per_key {
             let Some(text) = edits::status::clean_text(&result) else {
@@ -628,10 +629,18 @@ pub async fn fix_glossary_variant(
                 part: row.part,
                 edit_key: None,
             };
-            edits::db::upsert_proposal(&state.db, key, &place, &text, "own", false, None, me.id)
-                .await?;
+            ids.push(
+                edits::db::upsert_proposal(&state.db, key, &place, &text, "own", false, None, me.id)
+                    .await?,
+            );
             created += 1;
         }
+    }
+    // One edit in the Edits list: approved or rejected whole.
+    if !ids.is_empty() {
+        let from = input.from.as_deref().unwrap_or(&input.stem);
+        let batch = edits::db::new_batch(&state.db, "glossary", from, &term.ru, me.id).await?;
+        edits::db::set_batch(&state.db, batch, &ids).await?;
     }
     Ok(Json(GlossaryFix {
         lines,
@@ -755,6 +764,7 @@ pub async fn replace_word(
     let mut lines = Vec::new();
     let mut unsure = 0;
     let mut created = 0;
+    let mut ids: Vec<i64> = Vec::new();
     for (row, text, result) in &found {
         let (id, key, md5, en, _, approved, places, _) = row;
         let at = first.get(key.as_str());
@@ -789,9 +799,16 @@ pub async fn replace_word(
             },
             None => edits::dto::EditPlace::text_by_md5(key, md5),
         };
-        edits::db::upsert_proposal(&state.db, key, &place, &clean, "own", false, None, me.id)
-            .await?;
+        ids.push(
+            edits::db::upsert_proposal(&state.db, key, &place, &clean, "own", false, None, me.id)
+                .await?,
+        );
         created += 1;
+    }
+    // One edit in the Edits list: approved or rejected whole.
+    if !ids.is_empty() {
+        let batch = edits::db::new_batch(&state.db, "word", from, to, me.id).await?;
+        edits::db::set_batch(&state.db, batch, &ids).await?;
     }
     // The glossary's terms whose Russian is the old word, unless they already say the new one.
     let to_folded = to.to_lowercase().replace('ё', "е");

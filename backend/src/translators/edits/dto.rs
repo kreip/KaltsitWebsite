@@ -412,8 +412,23 @@ pub struct EditRow {
     pub state: String,
     /// Approved and gone out in a pack: its version.
     pub released_in: Option<String>,
+    /// Made by a replacement at once: one edit in the list with the others of it.
+    pub batch: Option<EditBatch>,
     /// Places holding the entry.
     pub places: i32,
+}
+
+/// A replacement made at once ("Replace «Доберман» → «Доберманн» in N more lines").
+#[derive(Debug, Clone, Serialize, TS, ToSchema)]
+#[serde(rename_all = "camelCase")]
+#[ts(export)]
+pub struct EditBatch {
+    #[ts(type = "number")]
+    pub id: i64,
+    /// `word` (a word replaced after a proposal) or `glossary` (the glossary's form put in).
+    pub kind: String,
+    pub from: String,
+    pub to: String,
 }
 
 /// "My edits".

@@ -241,6 +241,9 @@ pub struct GlossaryFixInput {
     /// With `apply`: only these lines (the ticked ones); absent — every sure line.
     #[serde(default)]
     pub picked: Option<Vec<LinePick>>,
+    /// The game's variant as shown ("Зои Перрис"): names the replacement in the Edits list.
+    #[serde(default)]
+    pub from: Option<String>,
 }
 
 /// One line of a replacement list, as `GlossaryFixLine` names it.

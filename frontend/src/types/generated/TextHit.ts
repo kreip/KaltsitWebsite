@@ -4,36 +4,40 @@ import type { TextAt } from "./TextAt";
 /**
  * One found text.
  */
-export type TextHit = { id: number, 
-/**
- * The entry an edit changes (its English).
- */
-editKey: string, en: string, 
-/**
- * The Russian the game shows now.
- */
-ru: string | null, 
-/**
- * The dictionary file holding it, or `plugin:<role>`.
- */
-file: string | null, 
-/**
- * The plugin's catalog also holds it, under this role.
- */
-pluginRole: string | null, 
-/**
- * The plugin's Russian when it differs.
- */
-ruPlugin: string | null, sections: Array<string>, 
-/**
- * Story lines and game data places holding it.
- */
-places: number, 
-/**
- * `unchecked`, `proposed` or `approved`.
- */
-status: string, 
-/**
- * Its first places, the game data's before the story's.
- */
-at: Array<TextAt>, };
+export type TextHit = {
+    id: number;
+    /**
+     * The entry an edit changes (its English).
+     */
+    editKey: string;
+    en: string;
+    /**
+     * The Russian the game shows now.
+     */
+    ru: string | null;
+    /**
+     * The dictionary file holding it, or `plugin:<role>`.
+     */
+    file: string | null;
+    /**
+     * The plugin's catalog also holds it, under this role.
+     */
+    pluginRole: string | null;
+    /**
+     * The plugin's Russian when it differs.
+     */
+    ruPlugin: string | null;
+    sections: Array<string>;
+    /**
+     * Story lines and game data places holding it.
+     */
+    places: number;
+    /**
+     * `unchecked`, `proposed` or `approved`.
+     */
+    status: string;
+    /**
+     * Its first places, the game data's before the story's.
+     */
+    at: Array<TextAt>;
+};

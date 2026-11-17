@@ -763,6 +763,36 @@ pub async fn rewrite_proposal(
     tx.commit().await
 }
 
+/// A replacement made at once (`word` or `glossary`): its proposals are one edit in the Edits list.
+pub async fn new_batch(
+    pool: &PgPool,
+    kind: &str,
+    from: &str,
+    to: &str,
+    author: Uuid,
+) -> Result<i64, sqlx::Error> {
+    sqlx::query_scalar(
+        "INSERT INTO translators.proposal_batches (kind, word_from, word_to, author_id)
+         VALUES ($1, $2, $3, $4) RETURNING id",
+    )
+    .bind(kind)
+    .bind(from)
+    .bind(to)
+    .bind(author)
+    .fetch_one(pool)
+    .await
+}
+
+/// Put proposals into a batch.
+pub async fn set_batch(pool: &PgPool, batch: i64, ids: &[i64]) -> Result<(), sqlx::Error> {
+    sqlx::query("UPDATE translators.proposals SET batch_id = $1 WHERE id = ANY($2)")
+        .bind(batch)
+        .bind(ids)
+        .execute(pool)
+        .await?;
+    Ok(())
+}
+
 /// Soft-delete a proposal and drop the votes for it.
 pub async fn delete_proposal(pool: &PgPool, id: i64) -> Result<(), sqlx::Error> {
     let mut tx = pool.begin().await?;
@@ -1288,6 +1318,10 @@ struct EditRowDb {
     approved: bool,
     approved_proposal: Option<i64>,
     released_in: Option<String>,
+    batch_id: Option<i64>,
+    batch_kind: Option<String>,
+    batch_from: Option<String>,
+    batch_to: Option<String>,
 }
 
 /// "My edits": the caller's live proposals (or everyone's), newest first.
@@ -1306,8 +1340,10 @@ pub async fn edit_rows(pool: &PgPool, author: Option<Uuid>) -> Result<Vec<EditRo
                     AND CASE WHEN p.context
                              THEN i.text = p.text AND i.story_id = p.story_id AND i.line = p.line AND i.part = p.part
                              ELSE i.story_id IS NULL AND i.text = a.text END
-                  ORDER BY r.id DESC LIMIT 1) AS released_in
+                  ORDER BY r.id DESC LIMIT 1) AS released_in,
+                b.id AS batch_id, b.kind AS batch_kind, b.word_from AS batch_from, b.word_to AS batch_to
          FROM translators.proposals p
+         LEFT JOIN translators.proposal_batches b ON b.id = p.batch_id
          JOIN users u ON u.id = p.author_id
          LEFT JOIN LATERAL (
              SELECT x.en, x.ru_game FROM (
@@ -1371,6 +1407,12 @@ pub async fn edit_rows(pool: &PgPool, author: Option<Uuid>) -> Result<Vec<EditRo
                 ord: r.ord,
                 // The pack version the approved text went out in.
                 released_in: r.released_in.filter(|_| state == "approved"),
+                batch: r.batch_id.map(|id| super::dto::EditBatch {
+                    id,
+                    kind: r.batch_kind.clone().unwrap_or_default(),
+                    from: r.batch_from.clone().unwrap_or_default(),
+                    to: r.batch_to.clone().unwrap_or_default(),
+                }),
                 state: state.to_owned(),
                 places: i32::try_from(r.places).unwrap_or(i32::MAX),
             }

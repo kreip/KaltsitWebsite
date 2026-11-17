@@ -24644,6 +24644,32 @@
           }
         }
       },
+      "EditBatch": {
+        "type": "object",
+        "description": "A replacement made at once (\"Replace «Доберман» → «Доберманн» in N more lines\").",
+        "required": [
+          "id",
+          "kind",
+          "from",
+          "to"
+        ],
+        "properties": {
+          "from": {
+            "type": "string"
+          },
+          "id": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "kind": {
+            "type": "string",
+            "description": "`word` (a word replaced after a proposal) or `glossary` (the glossary's form put in)."
+          },
+          "to": {
+            "type": "string"
+          }
+        }
+      },
       "EditComment": {
         "type": "object",
         "description": "A note on an entry.",
@@ -24823,6 +24849,17 @@
           "places"
         ],
         "properties": {
+          "batch": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/EditBatch",
+                "description": "Made by a replacement at once: one edit in the list with the others of it."
+              }
+            ]
+          },
           "en": {
             "type": "string",
             "description": "The English of the entry."
@@ -26759,6 +26796,13 @@
           "apply": {
             "type": "boolean",
             "description": "Write the proposals (else only list what would be written)."
+          },
+          "from": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The game's variant as shown (\"Зои Перрис\"): names the replacement in the Edits list."
           },
           "picked": {
             "type": [

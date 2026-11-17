@@ -5,15 +5,17 @@
  * in the list: a click on the state approves or rejects (with a reason the
  * author sees), and the rows ticked (Shift for a range) are decided at once
  * from the "N selected" bar. Export to the XUnity dictionaries: the Export…
- * dialog. Above the list: chips by state (proposed, approved, rejected,
+ * dialog. A replacement made at once (a word in many lines, the glossary's
+ * form) is one row that unfolds into its places and is decided whole.
+ * Above the list: chips by state (proposed, approved, rejected,
  * gone out in a pack) with their counts, and Compare ("now" as its changes
  * against "was").
  */
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
-import { Check, ChevronDown, History, PenLine, RotateCcw, Trash2, Undo2, X } from "lucide-react";
+import { Check, ChevronDown, ChevronRight, History, PenLine, RotateCcw, Trash2, Undo2, X } from "lucide-react";
 import type React from "react";
-import { useId, useMemo, useRef, useState } from "react";
+import { Fragment, useId, useMemo, useRef, useState } from "react";
 import { Badge } from "#/components/ui/badge";
 import { Button } from "#/components/ui/button";
 import { Checkbox } from "#/components/ui/checkbox";
@@ -29,6 +31,7 @@ import { ToggleGroup, ToggleGroupItem } from "#/components/ui/toggle-group";
 import { useFormatters, useLocale, useT } from "#/lib/i18n";
 import type { TypedT } from "#/lib/i18n/messages";
 import { deleteProposalFn, editsQueryOptions, type ProposalDecision, proposalVersionsQueryOptions, rewriteProposalFn, translatorsMeQueryOptions } from "#/lib/translators/api";
+import type { EditBatch } from "#/types/generated/EditBatch";
 import type { EditRow } from "#/types/generated/EditRow";
 import type { TranslatorsMe } from "#/types/generated/TranslatorsMe";
 import { ExportDialog } from "./ExportDialog";
@@ -367,6 +370,79 @@ function FilterChips({ rows, value, onChange, t }: { rows: readonly EditRow[]; v
     );
 }
 
+type EditItem = { kind: "row"; row: EditRow; i: number } | { kind: "batch"; batch: EditBatch; members: { row: EditRow; i: number }[] };
+
+/** The rows in order, the proposals of one replacement made at once as one item where its first stands. */
+function groupBatches(rows: readonly EditRow[]): EditItem[] {
+    const out: EditItem[] = [];
+    const at = new Map<number, Extract<EditItem, { kind: "batch" }>>();
+    rows.forEach((row, i) => {
+        const b = row.batch;
+        if (!b) {
+            out.push({ kind: "row", row, i });
+            return;
+        }
+        const item = at.get(b.id);
+        if (item) item.members.push({ row, i });
+        else {
+            const next = { kind: "batch" as const, batch: b, members: [{ row, i }] };
+            at.set(b.id, next);
+            out.push(next);
+        }
+    });
+    return out;
+}
+
+/**
+ * A replacement made at once («Доберман» → «Доберманн» in 281 places) as one
+ * edit: what, how many, their states; a translator approves or rejects every
+ * waiting one at once. Unfolded, its places are the usual rows — one is taken
+ * out by rejecting it there (or, by its author, deleting it).
+ */
+function BatchRow({ batch, rows, lead, open, onToggle, ticked, onTick, t }: { batch: EditBatch; rows: readonly EditRow[]; lead: boolean; open: boolean; onToggle: () => void; ticked: boolean; onTick: (on: boolean) => void; t: T }): React.ReactElement {
+    const f = useFormatters();
+    const [rejecting, setRejecting] = useState(false);
+    const decide = useDecide(t);
+    const waiting = rows.filter(decidable).map((r) => r.proposal.id);
+    const places = rows.reduce((n, r) => n + Math.max(1, r.places), 0);
+    const states = new Map<string, number>();
+    for (const r of rows) states.set(r.state, (states.get(r.state) ?? 0) + 1);
+    return (
+        <TableRow className="bg-muted/40 hover:bg-muted/40">
+            {lead ? <TableCell className="py-1.5 align-top">{waiting.length > 0 ? <Checkbox checked={ticked} onCheckedChange={(v) => onTick(v === true)} aria-label={t("batch.tick")} /> : null}</TableCell> : null}
+            <TableCell colSpan={5} className="whitespace-normal py-1.5">
+                <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+                    <Button variant="ghost" size="sm" className="h-auto px-1 py-0.5 font-medium" aria-expanded={open} onClick={onToggle}>
+                        {open ? <ChevronDown aria-hidden="true" /> : <ChevronRight aria-hidden="true" />}
+                        {t(batch.kind === "glossary" ? "batch.glossary" : "batch.word", { from: batch.from, to: batch.to })}
+                    </Button>
+                    <span className="text-muted-foreground text-xs">{t("batch.count", { entries: rows.length, places: f.number(places) })}</span>
+                    <span className="flex flex-wrap gap-1">
+                        {[...states.entries()].map(([state, n]) => (
+                            <Badge key={state} variant={STATE_VARIANT[state as keyof typeof STATE_VARIANT] ?? "secondary"} size="sm">
+                                {t(`state.${state}` as "state.proposed")} · {f.number(n)}
+                            </Badge>
+                        ))}
+                    </span>
+                    {lead && waiting.length > 0 ? (
+                        <span className="flex flex-wrap gap-1">
+                            <Button size="xs" onClick={() => decide.mutate({ ids: waiting, decision: "approve", reason: "" })} disabled={decide.isPending}>
+                                {decide.isPending ? <Spinner /> : <Check aria-hidden="true" />}
+                                {t("batch.approve", { count: waiting.length })}
+                            </Button>
+                            <Button size="xs" variant="destructive-outline" onClick={() => setRejecting(true)} disabled={decide.isPending}>
+                                <X aria-hidden="true" />
+                                {t("batch.reject", { count: waiting.length })}
+                            </Button>
+                        </span>
+                    ) : null}
+                </div>
+                {rejecting ? <RejectDialog open={rejecting} onOpenChange={setRejecting} count={waiting.length} pending={decide.isPending} onReject={(reason) => decide.mutate({ ids: waiting, decision: "reject", reason }, { onSuccess: () => setRejecting(false) })} t={t} /> : null}
+            </TableCell>
+        </TableRow>
+    );
+}
+
 export function MyEditsTab(): React.ReactElement {
     const t: T = useT("translators");
     const allId = useId();
@@ -375,6 +451,7 @@ export function MyEditsTab(): React.ReactElement {
     const diffId = useId();
     const [all, setAll] = useState(false);
     const [compare, setCompare] = useState(false);
+    const [openBatches, setOpenBatches] = useState<ReadonlySet<number>>(new Set());
     const [filter, setFilter] = useState<EditFilter>("all");
     const query = useQuery({ ...editsQueryOptions(all && lead), enabled: Boolean(me.data) });
     const [selected, setSelected] = useState<ReadonlySet<number>>(new Set());
@@ -447,9 +524,32 @@ export function MyEditsTab(): React.ReactElement {
                             </TableRow>
                         </TableHeader>
                         <TableBody>
-                            {rows.map((row, i) => (
-                                <Row key={row.proposal.id} row={row} me={me.data} all={query.data.all} nickname={me.data.nickname ?? t("nickname.fallback")} lead={lead} selected={selected.has(row.proposal.id)} onSelect={(shift) => select(i, shift)} compare={compare} t={t} />
-                            ))}
+                            {groupBatches(rows).map((item) => {
+                                const rowOf = ({ row, i }: { row: EditRow; i: number }) => (
+                                    <Row key={row.proposal.id} row={row} me={me.data} all={query.data.all} nickname={me.data.nickname ?? t("nickname.fallback")} lead={lead} selected={selected.has(row.proposal.id)} onSelect={(shift) => select(i, shift)} compare={compare} t={t} />
+                                );
+                                if (item.kind === "row") return rowOf(item);
+                                const ids = item.members
+                                    .map((m) => m.row)
+                                    .filter(decidable)
+                                    .map((r) => r.proposal.id);
+                                const isOpen = openBatches.has(item.batch.id);
+                                return (
+                                    <Fragment key={`batch-${item.batch.id}`}>
+                                        <BatchRow
+                                            batch={item.batch}
+                                            rows={item.members.map((m) => m.row)}
+                                            lead={lead}
+                                            open={isOpen}
+                                            onToggle={() => setOpenBatches((prev) => (prev.has(item.batch.id) ? new Set([...prev].filter((x) => x !== item.batch.id)) : new Set([...prev, item.batch.id])))}
+                                            ticked={ids.length > 0 && ids.every((id) => selected.has(id))}
+                                            onTick={(on) => setSelected((prev) => (on ? new Set([...prev, ...ids]) : new Set([...prev].filter((x) => !ids.includes(x)))))}
+                                            t={t}
+                                        />
+                                        {isOpen ? item.members.map(rowOf) : null}
+                                    </Fragment>
+                                );
+                            })}
                         </TableBody>
                     </Table>
                 </>

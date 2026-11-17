@@ -3,4 +3,4 @@
 /**
  * A glossary term whose Russian is the old word: the glossary may need fixing.
  */
-export type WordGlossaryTerm = { en: string, ru: string, };
+export type WordGlossaryTerm = { en: string; ru: string };

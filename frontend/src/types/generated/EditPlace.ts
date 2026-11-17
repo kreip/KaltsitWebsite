@@ -5,18 +5,20 @@
  * the story (found by the search) is the place [`TEXT_PLACE`] with line and
  * part 0 and its entry's English in `editKey`.
  */
-export type EditPlace = { storyId: string, 
-/**
- * 1-based line in the EN script.
- */
-line: number, 
-/**
- * The option number of a decision, else 0.
- */
-part: number, 
-/**
- * A text outside the story: the English of its entry, or `md5:` and the
- * md5 of that English (hex) for a long one, so that a place always fits
- * an address.
- */
-editKey?: string, };
+export type EditPlace = {
+    storyId: string;
+    /**
+     * 1-based line in the EN script.
+     */
+    line: number;
+    /**
+     * The option number of a decision, else 0.
+     */
+    part: number;
+    /**
+     * A text outside the story: the English of its entry, or `md5:` and the
+     * md5 of that English (hex) for a long one, so that a place always fits
+     * an address.
+     */
+    editKey?: string;
+};

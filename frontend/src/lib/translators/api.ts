@@ -335,9 +335,9 @@ export function glossaryLinesQueryOptions(id: number, missing: boolean) {
 
 /** "Replace with the glossary's form" for one of a term's game variants (by its stem): the lines it would change, and with `apply` my proposals written for them. */
 export const fixGlossaryVariantFn = createServerFn({ method: "POST" })
-    .inputValidator((d: { id: number; stem: string; apply: boolean; picked?: LinePick[] }) => d)
+    .inputValidator((d: { id: number; stem: string; apply: boolean; picked?: LinePick[]; from?: string }) => d)
     .handler(async ({ data }): Promise<GlossaryFix> => {
-        const res = await send(`/translators/glossary/${data.id}/fix`, "POST", { stem: data.stem, apply: data.apply, picked: data.picked });
+        const res = await send(`/translators/glossary/${data.id}/fix`, "POST", { stem: data.stem, apply: data.apply, picked: data.picked, from: data.from });
         return (await res.json()) as GlossaryFix;
     });
 

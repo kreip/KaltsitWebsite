@@ -3,4 +3,4 @@
 /**
  * A glossary term missing from a variant: as in the English line, and the glossary's Russian.
  */
-export type MissingTerm = { en: string, ru: string, };
+export type MissingTerm = { en: string; ru: string };

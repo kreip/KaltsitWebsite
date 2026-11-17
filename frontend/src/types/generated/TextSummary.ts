@@ -6,4 +6,4 @@ import type { ProblemCount } from "./ProblemCount";
  * Russian and those approved; and each problem's count under the query and
  * the section.
  */
-export type TextSummary = { total: number, ru: number, approved: number, problems: Array<ProblemCount>, };
+export type TextSummary = { total: number; ru: number; approved: number; problems: Array<ProblemCount> };
