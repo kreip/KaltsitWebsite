@@ -18,7 +18,7 @@ use super::super::glossary::matcher::{Finder, term_found};
 use super::plugin_styles;
 
 /// The problem codes, as the search's status filter names them.
-pub const PROBLEMS: &[&str] = &["glossary", "brokenTag", "noHighlight", "newlines"];
+pub const PROBLEMS: &[&str] = &["glossary", "brokenTag", "nickname", "noHighlight", "newlines"];
 
 /// The markup scanner of `markup.ts`: 1 game opener · 2 universal closer ·
 /// 3 paragraph · 4 inline opener · 5 inline closer · 6 colour / size opener ·
@@ -362,6 +362,31 @@ pub fn tag_problems(en: &str, ru: &str) -> (bool, bool) {
     (broken, !broken && !lost_highlights(en, ru).is_empty())
 }
 
+/// Whether a text has the player's nickname substitution `{@nickname}` (any case).
+pub fn has_nickname(s: &str) -> bool {
+    s.to_lowercase().contains("{@nickname}")
+}
+
+/// The text with every `{@nickname}` (any case) written as a word, as a translation without it reads.
+fn drop_nickname(s: &str) -> String {
+    const TOKEN: &str = "{@nickname}";
+    let mut out = String::with_capacity(s.len());
+    let mut rest = s;
+    while let Some(at) = rest.find('{') {
+        let (before, from) = rest.split_at(at);
+        out.push_str(before);
+        if from.get(..TOKEN.len()).is_some_and(|t| t.eq_ignore_ascii_case(TOKEN)) {
+            out.push_str("Doctor");
+            rest = &from[TOKEN.len()..];
+        } else {
+            out.push('{');
+            rest = &from[1..];
+        }
+    }
+    out.push_str(rest);
+    out
+}
+
 /// Line breaks as the reader sees them (literal `\n` too), trimmed.
 fn breaks(s: &str) -> usize {
     s.replace("\\n", "\n").trim().matches('\n').count()
@@ -396,9 +421,19 @@ pub fn problems(
             out.push("glossary");
         }
     }
-    let (broken, no_highlight) = tag_problems(en, ru);
+    // The player's nickname written as a word («Доктор»): its own problem, not a broken tag.
+    let no_nickname = has_nickname(en) && !has_nickname(ru);
+    let en_tags = if no_nickname {
+        std::borrow::Cow::Owned(drop_nickname(en))
+    } else {
+        std::borrow::Cow::Borrowed(en)
+    };
+    let (broken, no_highlight) = tag_problems(&en_tags, ru);
     if broken {
         out.push("brokenTag");
+    }
+    if no_nickname {
+        out.push("nickname");
     }
     if no_highlight {
         out.push("noHighlight");
@@ -457,6 +492,14 @@ pub async fn refresh(pool: &PgPool, server: &str) -> Result<usize, sqlx::Error> 
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn a_nickname_written_as_a_word_is_its_own_problem() {
+        let p = problems("Well done, {@nickname}.", "Отлично, Доктор.", None);
+        assert_eq!(p, vec!["nickname"]);
+        assert!(problems("Well done, {@NICKNAME}.", "Отлично, {@nickname}.", None).is_empty());
+        assert_eq!(drop_nickname("a {@Nickname} b {x}"), "a Doctor b {x}");
+    }
 
     #[test]
     fn tells_a_broken_tag_from_a_missing_one() {

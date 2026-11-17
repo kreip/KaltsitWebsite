@@ -7,4 +7,4 @@ import type { TranslatorLine } from "./TranslatorLine";
  * One found text as the search screen shows it: like a story line, at the
  * place an edit is made from (its first story line, else the text itself).
  */
-export type SearchLine = { hit: TextHit; place: EditPlace; line: TranslatorLine };
+export type SearchLine = { hit: TextHit, place: EditPlace, line: TranslatorLine, };

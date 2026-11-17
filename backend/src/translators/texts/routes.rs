@@ -35,6 +35,7 @@ const STATUSES: &[&str] = &[
     "problems",
     "glossary",
     "brokenTag",
+    "nickname",
     "noHighlight",
     "newlines",
     "longer",

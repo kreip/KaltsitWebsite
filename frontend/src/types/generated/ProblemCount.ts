@@ -3,4 +3,4 @@
 /**
  * How many texts have one problem.
  */
-export type ProblemCount = { status: string; count: number };
+export type ProblemCount = { status: string, count: number, };

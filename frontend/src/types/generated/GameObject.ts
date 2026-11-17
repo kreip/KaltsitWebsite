@@ -4,41 +4,40 @@
  * An object of a game section: an operator, an enemy, a stage or a zone, an
  * item; in the archives, an operator again (its file, records, stories and voice lines).
  */
-export type GameObject = {
-    /**
-     * What names it in the address: an operator's id in the game data (also for its archives); the
-     * English name for the rest, where the game data keeps several objects
-     * under one name (a stage and its challenge mode) and they are one card.
-     */
-    id: string;
-    /**
-     * The English name (a stage's with its code: `0-1 Collapse`).
-     */
-    en: string;
-    /**
-     * The name in the game's Russian, when the pack has one.
-     */
-    ru: string | null;
-    /**
-     * Its texts that can be edited, each English once.
-     */
-    total: number;
-    /**
-     * Of them: approved (the game's Russian checked included).
-     */
-    approved: number;
-    /**
-     * Of them: with a live proposal and not approved.
-     */
-    waiting: number;
-    /**
-     * Other records of the game data with the same name and the same texts
-     * (their ids): they are this object too.
-     */
-    also: Array<string>;
-    /**
-     * For a record that shares its name with a different one: what tells it
-     * apart — its first text the others lack, else its id.
-     */
-    hint: string | null;
-};
+export type GameObject = { 
+/**
+ * What names it in the address: an operator's id in the game data (also for its archives); the
+ * English name for the rest, where the game data keeps several objects
+ * under one name (a stage and its challenge mode) and they are one card.
+ */
+id: string, 
+/**
+ * The English name (a stage's with its code: `0-1 Collapse`).
+ */
+en: string, 
+/**
+ * The name in the game's Russian, when the pack has one.
+ */
+ru: string | null, 
+/**
+ * Its texts that can be edited, each English once.
+ */
+total: number, 
+/**
+ * Of them: approved (the game's Russian checked included).
+ */
+approved: number, 
+/**
+ * Of them: with a live proposal and not approved.
+ */
+waiting: number, 
+/**
+ * Other records of the game data with the same name and the same texts
+ * (their ids): they are this object too.
+ */
+also: Array<string>, 
+/**
+ * For a record that shares its name with a different one: what tells it
+ * apart — its first text the others lack, else its id.
+ */
+hint: string | null, };

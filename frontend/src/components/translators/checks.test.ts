@@ -43,9 +43,15 @@ describe("variant checks", () => {
         const l = line({ en: "<i>{@nickname}</i>,\\nlook.", ruGame: "<i>{@nickname}</i>,\nсмотри." });
         expect(passes(checkVariant(l.ruGame ?? "", "game", l, null))).toBe(true);
         const c = checkVariant("Доктор, смотри.", "ai", l, null);
-        expect(c.brokenTag).toBe(true);
-        expect(c.placeholders).toEqual(["{@nickname}"]);
+        // The <i> lost is a lost highlight; the nickname written as a word is its own mark.
+        expect(c.brokenTag).toBe(false);
+        expect(c.noHighlight).toBe(true);
+        expect(c.placeholders).toEqual([]);
+        expect(c.noNickname).toBe(true);
         expect(c.newlines).toEqual({ en: 1, ru: 0 });
+        const plain = line({ en: "Well done, {@nickname}.", ruGame: "Отлично, Доктор." });
+        const g = checkVariant(plain.ruGame ?? "", "game", plain, null);
+        expect([g.brokenTag, g.noNickname, g.placeholders]).toEqual([false, true, []]);
     });
 
     it("mark a variant noticeably longer than the game's, never a short one", () => {

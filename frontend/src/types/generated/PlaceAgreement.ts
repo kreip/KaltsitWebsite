@@ -5,11 +5,8 @@ import type { EditPlace } from "./EditPlace";
 /**
  * Who agrees with Sova's or the AI's variant at one place.
  */
-export type PlaceAgreement = {
-    /**
-     * `sova` or `ai`.
-     */
-    variant: string;
-    place: EditPlace;
-    people: Array<EditPerson>;
-};
+export type PlaceAgreement = { 
+/**
+ * `sova` or `ai`.
+ */
+variant: string, place: EditPlace, people: Array<EditPerson>, };

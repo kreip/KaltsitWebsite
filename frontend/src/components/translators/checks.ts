@@ -24,8 +24,10 @@ export interface IVariantCheck {
     brokenTag: boolean;
     /** A tag of the English missing, the text otherwise whole: the game shows it without its highlight. */
     noHighlight: boolean;
-    /** Substitutions (`{0}`, `{@nickname}`) missing from the text or not in the English. */
+    /** Substitutions (`{0}`, `{@nickname}`) missing from the text or not in the English (the nickname written as a word aside). */
     placeholders: string[];
+    /** The English has the player's nickname `{@nickname}`, the text a word instead («Доктор»). */
+    noNickname: boolean;
     /** Line breaks: the English's count and the text's, when they differ. */
     newlines: { en: number; ru: number } | null;
     /** How much longer than the game's Russian (0.45 = 45 %), when noticeably. */
@@ -103,8 +105,13 @@ export function neighbourAddress(lines: readonly TranslatorLine[], index: number
 }
 
 /** Every mark of one variant's text against its line. `variant` names it as the backend does (`game`, `sova`, `proposal:12`). */
+const NICKNAME = /\{@nickname\}/gi;
+
 export function checkVariant(text: string, variant: string, line: TranslatorLine, neighbours: Address | null): IVariantCheck {
-    const enTokens = tokens(line.en);
+    // The nickname written as a word: its own mark, not a broken tag.
+    const noNickname = /\{@nickname\}/i.test(line.en) && !/\{@nickname\}/i.test(text);
+    const en = noNickname ? line.en.replace(NICKNAME, "Doctor") : line.en;
+    const enTokens = tokens(en);
     const ruTokens = tokens(text);
     const enBreaks = breaks(line.en);
     const ruBreaks = breaks(text);
@@ -115,12 +122,13 @@ export function checkVariant(text: string, variant: string, line: TranslatorLine
         if (base > 0 && own - base > LONGER_CHARS && own / base - 1 > LONGER_SHARE) longer = own / base - 1;
     }
     const own = addressOf(text);
-    const tags = tagHealth(line.en, text);
+    const tags = tagHealth(en, text);
     return {
         glossary: line.variantGlossary.find((v) => v.variant === variant)?.missing ?? [],
         brokenTag: tags.broken,
         noHighlight: tags.noHighlight,
         placeholders: [...difference(enTokens, ruTokens), ...difference(ruTokens, enTokens)],
+        noNickname,
         newlines: enBreaks === ruBreaks ? null : { en: enBreaks, ru: ruBreaks },
         longer,
         address: own && neighbours && own !== neighbours ? neighbours : null,
@@ -129,7 +137,7 @@ export function checkVariant(text: string, variant: string, line: TranslatorLine
 
 /** Whether a variant passes every check. */
 export function passes(c: IVariantCheck): boolean {
-    return c.glossary.length === 0 && !c.brokenTag && !c.noHighlight && c.placeholders.length === 0 && c.newlines === null && c.longer === null && c.address === null;
+    return c.glossary.length === 0 && !c.brokenTag && !c.noHighlight && c.placeholders.length === 0 && !c.noNickname && c.newlines === null && c.longer === null && c.address === null;
 }
 
 export interface ICandidate {
@@ -175,7 +183,7 @@ export function recommend(candidates: readonly ICandidate[], approved: boolean, 
 }
 
 /** The problems the filters and the yellow rows name. */
-export const PROBLEM_KINDS = ["glossary", "brokenTag", "noHighlight", "newlines", "longer", "address"] as const;
+export const PROBLEM_KINDS = ["glossary", "brokenTag", "nickname", "noHighlight", "newlines", "longer", "address"] as const;
 export type ProblemKind = (typeof PROBLEM_KINDS)[number];
 
 /**
@@ -191,6 +199,7 @@ export function lineProblems(shown: IVariantCheck | undefined, settled: boolean,
     if (shown) {
         if (settled ? glossaryMissing : shown.glossary.length > 0) out.add("glossary");
         if (shown.brokenTag || shown.placeholders.length > 0) out.add("brokenTag");
+        if (shown.noNickname) out.add("nickname");
         if (shown.noHighlight) out.add("noHighlight");
         if (shown.newlines) out.add("newlines");
         if (shown.address) out.add("address");

@@ -2719,6 +2719,18 @@ export const messages = {
         text: "Approved ones are withdrawn first. The history keeps the record.",
         description: "Test edits: confirmation text.",
     },
+    "checks.nickname": {
+        text: "no player nickname",
+        description: "Mark: the English has the player's nickname {@nickname}, the text a word instead (e.g. «Доктор»).",
+    },
+    "checks.nicknameHint": {
+        text: "The English shows the player's nickname here; the Russian has a word instead, so every player is called the same.",
+        description: "Hover text of the no-nickname mark.",
+    },
+    "problem.nickname": {
+        text: "no player nickname",
+        description: "Status filter option: the nickname {@nickname} written as a word.",
+    },
 } satisfies MessageMap;
 
 export const { keys } = defineMessages({ namespace, messages });

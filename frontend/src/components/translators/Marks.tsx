@@ -2,7 +2,7 @@
  * A variant's automatic marks, inline after its text or label so a row never
  * grows: "recommended" as a small star (it is on most lines, by the rule), and
  * only what is wrong (a glossary form missing,
- * tags, substitutions, line breaks, noticeably longer, ты / вы against the
+ * tags, substitutions, the player's nickname written as a word, line breaks, noticeably longer, ты / вы against the
  * speaker's neighbouring lines).
  */
 import { AlertTriangle, Star, X } from "lucide-react";
@@ -36,7 +36,7 @@ export function Marks({ check, recommended, skipGlossary = false, t }: IMarksPro
     const f = useFormatters();
     const glossary = skipGlossary ? [] : check.glossary;
     const broken = check.brokenTag || check.placeholders.length > 0;
-    const any = recommended || glossary.length > 0 || broken || check.noHighlight || check.newlines || check.longer !== null || check.address;
+    const any = recommended || glossary.length > 0 || broken || check.noNickname || check.noHighlight || check.newlines || check.longer !== null || check.address;
     if (!any) return null;
     return (
         <span className="ms-1.5 inline-flex flex-wrap items-center gap-x-1.5 align-baseline text-xs">
@@ -58,6 +58,7 @@ export function Marks({ check, recommended, skipGlossary = false, t }: IMarksPro
                     {check.placeholders.length > 0 ? ` ${check.placeholders.join(" ")}` : ""}
                 </Warn>
             ) : null}
+            {check.noNickname ? <Warn title={t("checks.nicknameHint")}>{t("checks.nickname")}</Warn> : null}
             {check.noHighlight ? <Warn title={t("checks.noHighlightHint")}>{t("checks.noHighlight")}</Warn> : null}
             {check.newlines ? <Warn title={t("checks.newlinesHint", { en: check.newlines.en, ru: check.newlines.ru })}>{t("checks.newlines", { en: check.newlines.en, ru: check.newlines.ru })}</Warn> : null}
             {check.longer !== null ? <Warn title={t("checks.longerHint")}>{t("checks.longer", { share: f.percent(check.longer) })}</Warn> : null}

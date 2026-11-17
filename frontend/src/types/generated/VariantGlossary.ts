@@ -4,4 +4,4 @@ import type { MissingTerm } from "./MissingTerm";
 /**
  * One variant of a line and the glossary terms its Russian lacks.
  */
-export type VariantGlossary = { variant: string; missing: Array<MissingTerm> };
+export type VariantGlossary = { variant: string, missing: Array<MissingTerm>, };

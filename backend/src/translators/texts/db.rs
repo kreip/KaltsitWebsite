@@ -182,6 +182,7 @@ pub const PROBLEM_STATUSES: &[&str] = &[
     "problems",
     "glossary",
     "brokenTag",
+    "nickname",
     "noHighlight",
     "newlines",
     "longer",
