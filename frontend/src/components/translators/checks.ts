@@ -110,7 +110,7 @@ const NICKNAME = /\{@nickname\}/gi;
 export function checkVariant(text: string, variant: string, line: TranslatorLine, neighbours: Address | null): IVariantCheck {
     // The nickname written as a word: its own mark, not a broken tag.
     const noNickname = /\{@nickname\}/i.test(line.en) && !/\{@nickname\}/i.test(text);
-    const en = noNickname ? line.en.replace(NICKNAME, "Doctor") : line.en;
+    const en = noNickname ? line.en.replace(NICKNAME, "Nickname") : line.en;
     const enTokens = tokens(en);
     const ruTokens = tokens(text);
     const enBreaks = breaks(line.en);

@@ -2071,7 +2071,7 @@ export const messages = {
         description: "A story's paragraph span in words.",
     },
     "tag.token.nickname": {
-        text: "the Doctor's name",
+        text: "the player's nickname",
         description: "The {@nickname} substitution in words.",
     },
     "tag.token.value": {
