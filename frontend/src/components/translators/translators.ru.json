@@ -686,5 +686,9 @@
     "replaceWord.glossary": "В глоссарии старое слово — возможно, глоссарий надо поправить:",
     "replaceWord.glossaryToo": "В глоссарии старое слово: {terms}. Возможно, его надо поправить.",
     "replaceWord.glossaryOnly": "В глоссарии старое слово: {terms}. Возможно, его надо поправить.",
-    "problem.allBare": "Ошибки: все"
+    "problem.allBare": "Ошибки: все",
+    "edits.filter": "Показать по статусу",
+    "edits.filter.all": "Все",
+    "edits.filter.released": "Вышло в паке",
+    "edits.filter.empty": "Нет правок с этим статусом"
 }

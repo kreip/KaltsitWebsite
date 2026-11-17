@@ -24767,6 +24767,13 @@
           "proposal": {
             "$ref": "#/components/schemas/Proposal"
           },
+          "releasedIn": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Approved and gone out in a pack: its version."
+          },
           "ruGame": {
             "type": [
               "string",

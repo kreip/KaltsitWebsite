@@ -23,6 +23,10 @@ export type EditRow = {
      */
     state: string;
     /**
+     * Approved and gone out in a pack: its version.
+     */
+    releasedIn: string | null;
+    /**
      * Places holding the entry.
      */
     places: number;

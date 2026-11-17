@@ -5,7 +5,9 @@
  * in the list: a click on the state approves or rejects (with a reason the
  * author sees), and the rows ticked (Shift for a range) are decided at once
  * from the "N selected" bar. Export to the XUnity dictionaries: the Export…
- * dialog.
+ * dialog. Above the list: chips by state (proposed, approved, rejected,
+ * gone out in a pack) with their counts, and Compare ("now" as its changes
+ * against "was").
  */
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
@@ -23,13 +25,14 @@ import { Skeleton } from "#/components/ui/skeleton";
 import { Spinner } from "#/components/ui/spinner";
 import { Switch } from "#/components/ui/switch";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "#/components/ui/table";
+import { ToggleGroup, ToggleGroupItem } from "#/components/ui/toggle-group";
 import { useFormatters, useLocale, useT } from "#/lib/i18n";
 import type { TypedT } from "#/lib/i18n/messages";
 import { deleteProposalFn, editsQueryOptions, type ProposalDecision, proposalVersionsQueryOptions, rewriteProposalFn, translatorsMeQueryOptions } from "#/lib/translators/api";
 import type { EditRow } from "#/types/generated/EditRow";
 import type { TranslatorsMe } from "#/types/generated/TranslatorsMe";
 import { ExportDialog } from "./ExportDialog";
-import { CONFIRM_PLACES, cleanText, exportsForGame, isLead, marksReleases, PlacesDialog, RejectDialog, SaveDialog, TagsWarning, useDecide, useEditMutation, useEditorTools } from "./LineEdits";
+import { CONFIRM_PLACES, cleanText, diffLabels, exportsForGame, isLead, marksReleases, PlacesDialog, RejectDialog, SaveDialog, TagsWarning, useDecide, useEditMutation, useEditorTools } from "./LineEdits";
 import { StoryText } from "./StoryText";
 import { useStoryNames } from "./storyNames";
 import { TextDiff } from "./TextDiff";
@@ -91,6 +94,11 @@ function StateCell({ row, lead, t }: { row: EditRow; lead: boolean; t: T }): Rea
             ) : (
                 badge
             )}
+            {row.releasedIn ? (
+                <Badge variant="success" size="sm">
+                    {t("release.in", { version: row.releasedIn })}
+                </Badge>
+            ) : null}
             {p.rejectedBy ? <span className="text-subtle-foreground text-xs">{t("decide.rejectedBy", { name: p.rejectedBy.name })}</span> : null}
             {p.rejectReason ? <span className="text-xs">{t("decide.reasonShown", { reason: p.rejectReason })}</span> : null}
             {p.agreements.length > 0 ? <span className="text-subtle-foreground text-xs">{t("proposal.agreed", { count: p.agreements.length })}</span> : null}
@@ -253,10 +261,12 @@ interface IRowProps {
     lead: boolean;
     selected: boolean;
     onSelect: (shift: boolean) => void;
+    /** Compare: "now" as its changes against "was" (the game's Russian). */
+    compare: boolean;
     t: T;
 }
 
-function Row({ row, me, all, nickname, lead, selected, onSelect, t }: IRowProps): React.ReactElement {
+function Row({ row, me, all, nickname, lead, selected, onSelect, compare, t }: IRowProps): React.ReactElement {
     const f = useFormatters();
     const [rewriting, setRewriting] = useState(false);
     const remove = useEditMutation(() => deleteProposalFn({ data: { id: row.proposal.id } }), t("edit.failedDelete"));
@@ -278,7 +288,7 @@ function Row({ row, me, all, nickname, lead, selected, onSelect, t }: IRowProps)
             <TableCell className={PROSE}>
                 <div className="flex flex-col gap-1">
                     {all ? <span className="text-subtle-foreground text-xs">{mine ? t("proposal.mine") : p.author.name}</span> : null}
-                    {rewriting ? <Rewrite row={row} nickname={nickname} onClose={() => setRewriting(false)} t={t} /> : <StoryText text={p.text} nickname={nickname} />}
+                    {rewriting ? <Rewrite row={row} nickname={nickname} onClose={() => setRewriting(false)} t={t} /> : compare && row.ruGame ? <TextDiff before={row.ruGame} after={p.text} labels={diffLabels(t)} /> : <StoryText text={p.text} nickname={nickname} />}
                     {p.here ? (
                         <span>
                             <Badge variant="warning" size="sm">
@@ -329,17 +339,49 @@ function Row({ row, me, all, nickname, lead, selected, onSelect, t }: IRowProps)
     );
 }
 
+/** The Edits list's filter by state: every row, or one state; "released" — approved and gone out in a pack. */
+type EditFilter = "all" | "proposed" | "approved" | "rejected" | "released" | "otherApproved" | "outdated";
+const EDIT_FILTERS: readonly EditFilter[] = ["all", "proposed", "approved", "rejected", "released", "otherApproved", "outdated"];
+
+function inFilter(row: EditRow, filter: EditFilter): boolean {
+    if (filter === "all") return true;
+    if (filter === "released") return row.releasedIn !== null;
+    return row.state === filter;
+}
+
+/** The state chips above the list, each with its count; the two rarer states only when they have rows. */
+function FilterChips({ rows, value, onChange, t }: { rows: readonly EditRow[]; value: EditFilter; onChange: (next: EditFilter) => void; t: T }): React.ReactElement {
+    const f = useFormatters();
+    const count = (filter: EditFilter) => rows.filter((r) => inFilter(r, filter)).length;
+    return (
+        <ToggleGroup aria-label={t("edits.filter")} className="w-auto max-w-full flex-wrap gap-1.5" onValueChange={(next) => onChange((next[0] as EditFilter | undefined) ?? "all")} size="sm" value={[value]} variant="outline">
+            {EDIT_FILTERS.filter((filter) => (filter !== "otherApproved" && filter !== "outdated") || count(filter) > 0 || value === filter).map((filter) => (
+                <ToggleGroupItem key={filter} className="flex-none gap-1.5 px-3" value={filter}>
+                    {filter === "all" ? t("edits.filter.all") : filter === "released" ? t("edits.filter.released") : t(`state.${filter}` as "state.proposed")}
+                    <Badge className="font-mono tabular-nums" size="sm" variant="secondary">
+                        {f.number(count(filter))}
+                    </Badge>
+                </ToggleGroupItem>
+            ))}
+        </ToggleGroup>
+    );
+}
+
 export function MyEditsTab(): React.ReactElement {
     const t: T = useT("translators");
     const allId = useId();
     const me = useQuery(translatorsMeQueryOptions());
     const lead = me.data ? isLead(me.data) : false;
+    const diffId = useId();
     const [all, setAll] = useState(false);
+    const [compare, setCompare] = useState(false);
+    const [filter, setFilter] = useState<EditFilter>("all");
     const query = useQuery({ ...editsQueryOptions(all && lead), enabled: Boolean(me.data) });
     const [selected, setSelected] = useState<ReadonlySet<number>>(new Set());
     // The last row ticked or unticked: Shift extends from it.
     const anchor = useRef<number | null>(null);
-    const rows = query.data?.rows ?? [];
+    const everyRow = query.data?.rows ?? [];
+    const rows = useMemo(() => everyRow.filter((r) => inFilter(r, filter)), [everyRow, filter]);
     const open = useMemo(() => rows.filter(decidable).map((r) => r.proposal.id), [rows]);
     // Only what is still waiting stays ticked (after a decision or a reload).
     const ticked = open.filter((id) => selected.has(id));
@@ -371,14 +413,19 @@ export function MyEditsTab(): React.ReactElement {
                             <span className="font-medium text-sm">{t("edits.all")}</span>
                         </label>
                     ) : null}
+                    <label htmlFor={diffId} className="flex items-center gap-3" title={t("toggle.diffHint")}>
+                        <Switch id={diffId} checked={compare} onCheckedChange={setCompare} />
+                        <span className="font-medium text-sm">{t("toggle.diff")}</span>
+                    </label>
                     <ExportDialog forGame={exportsForGame(me.data)} releases={marksReleases(me.data)} t={t} />
                 </div>
             </div>
+            {everyRow.length > 0 ? <FilterChips rows={everyRow} value={filter} onChange={setFilter} t={t} /> : null}
             {rows.length === 0 ? (
                 <Empty>
                     <EmptyHeader>
-                        <EmptyTitle>{t("edits.empty")}</EmptyTitle>
-                        <EmptyDescription>{t("edits.emptyHint")}</EmptyDescription>
+                        <EmptyTitle>{everyRow.length > 0 ? t("edits.filter.empty") : t("edits.empty")}</EmptyTitle>
+                        {everyRow.length > 0 ? null : <EmptyDescription>{t("edits.emptyHint")}</EmptyDescription>}
                     </EmptyHeader>
                 </Empty>
             ) : (
@@ -401,7 +448,7 @@ export function MyEditsTab(): React.ReactElement {
                         </TableHeader>
                         <TableBody>
                             {rows.map((row, i) => (
-                                <Row key={row.proposal.id} row={row} me={me.data} all={query.data.all} nickname={me.data.nickname ?? t("nickname.fallback")} lead={lead} selected={selected.has(row.proposal.id)} onSelect={(shift) => select(i, shift)} t={t} />
+                                <Row key={row.proposal.id} row={row} me={me.data} all={query.data.all} nickname={me.data.nickname ?? t("nickname.fallback")} lead={lead} selected={selected.has(row.proposal.id)} onSelect={(shift) => select(i, shift)} compare={compare} t={t} />
                             ))}
                         </TableBody>
                     </Table>

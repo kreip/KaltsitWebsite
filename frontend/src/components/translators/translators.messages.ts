@@ -2671,6 +2671,22 @@ export const messages = {
         text: "Errors: all",
         description: "Status filter option: lines with any error, while the count is not known yet.",
     },
+    "edits.filter": {
+        text: "Show by state",
+        description: "Accessible name of the Edits tab's chips that filter the list by state.",
+    },
+    "edits.filter.all": {
+        text: "All",
+        description: "Edits tab chip: every row.",
+    },
+    "edits.filter.released": {
+        text: "Released in a pack",
+        description: "Edits tab chip: approved and gone out in a pack version.",
+    },
+    "edits.filter.empty": {
+        text: "No edits in this state",
+        description: "Edits tab: the chosen state chip has no rows.",
+    },
 } satisfies MessageMap;
 
 export const { keys } = defineMessages({ namespace, messages });

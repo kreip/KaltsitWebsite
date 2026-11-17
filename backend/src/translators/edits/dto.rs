@@ -410,6 +410,8 @@ pub struct EditRow {
     pub ord: Option<i32>,
     /// `proposed`, `approved`, `otherApproved`, `outdated` or `rejected`.
     pub state: String,
+    /// Approved and gone out in a pack: its version.
+    pub released_in: Option<String>,
     /// Places holding the entry.
     pub places: i32,
 }

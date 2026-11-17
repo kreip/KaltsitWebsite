@@ -1287,6 +1287,7 @@ struct EditRowDb {
     places: i64,
     approved: bool,
     approved_proposal: Option<i64>,
+    released_in: Option<String>,
 }
 
 /// "My edits": the caller's live proposals (or everyone's), newest first.
@@ -1298,7 +1299,14 @@ pub async fn edit_rows(pool: &PgPool, author: Option<Uuid>) -> Result<Vec<EditRo
                            WHERE s.server = $1 AND s.edit_key = p.edit_key),
                          (SELECT t.places FROM translators.texts t
                            WHERE t.server = $1 AND t.edit_key = p.edit_key), 0) AS places,
-                (a.edit_key IS NOT NULL) AS approved, a.proposal_id AS approved_proposal
+                (a.edit_key IS NOT NULL) AS approved, a.proposal_id AS approved_proposal,
+                (SELECT r.version FROM translators.release_items i
+                   JOIN translators.releases r ON r.id = i.release_id
+                  WHERE i.edit_key = p.edit_key
+                    AND CASE WHEN p.context
+                             THEN i.text = p.text AND i.story_id = p.story_id AND i.line = p.line AND i.part = p.part
+                             ELSE i.story_id IS NULL AND i.text = a.text END
+                  ORDER BY r.id DESC LIMIT 1) AS released_in
          FROM translators.proposals p
          JOIN users u ON u.id = p.author_id
          LEFT JOIN LATERAL (
@@ -1351,17 +1359,19 @@ pub async fn edit_rows(pool: &PgPool, author: Option<Uuid>) -> Result<Vec<EditRo
                 );
                 proposal.place = EditPlace::text_by_md5(&proposal.edit_key, &md5);
             }
+            let state = if rejected {
+                "rejected"
+            } else {
+                status::proposal_state(outdated, approved, id)
+            };
             EditRow {
                 proposal,
                 en,
                 ru_game: r.ru_game,
                 ord: r.ord,
-                state: if rejected {
-                    "rejected"
-                } else {
-                    status::proposal_state(outdated, approved, id)
-                }
-                .to_owned(),
+                // The pack version the approved text went out in.
+                released_in: r.released_in.filter(|_| state == "approved"),
+                state: state.to_owned(),
                 places: i32::try_from(r.places).unwrap_or(i32::MAX),
             }
         })
