@@ -98,5 +98,41 @@ export function diffWords(before: string, after: string): IDiffPart[] {
         }
     }
     flush();
+    return byLetters(out);
+}
+
+const ONE_WORD = /^[\p{L}\p{N}]+(?:['’-][\p{L}\p{N}]+)*$/u;
+
+/**
+ * A word changed by a few letters («Доберман» → «Доберманн», «Рэндалл» →
+ * «Рэндолл») shows only those letters: when what the two keep at the start
+ * and at the end is at least half of the longer word.
+ */
+function byLetters(parts: IDiffPart[]): IDiffPart[] {
+    const out: IDiffPart[] = [];
+    for (let i = 0; i < parts.length; i++) {
+        const p = parts[i];
+        const q = parts[i + 1];
+        if (p.kind !== "del" || q?.kind !== "add" || !ONE_WORD.test(p.text) || !ONE_WORD.test(q.text)) {
+            out.push({ ...p });
+            continue;
+        }
+        const a = [...p.text];
+        const b = [...q.text];
+        let head = 0;
+        while (head < a.length && head < b.length && a[head] === b[head]) head++;
+        let tail = 0;
+        while (tail < a.length - head && tail < b.length - head && a[a.length - 1 - tail] === b[b.length - 1 - tail]) tail++;
+        if (head + tail < Math.max(a.length, b.length) / 2) {
+            out.push({ ...p });
+            continue;
+        }
+        const piece = (from: string[], start: number, end: number) => from.slice(start, end).join("");
+        if (head > 0) push(out, "same", piece(a, 0, head));
+        if (a.length - tail > head) push(out, "del", piece(a, head, a.length - tail));
+        if (b.length - tail > head) push(out, "add", piece(b, head, b.length - tail));
+        if (tail > 0) push(out, "same", piece(a, a.length - tail, a.length));
+        i++;
+    }
     return out;
 }

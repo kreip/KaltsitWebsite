@@ -2747,6 +2747,10 @@ export const messages = {
         text: "Glossary: {terms} — this form is not in the text.",
         description: "Warning under the proposal box: glossary terms of the English whose Russian form the text lacks.",
     },
+    "diff.tags": {
+        text: "tags changed",
+        description: "Compare: the texts differ only in their tags (italics, colours), which the comparison does not spell out.",
+    },
 } satisfies MessageMap;
 
 export const { keys } = defineMessages({ namespace, messages });

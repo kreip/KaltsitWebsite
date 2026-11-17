@@ -507,8 +507,8 @@ export function approvedVariant(edits: KeyEdits | undefined): string | null {
 }
 
 /** The screen-reader words of a comparison. */
-export function diffLabels(t: T): { added: string; removed: string } {
-    return { added: t("diff.added"), removed: t("diff.removed") };
+export function diffLabels(t: T): { added: string; removed: string; tags: string } {
+    return { added: t("diff.added"), removed: t("diff.removed"), tags: t("diff.tags") };
 }
 
 interface IApprovedProps {

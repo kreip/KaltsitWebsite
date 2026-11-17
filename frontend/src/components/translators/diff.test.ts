@@ -16,7 +16,8 @@ describe("comparing versions by words", () => {
     });
 
     it("marks one replaced word inside the text", () => {
-        expect(show("Вы, ребята... не из Урсуса...", "Вы, ребята... не из Урсина...")).toBe("Вы, ребята... не из [-Урсуса][+Урсина]...");
+        expect(show("Вы, ребята... не из Урсуса...", "Вы, ребята... не из Урсина...")).toBe("Вы, ребята... не из Урс[-ус][+ин]а...");
+        expect(show("Вы, ребята... не из Урсуса...", "Вы, ребята... не из Колумбии...")).toBe("Вы, ребята... не из [-Урсуса][+Колумбии]...");
     });
 
     it("marks an added and a dropped word", () => {
@@ -37,5 +38,24 @@ describe("comparing versions by words", () => {
 
     it("keeps tags and substitutions whole", () => {
         expect(show("<i>Тихо.</i> {@nickname}?", "Тихо. {@nickname}!")).toBe("[-<i>]Тихо.[-</i>] {@nickname}[-?][+!]");
+    });
+
+    it("marks only the letters of a word changed by a few", () => {
+        expect(diffWords("Это Доберман.", "Это Доберманн.")).toEqual([
+            { kind: "same", text: "Это Доберман" },
+            { kind: "add", text: "н" },
+            { kind: "same", text: "." },
+        ]);
+        expect(diffWords("Рэндалл", "Рэндолл")).toEqual([
+            { kind: "same", text: "Рэнд" },
+            { kind: "del", text: "а" },
+            { kind: "add", text: "о" },
+            { kind: "same", text: "лл" },
+        ]);
+        // Another word altogether: whole.
+        expect(diffWords("Бибек", "Байбик")).toEqual([
+            { kind: "del", text: "Бибек" },
+            { kind: "add", text: "Байбик" },
+        ]);
     });
 });

@@ -1,24 +1,29 @@
 /**
  * Two versions of a translation compared by words (diff.ts): the new text
  * with what it added in the success green and what it dropped, where it
- * stood, struck through in the destructive red. The texts are shown as
- * written (tags and `{@nickname}` as they are), so a changed tag is seen too.
+ * stood, struck through in the destructive red; a word changed by a few
+ * letters shows those letters. The game's tags (`<i>`, `<@ba.vup>`, `</>`…)
+ * are never shown as letters: they are left out of the comparison, and a
+ * change of the tags alone says so.
  */
 import type React from "react";
 import { useMemo } from "react";
 import { diffWords } from "./diff";
 
-/** Line breaks written as `\n` read as line breaks, the way the story text shows them. */
+/** The game's and Unity's tags: left out of the comparison. */
+const TAG = /<\/?(?:[@$][^<>\n]*|i|b|u|color(?:=[^<>\n]*)?|size(?:=[^<>\n]*)?|p(?:=[^<>\n]*)?)?>/gi;
+
+/** Line breaks written as `\n` read as line breaks, the way the story text shows them; no tags. */
 function prepare(text: string): string {
-    return text.replace(/\\n/g, "\n");
+    return text.replace(/\\n/g, "\n").replace(TAG, "");
 }
 
 export interface ITextDiffProps {
     /** The text one step back. */
     before: string;
     after: string;
-    /** Screen-reader words for an added and a dropped fragment. */
-    labels: { added: string; removed: string };
+    /** Screen-reader words for an added and a dropped fragment; the note for a change of the tags alone. */
+    labels: { added: string; removed: string; tags?: string };
 }
 
 export function TextDiff({ before, after, labels }: ITextDiffProps): React.ReactElement {
@@ -31,8 +36,10 @@ export function TextDiff({ before, after, labels }: ITextDiffProps): React.React
             return { ...p, key };
         });
     }, [before, after]);
+    const tagsOnly = before !== after && prepare(before) === prepare(after);
     return (
         <span className="whitespace-pre-line">
+            {tagsOnly && labels.tags ? <span className="me-1 text-subtle-foreground text-xs">({labels.tags})</span> : null}
             {parts.map((p) =>
                 p.kind === "same" ? (
                     <span key={p.key}>{p.text}</span>
