@@ -63,6 +63,8 @@ pub fn router() -> OpenApiRouter<AppState> {
         .routes(routes!(admin::stats))
         .routes(routes!(admin::admin_run_import, admin::admin_import_status))
         .routes(routes!(admin::refresh_site_texts))
+        .routes(routes!(admin::test_edits))
+        .routes(routes!(admin::delete_test_edits))
         .merge(edits::router())
         .merge(texts::router())
 }

@@ -2,7 +2,8 @@
  * The Admin tab (admins only): requests for access (accept with a role or
  * decline), the members with their role and "Remove", and the statistics —
  * proposals made, approved and rejected this week and in all, by person,
- * and each section's progress.
+ * and each section's progress; Maintenance: the import, the site texts and,
+ * with the development sign-in on, the test edits to clean away.
  */
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Check, Languages, Play, Trash2, X } from "lucide-react";
@@ -11,6 +12,7 @@ import { useState } from "react";
 import { AlertDialog, AlertDialogClose, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogPopup, AlertDialogTitle } from "#/components/ui/alert-dialog";
 import { Badge } from "#/components/ui/badge";
 import { Button } from "#/components/ui/button";
+import { Checkbox } from "#/components/ui/checkbox";
 import { LoadFailed } from "#/components/ui/load-failed";
 import { Meter } from "#/components/ui/meter";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "#/components/ui/select";
@@ -20,12 +22,14 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "#
 import { toastManager } from "#/components/ui/toast";
 import { useFormatters, useT } from "#/lib/i18n";
 import type { TypedT } from "#/lib/i18n/messages";
-import { ADMIN_QUERY_ROOT, accessRequestsQueryOptions, adminStatsQueryOptions, decideRequestFn, importStatusQueryOptions, membersQueryOptions, refreshSiteTextsFn, removeMemberFn, setMemberRoleFn, startImportFn, TRANSLATORS_QUERY_ROOT } from "#/lib/translators/api";
+import { ADMIN_QUERY_ROOT, accessRequestsQueryOptions, adminStatsQueryOptions, decideRequestFn, deleteTestEditsFn, importStatusQueryOptions, membersQueryOptions, refreshSiteTextsFn, removeMemberFn, setMemberRoleFn, startImportFn, TRANSLATORS_QUERY_ROOT, testEditsQueryOptions } from "#/lib/translators/api";
 import type { AccessRequest } from "#/types/generated/AccessRequest";
 import type { EditCounts } from "#/types/generated/EditCounts";
 import type { ImportStatus } from "#/types/generated/ImportStatus";
 import type { MemberRow } from "#/types/generated/MemberRow";
+import type { TestEdit } from "#/types/generated/TestEdit";
 import type { TranslatorsMe } from "#/types/generated/TranslatorsMe";
+import { useStoryNames } from "./storyNames";
 import type { messages } from "./translators.messages";
 
 type T = TypedT<typeof messages>;
@@ -366,7 +370,113 @@ function Service({ t }: { t: T }): React.ReactElement {
                 </div>
                 <span className="text-subtle-foreground text-xs">{t("admin.siteTexts.hint")}</span>
             </div>
+            <TestEditsBlock t={t} />
         </section>
+    );
+}
+
+function testEditId(e: TestEdit): string {
+    return `${e.kind}:${e.id}`;
+}
+
+/**
+ * Test edits: every proposal and approval of the development account
+ * (`dev-translator`), with tick boxes and "Delete selected" — an approved one
+ * is withdrawn first. Only with the development sign-in on (never on the real
+ * site), so the local base can be cleaned after a check.
+ */
+function TestEditsBlock({ t }: { t: T }): React.ReactElement | null {
+    const f = useFormatters();
+    const nameOf = useStoryNames();
+    const query = useQuery(testEditsQueryOptions());
+    const [ticked, setTicked] = useState<ReadonlySet<string>>(new Set());
+    const [asking, setAsking] = useState(false);
+    const remove = useAdminMutation((items: TestEdit[]) => deleteTestEditsFn({ data: { proposals: items.filter((e) => e.kind === "proposal").map((e) => Number(e.id)), approvals: items.filter((e) => e.kind === "approval").map((e) => e.id) } }), t);
+    if (query.isError) return <LoadFailed layout="inline" message={t("admin.load")} onRetry={() => query.refetch()} />;
+    if (!query.data?.enabled) return null;
+    const items = query.data.items;
+    const chosen = items.filter((e) => ticked.has(testEditId(e)));
+    const toggle = (e: TestEdit, on: boolean) =>
+        setTicked((prev) => {
+            const next = new Set(prev);
+            if (on) next.add(testEditId(e));
+            else next.delete(testEditId(e));
+            return next;
+        });
+    return (
+        <div className="flex flex-col gap-2">
+            <span className="font-medium text-sm">{t("admin.test.title", { count: items.length })}</span>
+            <span className="text-subtle-foreground text-xs">{t("admin.test.hint")}</span>
+            {items.length === 0 ? null : (
+                <>
+                    <div className="flex flex-wrap items-center gap-2">
+                        <Button size="xs" variant="ghost" onClick={() => setTicked(new Set(items.map(testEditId)))}>
+                            {t("replace.all")}
+                        </Button>
+                        <Button size="xs" variant="ghost" onClick={() => setTicked(new Set())} disabled={ticked.size === 0}>
+                            {t("replace.none")}
+                        </Button>
+                        <Button size="sm" variant="destructive-outline" onClick={() => setAsking(true)} disabled={chosen.length === 0 || remove.isPending}>
+                            {remove.isPending ? <Spinner /> : <Trash2 aria-hidden="true" />}
+                            {t("admin.test.delete", { count: chosen.length })}
+                        </Button>
+                    </div>
+                    <div className="max-h-96 overflow-y-auto">
+                        <Table aria-label={t("admin.test.table")} className="wrap-anywhere text-xs">
+                            <TableBody>
+                                {items.map((e) => {
+                                    const n = e.storyId === "@text" ? null : nameOf(e.storyId);
+                                    return (
+                                        <TableRow key={testEditId(e)}>
+                                            <TableCell className="w-8 py-1.5 align-top">
+                                                <Checkbox checked={ticked.has(testEditId(e))} onCheckedChange={(v) => toggle(e, v === true)} aria-label={t("admin.test.pick")} />
+                                            </TableCell>
+                                            <TableCell className={PROSE}>
+                                                <span className="block">{e.text}</span>
+                                                <span className="block text-subtle-foreground">{e.en.length > 160 ? `${e.en.slice(0, 160)}…` : e.en}</span>
+                                            </TableCell>
+                                            <TableCell className={`${PROSE} w-56 text-muted-foreground`}>{n ? `${n.group} › ${n.story}` : t("where.text")}</TableCell>
+                                            <TableCell className={`${PROSE} w-40`}>
+                                                <Badge variant={e.kind === "approval" || e.approved ? "success" : "info"} size="sm">
+                                                    {e.kind === "approval" ? t("admin.test.approval") : e.approved ? t("state.approved") : t("state.proposed")}
+                                                </Badge>
+                                            </TableCell>
+                                            <TableCell className="w-32 py-1.5 align-top text-muted-foreground tabular-nums">{f.date(e.at * 1000, { dateStyle: "medium", timeStyle: "short" })}</TableCell>
+                                        </TableRow>
+                                    );
+                                })}
+                            </TableBody>
+                        </Table>
+                    </div>
+                </>
+            )}
+            <AlertDialog open={asking} onOpenChange={setAsking}>
+                <AlertDialogPopup>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>{t("admin.test.confirmTitle", { count: chosen.length })}</AlertDialogTitle>
+                        <AlertDialogDescription>{t("admin.test.confirm")}</AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogClose render={<Button variant="ghost" />}>{t("editor.cancel")}</AlertDialogClose>
+                        <Button
+                            variant="destructive"
+                            onClick={() =>
+                                remove.mutate(chosen, {
+                                    onSuccess: () => {
+                                        setAsking(false);
+                                        setTicked(new Set());
+                                    },
+                                })
+                            }
+                            disabled={remove.isPending}
+                        >
+                            {remove.isPending ? <Spinner /> : null}
+                            {t("admin.test.delete", { count: chosen.length })}
+                        </Button>
+                    </AlertDialogFooter>
+                </AlertDialogPopup>
+            </AlertDialog>
+        </div>
     );
 }
 

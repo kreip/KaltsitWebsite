@@ -2687,6 +2687,38 @@ export const messages = {
         text: "No edits in this state",
         description: "Edits tab: the chosen state chip has no rows.",
     },
+    "admin.test.title": {
+        text: "Test edits ({count})",
+        description: "Admin tab, Maintenance: heading of the development account's edits (only with the development sign-in on).",
+    },
+    "admin.test.hint": {
+        text: "Proposals and approvals of the development account (dev-translator), for cleaning the local base after a check. An approved one is withdrawn, then deleted.",
+        description: "Admin tab, Maintenance: line under Test edits.",
+    },
+    "admin.test.table": {
+        text: "Test edits",
+        description: "Accessible name of the test edits table.",
+    },
+    "admin.test.pick": {
+        text: "Delete this edit",
+        description: "Accessible name of a test edit's tick box.",
+    },
+    "admin.test.approval": {
+        text: "Approval",
+        description: "Test edits: the row is an approval of another variant (the game's text, a translator's, the machine's).",
+    },
+    "admin.test.delete": {
+        text: "Delete selected ({count})",
+        description: "Test edits: deletes the ticked edits.",
+    },
+    "admin.test.confirmTitle": {
+        text: "Delete {count, plural, one {# test edit} other {# test edits}}?",
+        description: "Test edits: confirmation heading.",
+    },
+    "admin.test.confirm": {
+        text: "Approved ones are withdrawn first. The history keeps the record.",
+        description: "Test edits: confirmation text.",
+    },
 } satisfies MessageMap;
 
 export const { keys } = defineMessages({ namespace, messages });

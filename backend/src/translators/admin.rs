@@ -663,3 +663,196 @@ pub async fn refresh_site_texts(
     state.cache.invalidate_by_prefix("i18n:").await;
     Ok(Json(out))
 }
+
+/// One edit of the development account: a proposal (its id), or an approval
+/// it made of another variant (the entry's md5).
+#[derive(Debug, Serialize, TS, ToSchema)]
+#[serde(rename_all = "camelCase")]
+#[ts(export)]
+pub struct TestEdit {
+    /// `proposal` or `approval`.
+    pub kind: String,
+    /// The proposal's id, or the md5 of the approved entry's English.
+    pub id: String,
+    pub en: String,
+    pub text: String,
+    /// The story of the place (`@text` outside the story).
+    pub story_id: String,
+    /// A proposal approved (for the entry or its place): deleting withdraws it first.
+    pub approved: bool,
+    #[ts(type = "number")]
+    pub at: i64,
+}
+
+/// The development account's edits, for cleaning them away locally.
+#[derive(Debug, Serialize, TS, ToSchema)]
+#[serde(rename_all = "camelCase")]
+#[ts(export)]
+pub struct TestEdits {
+    /// The development sign-in is on (`TRANSLATORS_DEV_LOGIN=1`); off on the real site.
+    pub enabled: bool,
+    pub items: Vec<TestEdit>,
+}
+
+/// Which test edits to delete.
+#[derive(Debug, Deserialize, ToSchema)]
+#[serde(rename_all = "camelCase")]
+pub struct TestEditsDelete {
+    #[serde(default)]
+    pub proposals: Vec<i64>,
+    /// The md5s of entries whose approval (made by the development account) goes.
+    #[serde(default)]
+    pub approvals: Vec<String>,
+}
+
+/// The development account's live proposals and its approvals of other
+/// variants (the game's text, a translator's, the machine's), newest first.
+/// Admins only; empty unless the development sign-in is on.
+#[utoipa::path(
+    get,
+    path = "/translators/admin/test-edits",
+    tag = "translators",
+    security(("bearer_auth" = [])),
+    responses(
+        (status = 200, description = "The development account's edits.", body = TestEdits),
+        (status = 401, response = crate::app::openapi::responses::Unauthorized),
+        (status = 403, response = crate::app::openapi::responses::Forbidden),
+        (status = 500, response = crate::app::openapi::responses::InternalError)
+    )
+)]
+pub async fn test_edits(
+    State(state): State<AppState>,
+    auth: MaybeAuthUser,
+) -> Result<Json<TestEdits>, ApiError> {
+    require_admin(&state, &auth).await?;
+    if !super::dev_login_enabled() {
+        return Ok(Json(TestEdits {
+            enabled: false,
+            items: Vec::new(),
+        }));
+    }
+    type Row = (String, String, String, String, String, bool, DateTime<Utc>);
+    let rows: Vec<Row> = sqlx::query_as(
+        "SELECT * FROM (
+             SELECT 'proposal' AS kind, p.id::text AS id, p.edit_key AS en, p.text, p.story_id,
+                    (p.approved_at IS NOT NULL OR EXISTS (SELECT 1 FROM translators.approvals a
+                        WHERE a.edit_key = p.edit_key AND a.proposal_id = p.id)) AS approved,
+                    p.updated_at AS at
+             FROM translators.proposals p JOIN users u ON u.id = p.author_id
+             WHERE u.uid = $1 AND p.deleted_at IS NULL
+             UNION ALL
+             SELECT 'approval', md5(a.edit_key), a.edit_key, a.text, a.story_id, TRUE, a.approved_at
+             FROM translators.approvals a JOIN users u ON u.id = a.approved_by
+             WHERE u.uid = $1 AND NOT EXISTS (SELECT 1 FROM translators.proposals p
+                 JOIN users pu ON pu.id = p.author_id
+                 WHERE p.id = a.proposal_id AND pu.uid = $1 AND p.deleted_at IS NULL)
+         ) x ORDER BY at DESC LIMIT 2000",
+    )
+    .bind(super::routes::DEV_UID)
+    .fetch_all(&state.db)
+    .await?;
+    Ok(Json(TestEdits {
+        enabled: true,
+        items: rows
+            .into_iter()
+            .map(|(kind, id, en, text, story_id, approved, at)| TestEdit {
+                kind,
+                id,
+                en,
+                text,
+                story_id,
+                approved,
+                at: at.timestamp(),
+            })
+            .collect(),
+    }))
+}
+
+/// Delete the chosen test edits: an approved proposal is withdrawn first
+/// (logged as by the admin), then soft-deleted; an approval goes. Only the
+/// development account's own edits; admins only, with the development
+/// sign-in on.
+#[utoipa::path(
+    post,
+    path = "/translators/admin/test-edits/delete",
+    tag = "translators",
+    security(("bearer_auth" = [])),
+    request_body = TestEditsDelete,
+    responses(
+        (status = 204, description = "Deleted."),
+        (status = 401, response = crate::app::openapi::responses::Unauthorized),
+        (status = 403, response = crate::app::openapi::responses::Forbidden),
+        (status = 404, response = crate::app::openapi::responses::NotFound),
+        (status = 500, response = crate::app::openapi::responses::InternalError)
+    )
+)]
+pub async fn delete_test_edits(
+    State(state): State<AppState>,
+    auth: MaybeAuthUser,
+    Json(input): Json<TestEditsDelete>,
+) -> Result<StatusCode, ApiError> {
+    let me = require_admin(&state, &auth).await?;
+    if !super::dev_login_enabled() {
+        return Err(ApiError::NotFound);
+    }
+    let dev = super::routes::DEV_UID;
+    for id in input.proposals {
+        type P = (String, bool, String, i32, i16);
+        let Some((key, context, story_id, line, part)): Option<P> = sqlx::query_as(
+            "SELECT p.edit_key, p.context, p.story_id, p.line, p.part FROM translators.proposals p
+             JOIN users u ON u.id = p.author_id
+             WHERE p.id = $1 AND u.uid = $2 AND p.deleted_at IS NULL",
+        )
+        .bind(id)
+        .bind(dev)
+        .fetch_optional(&state.db)
+        .await?
+        else {
+            continue;
+        };
+        let place = super::edits::dto::EditPlace {
+            story_id,
+            line,
+            part,
+            edit_key: None,
+        };
+        if context {
+            super::edits::db::approve_context(&state.db, &key, id, &place, me.id, false).await?;
+        } else {
+            let approved: bool = sqlx::query_scalar(
+                "SELECT EXISTS (SELECT 1 FROM translators.approvals WHERE edit_key = $1 AND proposal_id = $2)",
+            )
+            .bind(&key)
+            .bind(id)
+            .fetch_one(&state.db)
+            .await?;
+            if approved {
+                super::edits::db::withdraw_key(&state.db, &key, &place, me.id).await?;
+            }
+        }
+        super::edits::db::delete_proposal(&state.db, id).await?;
+    }
+    for md5 in input.approvals {
+        type A = (String, String, i32, i16);
+        let Some((key, story_id, line, part)): Option<A> = sqlx::query_as(
+            "SELECT a.edit_key, a.story_id, a.line, a.part FROM translators.approvals a
+             JOIN users u ON u.id = a.approved_by
+             WHERE md5(a.edit_key) = $1 AND u.uid = $2",
+        )
+        .bind(&md5)
+        .bind(dev)
+        .fetch_optional(&state.db)
+        .await?
+        else {
+            continue;
+        };
+        let place = super::edits::dto::EditPlace {
+            story_id,
+            line,
+            part,
+            edit_key: None,
+        };
+        super::edits::db::withdraw_key(&state.db, &key, &place, me.id).await?;
+    }
+    Ok(StatusCode::NO_CONTENT)
+}

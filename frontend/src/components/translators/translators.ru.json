@@ -690,5 +690,13 @@
     "edits.filter": "Показать по статусу",
     "edits.filter.all": "Все",
     "edits.filter.released": "Вышло в паке",
-    "edits.filter.empty": "Нет правок с этим статусом"
+    "edits.filter.empty": "Нет правок с этим статусом",
+    "admin.test.title": "Тестовые правки ({count})",
+    "admin.test.hint": "Предложения и утверждения учётной записи для разработки (dev-translator) — для чистки локальной базы после проверки. Утверждённое сначала снимается, потом удаляется.",
+    "admin.test.table": "Тестовые правки",
+    "admin.test.pick": "Удалить эту правку",
+    "admin.test.approval": "Утверждение",
+    "admin.test.delete": "Удалить выбранные ({count})",
+    "admin.test.confirmTitle": "Удалить {count, plural, one {# тестовую правку} few {# тестовые правки} many {# тестовых правок} other {# тестовой правки}}?",
+    "admin.test.confirm": "Утверждённые сначала снимаются. В истории запись останется."
 }

@@ -13186,6 +13186,82 @@
         ]
       }
     },
+    "/api/translators/admin/test-edits": {
+      "get": {
+        "tags": [
+          "translators"
+        ],
+        "summary": "The development account's live proposals and its approvals of other\nvariants (the game's text, a translator's, the machine's), newest first.\nAdmins only; empty unless the development sign-in is on.",
+        "operationId": "test_edits",
+        "responses": {
+          "200": {
+            "description": "The development account's edits.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TestEdits"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        },
+        "security": [
+          {
+            "bearer_auth": []
+          }
+        ]
+      }
+    },
+    "/api/translators/admin/test-edits/delete": {
+      "post": {
+        "tags": [
+          "translators"
+        ],
+        "summary": "Delete the chosen test edits: an approved proposal is withdrawn first\n(logged as by the admin), then soft-deleted; an approval goes. Only the\ndevelopment account's own edits; admins only, with the development\nsign-in on.",
+        "operationId": "delete_test_edits",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TestEditsDelete"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "Deleted."
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        },
+        "security": [
+          {
+            "bearer_auth": []
+          }
+        ]
+      }
+    },
     "/api/translators/agreements": {
       "put": {
         "tags": [
@@ -35931,7 +36007,7 @@
           "written": {
             "type": "integer",
             "format": "int32",
-            "description": "Keys written now (new Russian, or the section's own keys)."
+            "description": "Keys written now (new Russian, the loader's own Russian changed in the file, or the section's own keys)."
           }
         }
       },
@@ -39285,6 +39361,87 @@
           "next",
           "unknown"
         ]
+      },
+      "TestEdit": {
+        "type": "object",
+        "description": "One edit of the development account: a proposal (its id), or an approval\nit made of another variant (the entry's md5).",
+        "required": [
+          "kind",
+          "id",
+          "en",
+          "text",
+          "storyId",
+          "approved",
+          "at"
+        ],
+        "properties": {
+          "approved": {
+            "type": "boolean",
+            "description": "A proposal approved (for the entry or its place): deleting withdraws it first."
+          },
+          "at": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "en": {
+            "type": "string"
+          },
+          "id": {
+            "type": "string",
+            "description": "The proposal's id, or the md5 of the approved entry's English."
+          },
+          "kind": {
+            "type": "string",
+            "description": "`proposal` or `approval`."
+          },
+          "storyId": {
+            "type": "string",
+            "description": "The story of the place (`@text` outside the story)."
+          },
+          "text": {
+            "type": "string"
+          }
+        }
+      },
+      "TestEdits": {
+        "type": "object",
+        "description": "The development account's edits, for cleaning them away locally.",
+        "required": [
+          "enabled",
+          "items"
+        ],
+        "properties": {
+          "enabled": {
+            "type": "boolean",
+            "description": "The development sign-in is on (`TRANSLATORS_DEV_LOGIN=1`); off on the real site."
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TestEdit"
+            }
+          }
+        }
+      },
+      "TestEditsDelete": {
+        "type": "object",
+        "description": "Which test edits to delete.",
+        "properties": {
+          "approvals": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "The md5s of entries whose approval (made by the development account) goes."
+          },
+          "proposals": {
+            "type": "array",
+            "items": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        }
       },
       "TextAt": {
         "type": "object",

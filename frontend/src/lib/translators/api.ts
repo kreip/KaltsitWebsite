@@ -40,6 +40,7 @@ import type { Release } from "#/types/generated/Release";
 import type { SearchLines } from "#/types/generated/SearchLines";
 import type { SiteTextsLoaded } from "#/types/generated/SiteTextsLoaded";
 import type { StoryProgress } from "#/types/generated/StoryProgress";
+import type { TestEdits } from "#/types/generated/TestEdits";
 import type { TextSummary } from "#/types/generated/TextSummary";
 import type { TranslatorStoryLines } from "#/types/generated/TranslatorStoryLines";
 import type { TranslatorsMe } from "#/types/generated/TranslatorsMe";
@@ -614,6 +615,22 @@ export const startImportFn = createServerFn({ method: "POST" }).handler(async ()
 });
 
 /** Load the site's Russian around the section (site-ru.json) into the site's translations again (an admin). */
+export const getTestEditsFn = createServerFn({ method: "GET" }).handler(async (): Promise<TestEdits> => {
+    const res = await send("/translators/admin/test-edits", "GET");
+    return (await res.json()) as TestEdits;
+});
+
+/** The development account's edits (Admin tab → Maintenance → Test edits). */
+export function testEditsQueryOptions() {
+    return queryOptions({ queryKey: [...ADMIN_QUERY_ROOT, "test-edits"], queryFn: () => getTestEditsFn(), staleTime: 0 });
+}
+
+export const deleteTestEditsFn = createServerFn({ method: "POST" })
+    .inputValidator((d: { proposals: number[]; approvals: string[] }) => d)
+    .handler(async ({ data }): Promise<void> => {
+        await send("/translators/admin/test-edits/delete", "POST", data);
+    });
+
 export const refreshSiteTextsFn = createServerFn({ method: "POST" }).handler(async (): Promise<SiteTextsLoaded> => {
     const res = await send("/translators/admin/site-texts", "POST");
     return (await res.json()) as SiteTextsLoaded;

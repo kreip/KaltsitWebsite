@@ -27,7 +27,7 @@ use crate::core::hypergryph::constants::Server;
 use crate::database::queries::users::{create_user, find_raw_by_uid};
 
 /// The uid of the development account. Real Arknights uids are digits only.
-const DEV_UID: &str = "dev-translator";
+pub const DEV_UID: &str = "dev-translator";
 
 /// A section member making a request.
 pub struct Member {
