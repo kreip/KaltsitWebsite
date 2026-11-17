@@ -53,9 +53,12 @@ The section speaks the site's language. Its own Russian ships with the page
 `ru` locale is switched on in the admin panel (the header's language switch then offers
 Русский, the pages live under `/ru/…`). The Russian of what stands around the section (the
 header, the menus, the sign-in dialog, the shared buttons: `backend/src/translators/site-ru.json`)
-is loaded into the site's translations by the backend itself at every start — only keys with
-no Russian yet, so a translation made in the admin panel is never overwritten, except the
-section's own menu item — and again by "Refresh site texts" on the Admin tab. A key the
+is loaded into the site's translations by the backend itself at every start — keys with no
+Russian yet and keys whose Russian the loader itself wrote (no author: a change of the file,
+such as «Операторы» → «Оперативники», reaches the site), so a translation made in the admin
+panel is never overwritten, except the section's own menu item — and again by "Refresh site
+texts" on the Admin tab. The game's word for an operator is «оперативник»: the section and the
+site's menus say so. A key the
 site's catalog does not know yet (the frontend's `bun run i18n:sync` has not run) is skipped
 and counted. The admin panel's value of a section key wins over the shipped file only when it
 differs from the English source. The site's other texts stay English until they are
@@ -159,10 +162,34 @@ Glossary tab recounts in the background after every approval.
 A term of several words shows the game's whole phrase in "As in the game", the words that
 are not the glossary's marked. Beside a variant with a cross, "Replace with the glossary's
 form" (`POST /api/translators/glossary/{id}/fix`) lists the lines, each with the text it
-would get — the glossary's stem plus the game word's ending, only when the two are the same
-word spelled differently; otherwise "check by hand" — and writes one proposal per entry.
+would get and a tick box (ticked at first; "Tick all" / "Untick all"), and writes one proposal
+per entry for the ticked lines only. Only the term's word changes, the rest of the line stays
+as written.
+
+**Case forms** (`glossary/matcher.rs::paradigm`): simple rules give a word's singular cases —
+names and nouns in `-ия` (Амия: Амии, Амию, Амией), `-а` (Маргарита: Маргариты, Маргарите…),
+`-я` (Зоя: Зои, Зое, Зою, Зоей), a consonant (Рэндолл: Рэндолла, Рэндоллу, Рэндоллом,
+Рэндолле), adjectives in `-ый`, `-ое`, `-ая`. A line holding one of them holds the glossary's
+form (no "form not found"). The replacement puts the glossary's stem with the game word's
+ending found among those rules, only when the two stems are the same word spelled differently;
+the nominative is never put in for another case ("У Зоя царапина"): a word whose case the rules
+cannot tell is "check by hand". A word in `-ь` (Чэнь), `-о`, `-и`… has no rules: only the
+glossary form's own ending counts, and a word that never declines is put in as it is.
 A failed download is kept as a code (`offline`, `forbidden`, `changed:…`) and worded on the
 page.
+
+## Replacing a word everywhere
+
+A saved proposal that changed one word of its text into another (`Бибек` → `Байбик`; not a
+change of ending, `Бибек` → `Бибека`: `wordSwap.ts`) asks which other texts hold the old word
+(`POST /api/translators/replace-word`): the story's and every other text, by the Russian they
+stand with (the approved one, else the game's), up to 500. When some do, a toast offers
+"Replace «Бибек» → «Байбик» in N more lines?"; "Show" opens the glossary's replace dialog with
+those lines — the new word in the same case by the case rules (the proposal's words in any
+case are first taken back to their nominatives), "check by hand" where the case is ambiguous
+(`Амии`: genitive, dative or prepositional) — and writes my proposals for the ticked ones. A
+glossary term whose Russian is the old word is named, with a link: the glossary may need
+fixing (the sheet is never written from the site).
 
 ## The game's tags
 
@@ -295,6 +322,12 @@ a proposal started from it and a comment show the author's name.
 Storage test against a throwaway database:
 `cargo test --test translators_edits_test -- --ignored`.
 
+## The Edits list
+
+Above the list: chips by state with their counts — All, Proposed, Approved, Rejected, Released
+in a pack (`EditRow.releasedIn`: the version the approved text went out in), and Approved by
+another / Outdated when there are such — and **Compare**: "now" as its changes against "was".
+
 ## Deciding in the Edits list
 
 On the **Edits** tab a translator (or an admin) decides without opening the line: a click on a
@@ -303,6 +336,20 @@ an approved one, Back to proposals for a rejected one. Tick boxes (Shift for a r
 for every waiting proposal) and the "Selected: N · Approve · Reject" bar decide many at once
 (`POST /api/translators/proposals/decisions`). A rejected proposal leaves the line and the
 progress; its author rewriting it makes it a proposal again.
+
+## A line folded and opened
+
+A line of the Story, Search and Game sections tables is quiet until clicked (`openRows.tsx`):
+it shows the text it stands with — the approved one, else the game's — the English and what is
+wrong (the marks, a glossary term without its form; the term's English is marked in yellow), no
+variants, proposals or buttons. A click on the row (not on a button or a link, not a selection,
+not the double click that selects a word) opens it: the variants, the proposals, the comments
+and every button, in sight without hovering. A second click or Esc folds it; the chevron in the
+№ cell does the same from the keyboard. A link to a line (`#n-…`) opens it. "Open every line" in
+the View menu (`open=1`) shows every row opened, the buttons on hover, as before.
+
+An approved line shows only the approved text with one Withdraw (the game's old text and the
+proposals are in its History; "a newer proposal" says one waits).
 
 ## The line's buttons
 
@@ -317,14 +364,18 @@ approved ("the text as in the game", "the variant by <author>") and marks a newe
 ## View
 
 The **View** button next to the filters (Story, Search, Game sections) holds the display
-settings: the variants, compare, Chinese and the service rows (Story), and **Only as in the game**
-(`game=1` in the address): the game's text and the English, nothing else. A translator's variant
+settings: the variants, compare, Chinese and the service rows (Story), **Only as in the game**
+(`game=1` in the address): the game's text and the English, nothing else, and **Open every
+line** (`open=1`). A translator's variant
 equal to the game's text is not shown.
 
 ## Problems
 
-A line whose game text has a problem is yellow (an approved one never is); the status filter
-names them with counts: a glossary form not found, a broken tag (left open or broken, a stray
+A row is never yellow as a whole: the marks name the problem and a glossary term's English is
+marked. The status filter counts a line by the text it stands with (as its folded row shows it:
+the approved text once approved — then the glossary only when a term changed after the
+approval — else the game's), with counts; a count not known yet shows no number, never "(0)";
+the menu opens under its field. The problems: a glossary form not found, a broken tag (left open or broken, a stray
 closer, a substitution `{…}` lost or added, a tag the English lacks), no highlight (the English
 has a tag the Russian lacks, the text whole), line breaks, a proposal noticeably longer than the
 game's text, ты / вы. The page works them out (`checks.ts`, `markup.ts::tagHealth`); for the
