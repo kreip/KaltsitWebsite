@@ -53,6 +53,7 @@ import { spanLook, tagOf, tagWords, useGameTags } from "./tags";
 import type { messages } from "./translators.messages";
 import { editorLabel, fromWords, TRANSLATOR_SOURCES, translatorName } from "./translatorVariants";
 import { WordReplaceOffer } from "./WordReplace";
+import { SPEAKER_FIELD } from "./where";
 import { wordSwap } from "./wordSwap";
 
 type T = TypedT<typeof messages>;
@@ -773,7 +774,8 @@ export function PlacesList({ place, nickname, compact = false, t }: { place: Edi
             <ul className={cn("flex max-h-72 flex-col overflow-y-auto text-xs", compact ? "gap-1" : "gap-2")}>
                 {places.map((p) => {
                     // A field of the game data: where it stands, in words.
-                    if (p.section !== "story")
+                    // A game data place, or a speaker's name in a scene (no story line).
+                    if (p.section !== "story" || p.field === SPEAKER_FIELD)
                         return (
                             <li key={`${p.section}-${p.objectId}-${p.field}-${p.idx}`} className="flex flex-col gap-0.5 border-s-2 ps-2">
                                 <span className={compact ? undefined : "font-medium"}>

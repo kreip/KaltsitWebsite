@@ -6,30 +6,27 @@ import type { TranslatorLine } from "./TranslatorLine";
  * One text of an object: what of the object it is, and the text as a line
  * of the table, edited as the text itself (one translation everywhere).
  */
-export type ObjectLine = {
-    /**
-     * The record of the game data holding it (`char_002_amiya`, `main_00-01`):
-     * the first one when several records of the object hold the same text.
-     */
-    objectId: string;
-    /**
-     * `name`, `trait`, `talent.description`, `skill.name`, `module.effect`, ...
-     */
-    field: string;
-    /**
-     * Which one of several (skill 2), from 1; 0 when there is one.
-     */
-    idx: number;
-    /**
-     * What tells it from the object's other texts at the same field, as
-     * codes: variants joined by `,`, the parts of one by `+`. `E2` elite,
-     * `L30` operator level, `P6` potential, `S7` skill level, `M3` mastery,
-     * `T2` module stage, `N1` the number in a list, `V2` the voice set, `C`
-     * challenge mode, `DE` / `DN` / `DT` the story / standard / adverse
-     * environment, `#…` a code of the game as it is, `@…` the id of the
-     * story an operator record's introduction leads to. May be empty.
-     */
-    note: string;
-    place: EditPlace;
-    line: TranslatorLine;
-};
+export type ObjectLine = { 
+/**
+ * The record of the game data holding it (`char_002_amiya`, `main_00-01`):
+ * the first one when several records of the object hold the same text.
+ */
+objectId: string, 
+/**
+ * `name`, `trait`, `talent.description`, `skill.name`, `module.effect`, ...
+ */
+field: string, 
+/**
+ * Which one of several (skill 2), from 1; 0 when there is one.
+ */
+idx: number, 
+/**
+ * What tells it from the object's other texts at the same field, as
+ * codes: variants joined by `,`, the parts of one by `+`. `E2` elite,
+ * `L30` operator level, `P6` potential, `S7` skill level, `M3` mastery,
+ * `T2` module stage, `N1` the number in a list, `V2` the voice set, `C`
+ * challenge mode, `DE` / `DN` / `DT` the story / standard / adverse
+ * environment, `#…` a code of the game as it is, `@…` the id of the
+ * story an operator record's introduction leads to. May be empty.
+ */
+note: string, place: EditPlace, line: TranslatorLine, };

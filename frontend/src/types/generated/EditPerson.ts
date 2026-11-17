@@ -3,4 +3,4 @@
 /**
  * A section member as an author or a voter.
  */
-export type EditPerson = { id: string; name: string };
+export type EditPerson = { id: string, name: string, };

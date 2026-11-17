@@ -190,6 +190,9 @@ export function gameWhere(section: string, object: string | null, field: string 
     return parts.join(" › ");
 }
 
+/** A speaker's name in a story scene (the backend's `texts::SPEAKER`; the object is the story). */
+export const SPEAKER_FIELD = "speaker";
+
 /** The story id of a text outside the story (the backend's `TEXT_PLACE`): an edit there holds everywhere. */
 export const TEXT_PLACE = "@text";
 

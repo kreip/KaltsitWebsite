@@ -2775,6 +2775,10 @@ export const messages = {
         text: "Select every waiting place of the replacement",
         description: "Accessible name of a replacement row's tick box.",
     },
+    "at.speakers": {
+        text: "Speakers",
+        description: "Where a text stands: a speaker's name in the story («Story › Speakers › chapter › scene»).",
+    },
 } satisfies MessageMap;
 
 export const { keys } = defineMessages({ namespace, messages });

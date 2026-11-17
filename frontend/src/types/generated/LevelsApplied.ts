@@ -3,13 +3,12 @@
 /**
  * What "Apply to the levels" did.
  */
-export type LevelsApplied = {
-    /**
-     * Level entries that got (or had rewritten) my proposal.
-     */
-    created: number;
-    /**
-     * Entries whose numbers do not fit the template or whose text would be the game's Russian.
-     */
-    skipped: number;
-};
+export type LevelsApplied = { 
+/**
+ * Level entries that got (or had rewritten) my proposal.
+ */
+created: number, 
+/**
+ * Entries whose numbers do not fit the template or whose text would be the game's Russian.
+ */
+skipped: number, };

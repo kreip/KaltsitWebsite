@@ -712,5 +712,6 @@
     "batch.count": "{entries, plural, one {# запись} few {# записи} many {# записей} other {# записи}} · мест: {places}",
     "batch.approve": "Утвердить всё ({count})",
     "batch.reject": "Отклонить всё ({count})",
-    "batch.tick": "Выбрать все ждущие места замены"
+    "batch.tick": "Выбрать все ждущие места замены",
+    "at.speakers": "Говорящие"
 }

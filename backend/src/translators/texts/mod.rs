@@ -39,6 +39,9 @@ pub fn router() -> OpenApiRouter<AppState> {
         .routes(routes!(routes::apply_levels))
 }
 
+/// The field of a speaker's name in a story scene (`section = story`, the object is the story).
+pub const SPEAKER: &str = "speaker";
+
 /// One entry of the list.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct TextRow {
@@ -243,6 +246,32 @@ pub fn collect(
         let i = b.entry(&p.text);
         b.place(i, &p);
     }
+    // The story's speakers: a name the pack translates stands in every scene
+    // it speaks in («Сюжет › Говорящие»), never "not tied".
+    let mut speakers: Vec<(&str, &str)> = Vec::new();
+    for (story_id, lines) in stories {
+        for l in lines {
+            if !l.speaker_en.is_empty() && matcher.entry(&l.speaker_en).is_some() {
+                speakers.push((story_id.as_str(), l.speaker_en.as_str()));
+            }
+        }
+    }
+    for (story_id, name) in speakers {
+        let i = b.entry(name);
+        b.place(
+            i,
+            &GamePlace {
+                section: STORY,
+                object_id: story_id.to_owned(),
+                object_en: story_id.to_owned(),
+                field: SPEAKER,
+                idx: 0,
+                note: String::new(),
+                text: name.to_owned(),
+                of_key: None,
+            },
+        );
+    }
     // The other tables: what the pack translates and no section above holds.
     let mut other: Vec<(String, String)> = Vec::new();
     gamedata::every_string(excel_dir, |table, s| {
@@ -384,6 +413,7 @@ mod tests {
             ("Sign in", "Войти", "11_ui.txt"),
             ("Left alone", "Сам по себе", "11_ui.txt"),
             ("Hello.", "Привет.", "12_story.txt"),
+            ("Ursus Child", "Урсусский ребёнок", "13_names.txt"),
         ]);
         let mut plugin = PluginCatalog::default();
         plugin.roles.insert(
@@ -416,6 +446,11 @@ mod tests {
             arktr_match: None,
             edit_key: "Hello.".to_owned(),
         });
+        // A speaker said twice in a scene: one place, the scene.
+        let mut child = hello[0].clone();
+        child.speaker_en = "Ursus Child".to_owned();
+        hello.push(child.clone());
+        hello.push(child);
         let stories = vec![("s1".to_owned(), hello)];
         let t = collect(&d, Some(&plugin), &matcher, &stories, dir.path());
         let row = |key: &str| t.rows.iter().find(|r| r.edit_key == key).unwrap();
@@ -438,7 +473,9 @@ mod tests {
         assert_eq!(row("Left alone").sections, vec![OTHER]);
         assert_eq!(row("Left alone").places, 0);
         assert_eq!(row("Only here").file.as_deref(), Some("plugin:skill"));
-        assert_eq!(t.rows.len(), 7);
+        assert_eq!(row("Ursus Child").sections, vec![STORY]);
+        assert_eq!(row("Ursus Child").places, 1);
+        assert_eq!(t.rows.len(), 8);
         let places: Vec<(&str, &str, &str)> = t
             .places
             .iter()
@@ -451,6 +488,7 @@ mod tests {
                 ("Deals Arts damage", "operators", "trait"),
                 ("Amiya", "enemies", "name"),
                 ("Not in the pack", "enemies", "description"),
+                ("Ursus Child", STORY, SPEAKER),
                 ("Sign in", OTHER, "text"),
             ]
         );
