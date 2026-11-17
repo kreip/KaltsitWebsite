@@ -2623,6 +2623,22 @@ export const messages = {
         text: "Replace in this line",
         description: "Replace dialog: accessible name of a line's tick box (only ticked lines get a proposal).",
     },
+    "row.open": {
+        text: "Open the line",
+        description: "Chevron in the № cell of a folded line: shows its variants, proposals and buttons (a click on the row does the same).",
+    },
+    "row.fold": {
+        text: "Fold the line",
+        description: "Chevron in the № cell of an opened line: back to the text only (a second click or Esc does the same).",
+    },
+    "view.openAll": {
+        text: "Open every line",
+        description: "View menu: every line shows its variants, proposals and buttons at once, as before.",
+    },
+    "view.openAllHint": {
+        text: "Off: a line shows its text and what is wrong; a click on it shows the rest.",
+        description: "View menu: the hint under Open every line.",
+    },
 } satisfies MessageMap;
 
 export const { keys } = defineMessages({ namespace, messages });

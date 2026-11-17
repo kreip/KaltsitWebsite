@@ -10,7 +10,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import { Check, CircleHelp, History, Layers, MessageSquare, NotebookPen, PenLine, ThumbsUp, Trash2, Undo2, X } from "lucide-react";
 import type React from "react";
-import { useId, useState } from "react";
+import { createContext, useContext, useId, useState } from "react";
 import { AlertDialog, AlertDialogClose, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogPopup, AlertDialogTitle } from "#/components/ui/alert-dialog";
 import { Badge } from "#/components/ui/badge";
 import { Button } from "#/components/ui/button";
@@ -304,13 +304,14 @@ export function AgreeButton({ place, variant, proposalId, people, me, own = fals
     const mine = people.some((p) => p.id === me.userId);
     const count = people.length;
     const vote = useEditMutation((agree: boolean) => setAgreementFn({ data: { place, variant, proposalId: proposalId ?? null, agree } }), t("agree.failed"));
+    const shown = useContext(ActionsShown);
     if (own && count === 0) return null;
     const title = count > 0 ? t("agree.who", { count, names: names(people) }) : t("agree.hint");
     return (
         <Button
             variant="ghost"
             size="xs"
-            className={cn("h-auto gap-0.5 px-1 py-0.5 align-baseline text-muted-foreground text-xs", count === 0 && !inBar && "opacity-0 pointer-coarse:opacity-100 focus-visible:opacity-100 group-hover/cell:opacity-100")}
+            className={cn("h-auto gap-0.5 px-1 py-0.5 align-baseline text-muted-foreground text-xs", count === 0 && !inBar && !shown && "opacity-0 pointer-coarse:opacity-100 focus-visible:opacity-100 group-hover/cell:opacity-100")}
             aria-pressed={mine}
             data-pressed={mine ? "" : undefined}
             disabled={own || vote.isPending}
@@ -484,6 +485,14 @@ export function ActionRow({ main, secondary, className }: { main?: React.ReactNo
 /** Shown on the hover of the cell (and keyboard focus; always on a touch screen). */
 export const ON_HOVER = "opacity-0 pointer-coarse:opacity-100 focus-within:opacity-100 group-hover/cell:opacity-100";
 
+/** The row was opened by a click (openRows.tsx): its buttons show without hovering. */
+export const ActionsShown = createContext(false);
+
+/** `ON_HOVER`, unless the row is opened (its buttons show). */
+export function useOnHover(): string {
+    return useContext(ActionsShown) ? "" : ON_HOVER;
+}
+
 /** The approved variant of the entry, if any: `game`, `sova`, `ai` or `proposal:<id>`. */
 export function approvedVariant(edits: KeyEdits | undefined): string | null {
     const a = edits?.approval;
@@ -504,10 +513,12 @@ interface IApprovedProps {
     marks?: React.ReactNode;
     /** Compare is on: the approved text as its changes against this (the game's Russian). */
     compareWith?: string | null;
+    /** The line's buttons (propose, remark, history…), after Withdraw. */
+    actions?: React.ReactNode;
     t: T;
 }
 
-export function ApprovedVariant({ edits, place, me, nickname, marks, compareWith, t }: IApprovedProps): React.ReactElement | null {
+export function ApprovedVariant({ edits, place, me, nickname, marks, compareWith, actions, t }: IApprovedProps): React.ReactElement | null {
     const f = useFormatters();
     const locale = useLocale();
     const a = edits?.approval;
@@ -545,6 +556,7 @@ export function ApprovedVariant({ edits, place, me, nickname, marks, compareWith
                         </Badge>
                     ) : null}
                     <ApproveButton place={place} variant={a.variant as AgreeVariant} proposalId={a.proposalId ?? undefined} me={me} approved t={t} />
+                    {actions}
                 </>
             }
         >
@@ -564,15 +576,18 @@ interface IProposalsProps extends ICommentsProps {
     marks?: (p: Proposal) => React.ReactNode;
     /** A skill's description template: how many dictionary entries carry its levels' numbers ("Apply to the levels"). */
     levelTexts?: number;
+    /** Only this proposal (the one approved for this place). */
+    only?: number;
 }
 
-export function Proposals({ edits, place, me, nickname, onEdit, marks, compare = false, ruGame = null, levelTexts = 0, t }: IProposalsProps): React.ReactElement | null {
+export function Proposals({ edits, place, me, nickname, onEdit, marks, compare = false, ruGame = null, levelTexts = 0, only, t }: IProposalsProps): React.ReactElement | null {
     const f = useFormatters();
     const locale = useLocale();
     const remove = useEditMutation((id: number) => deleteProposalFn({ data: { id } }), t("edit.failedDelete"));
     const levels = useEditMutation((id: number) => applyLevelsFn({ data: { id } }), t("levels.failed"));
     const applyLevels = (id: number) => levels.mutate(id, { onSuccess: (r) => toastManager.add({ title: t("levels.done", { created: r.created, skipped: r.skipped }), type: "success" }) });
-    const list = proposalsAt(edits, place);
+    const onHover = useOnHover();
+    const list = proposalsAt(edits, place).filter((p) => only === undefined || p.id === only);
     if (list.length === 0) return null;
     return (
         <>
@@ -613,7 +628,7 @@ export function Proposals({ edits, place, me, nickname, onEdit, marks, compare =
                                     {marks?.(p)}
                                     {before ? <span>· {p.previousText ? t("diff.vsPrevious") : t("diff.vsGame")}</span> : null}
                                     <ActionRow
-                                        className={approvedHere || p.agreements.length > 0 ? undefined : ON_HOVER}
+                                        className={approvedHere || p.agreements.length > 0 ? undefined : onHover}
                                         main={
                                             isLead(me) ? (
                                                 approvedHere ? (
@@ -703,7 +718,9 @@ function selectedIn(within: Element | null): string | null {
  * text selected in the row (read before the click can clear it). History
  * opens the history of the line's translation (LineHistory.tsx).
  */
-export function CellActions({ line, onOpen, onHistory, main, agree, t }: { line: TranslatorLine; onOpen: (state: EditorState) => void; onHistory: () => void; main?: React.ReactNode; agree?: React.ReactNode; t: T }): React.ReactElement {
+export function CellActions({ line, onOpen, onHistory, main, agree, proposeFrom, bare = false, t }: { line: TranslatorLine; onOpen: (state: EditorState) => void; onHistory: () => void; main?: React.ReactNode; agree?: React.ReactNode; proposeFrom?: string | null; bare?: boolean; t: T }): React.ReactElement {
+    // An opened row: the bar under the text, always in sight; else it hangs over the text on hover.
+    const shown = useContext(ActionsShown);
     const comment = (kind: "remark" | "note", from: HTMLElement) => onOpen({ kind, quote: selectedIn(from.closest("tr")) });
     const keys = (kind: "remark" | "note") => (e: React.KeyboardEvent<HTMLButtonElement>) => {
         if (e.key === "Enter" || e.key === " ") {
@@ -715,23 +732,25 @@ export function CellActions({ line, onOpen, onHistory, main, agree, t }: { line:
         e.preventDefault();
         comment(kind, e.currentTarget);
     };
-    return (
-        <div className={cn("absolute end-0 top-0 z-10 flex items-center rounded-lg border bg-popover p-0.5 shadow-xs transition-opacity", ON_HOVER)}>
-            <ActionRow
-                main={main}
-                secondary={
-                    <>
-                        {line.editable ? <IconAction icon={<PenLine aria-hidden="true" />} label={t("action.propose")} onClick={() => onOpen({ kind: "proposal", text: line.ruGame ?? "", source: "own", context: false })} /> : null}
-                        <IconAction icon={<MessageSquare aria-hidden="true" />} label={t("action.remark")} onPointerDown={down("remark")} onKeyDown={keys("remark")} />
-                        <IconAction icon={<NotebookPen aria-hidden="true" />} label={t("action.note")} onPointerDown={down("note")} onKeyDown={keys("note")} />
-                        <IconAction icon={<History aria-hidden="true" />} label={t("action.history")} onClick={onHistory} />
-                        {agree}
-                        <ActionsHelp t={t} />
-                    </>
-                }
-            />
-        </div>
+    const row = (
+        <ActionRow
+            className={bare && !shown ? ON_HOVER : undefined}
+            main={main}
+            secondary={
+                <>
+                    {line.editable ? <IconAction icon={<PenLine aria-hidden="true" />} label={t("action.propose")} onClick={() => onOpen({ kind: "proposal", text: proposeFrom ?? line.ruGame ?? "", source: "own", context: false })} /> : null}
+                    <IconAction icon={<MessageSquare aria-hidden="true" />} label={t("action.remark")} onPointerDown={down("remark")} onKeyDown={keys("remark")} />
+                    <IconAction icon={<NotebookPen aria-hidden="true" />} label={t("action.note")} onPointerDown={down("note")} onKeyDown={keys("note")} />
+                    <IconAction icon={<History aria-hidden="true" />} label={t("action.history")} onClick={onHistory} />
+                    {agree}
+                    <ActionsHelp t={t} />
+                </>
+            }
+        />
     );
+    // In a block's own label line (the approved one): the buttons only.
+    if (bare) return row;
+    return <div className={cn("flex items-center rounded-lg border bg-popover p-0.5 shadow-xs", shown ? "w-fit" : cn("absolute end-0 top-0 z-10 transition-opacity", ON_HOVER))}>{row}</div>;
 }
 
 /** Every place of the entry as links, with the lines before and after (`compact`: the places only). */

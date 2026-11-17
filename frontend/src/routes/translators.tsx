@@ -25,6 +25,7 @@ export const Route = createFileRoute("/translators")({
         if (on(search.service)) out.service = true;
         if (on(search.diff)) out.diff = true;
         if (on(search.game)) out.game = true;
+        if (on(search.open)) out.open = true;
         if (typeof search.q === "string" && search.q.trim()) out.q = search.q.trim();
         else if (typeof search.q === "number") out.q = String(search.q);
         if (on(search.whole)) out.whole = true;

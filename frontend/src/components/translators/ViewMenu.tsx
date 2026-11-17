@@ -3,7 +3,8 @@
  * same on the Story, Search and Game sections tabs — show the variants,
  * compare, Chinese and service rows (the story only), and "Only as in the
  * game": the game's text (and the English) without proposals, approvals,
- * variants and hints. Everything is kept in the address.
+ * variants and hints; "Open every line" (openRows.tsx). Everything is kept in
+ * the address.
  */
 import { Eye } from "lucide-react";
 import type React from "react";
@@ -51,7 +52,7 @@ export function ViewMenu({ search, onSearch, story = false }: { search: ITransla
     const t: T = useT("translators");
     const view = viewOf(search);
     // Settings away from their default, counted on the button.
-    const on = [search.variants === false, view.diff, view.cn, view.service].filter(Boolean).length;
+    const on = [search.variants === false, view.diff, view.cn, view.service, search.open === true].filter(Boolean).length;
     return (
         <Menu>
             <MenuTrigger render={<Button variant="outline" size="sm" />}>
@@ -61,6 +62,7 @@ export function ViewMenu({ search, onSearch, story = false }: { search: ITransla
             </MenuTrigger>
             <MenuPopup align="start" className="w-80">
                 <Item checked={view.gameOnly} onChange={(c) => onSearch({ ...search, game: c || undefined })} label={t("view.gameOnly")} hint={t("view.gameOnlyHint")} />
+                <Item checked={search.open === true} disabled={view.gameOnly} onChange={(c) => onSearch({ ...search, open: c || undefined })} label={t("view.openAll")} hint={t("view.openAllHint")} />
                 <MenuSeparator />
                 <Item checked={view.variants} disabled={view.gameOnly} onChange={(c) => onSearch({ ...search, variants: c ? undefined : false })} label={t("toggle.variants")} hint={t("toggle.variantsHint")} />
                 <Item checked={view.diff} disabled={view.gameOnly} onChange={(c) => onSearch({ ...search, diff: c || undefined })} label={t("toggle.diff")} hint={t("toggle.diffHint")} />

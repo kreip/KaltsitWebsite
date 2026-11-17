@@ -14,7 +14,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import { ChevronDown, ChevronLeft, ChevronRight } from "lucide-react";
 import type React from "react";
-import { useId, useMemo, useState } from "react";
+import { useContext, useId, useMemo, useState } from "react";
 import { Button } from "#/components/ui/button";
 import { Combobox, ComboboxEmpty, ComboboxInput, ComboboxItem, ComboboxList, ComboboxPopup } from "#/components/ui/combobox";
 import { Empty, EmptyHeader, EmptyTitle } from "#/components/ui/empty";
@@ -31,9 +31,10 @@ import { cn } from "#/lib/utils";
 import type { TranslatorsMe } from "#/types/generated/TranslatorsMe";
 import type { ProblemKind, RecommendRule } from "./checks";
 import { type EditorState, StatusDot } from "./LineEdits";
-import { analyse, filterWord, PROBLEM_ROW, PROSE, problemOptions, RuCell } from "./LinesTable";
+import { analyse, filterWord, missingTermsEn, PROSE, problemOptions, RuCell } from "./LinesTable";
 import { Folded, isLong, useUnfolded } from "./LongText";
 import { NextUnchecked, TextCounts } from "./Overview";
+import { OpenAll, RowToggle, useOpenRows } from "./openRows";
 import { type ISearchState, SearchTab } from "./SearchTab";
 import { StoryText } from "./StoryText";
 import { useStoryNames } from "./storyNames";
@@ -137,6 +138,8 @@ function Card({ section, item, me, showVariants, showDiff, t }: ICardProps): Rea
     // One editor open at a time: the row and what it is open for.
     const [editing, setEditing] = useState<{ id: string; state: EditorState } | null>(null);
     const unfolded = useUnfolded();
+    const opened = useOpenRows();
+    const all = useContext(OpenAll);
     // Which skills' level entries are unfolded (by the skill's number).
     const levelsOpen = useUnfolded();
     // The rows in the card's order; a skill's level entries after its description, behind a fold.
@@ -244,10 +247,12 @@ function Card({ section, item, me, showVariants, showDiff, t }: ICardProps): Rea
                         const long = isLong(r.line.en, r.line.ruGame);
                         // An open editor needs the whole row.
                         const folded = long && !unfolded.has(id) && editing?.id !== id;
+                        const open = all || opened.isOpen(id) || editing?.id === id;
                         return (
-                            <TableRow key={id} id={`n-${i + 1}`} className={cn("scroll-mt-(--site-header-height) target:bg-primary/10", analyses[i].problems.size > 0 && PROBLEM_ROW)} data-field={r.field} data-status={r.line.status} data-place={`${r.place.storyId}|0|0`}>
+                            <TableRow key={id} id={`n-${i + 1}`} className={cn("scroll-mt-(--site-header-height) target:bg-primary/10", !all && "cursor-pointer")} {...(all ? {} : opened.rowProps(id, editing?.id === id))} data-field={r.field} data-status={r.line.status} data-place={`${r.place.storyId}|0|0`}>
                                 <TableCell className="py-1.5 align-top text-subtle-foreground text-xs tabular-nums leading-snug">
                                     <span className="flex items-center gap-1.5">
+                                        {all ? null : <RowToggle open={open} onToggle={() => opened.toggle(id)} label={open ? t("row.fold") : t("row.open")} />}
                                         {i + 1}
                                         <StatusDot status={r.line.status} t={t} />
                                     </span>
@@ -284,13 +289,14 @@ function Card({ section, item, me, showVariants, showDiff, t }: ICardProps): Rea
                                             editor={editing?.id === id ? editing.state : null}
                                             onEditor={(state) => setEditing(state ? { id, state } : null)}
                                             here={{ section, objectId: r.objectId, objectEn: item.en, field: r.field, idx: r.idx }}
+                                            expanded={open}
                                             t={t}
                                         />
                                     </Folded>
                                 </TableCell>
                                 <TableCell className={PROSE} data-sel="en">
                                     <Folded folded={folded} onOpen={() => unfolded.toggle(id)}>
-                                        <StoryText text={r.line.en} nickname={nickname} />
+                                        <StoryText text={r.line.en} nickname={nickname} quotes={missingTermsEn(r.line.terms)} />
                                     </Folded>
                                 </TableCell>
                             </TableRow>

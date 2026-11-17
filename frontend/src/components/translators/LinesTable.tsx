@@ -9,6 +9,7 @@
  * commands sit between the lines as gray rows, in words.
  */
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useRouterState } from "@tanstack/react-router";
 import { Check, PenLine, X } from "lucide-react";
 import type React from "react";
 import { Fragment, useContext, useId, useMemo, useState } from "react";
@@ -34,6 +35,7 @@ import { BulkApprove, type IBulkLine } from "./BulkApprove";
 import { type Address, checkVariant, type ICandidate, type IVariantCheck, lineProblems, neighbourAddress, PROBLEM_KINDS, type ProblemKind, type RecommendRule, recommend } from "./checks";
 import {
     ActionRow,
+    ActionsShown,
     AgreeButton,
     ApproveButton,
     ApprovedVariant,
@@ -45,7 +47,6 @@ import {
     IconAction,
     isLead,
     LineComments,
-    ON_HOVER,
     OutdatedHere,
     ProposalEditor,
     Proposals,
@@ -56,10 +57,12 @@ import {
     StatusDot,
     TONE,
     Toned,
+    useOnHover,
     VariantNotes,
 } from "./LineEdits";
 import { LineHistoryDialog } from "./LineHistory";
 import { Marks } from "./Marks";
+import { OpenAll, RowToggle, useOpenRows } from "./openRows";
 import { type IFind, StoryText } from "./StoryText";
 import { DISPLAYED_KINDS, describeCommands } from "./service";
 import { TextDiff } from "./TextDiff";
@@ -125,11 +128,17 @@ function groupTerms(terms: readonly LineTerm[], sovaSheet: string): ITermGroup[]
     return [...out.values()];
 }
 
-function Terms({ terms, t }: { terms: readonly LineTerm[]; t: T }): React.ReactElement | null {
-    if (terms.length === 0) return null;
+/** The glossary terms the English holds whose form the Russian lacks: their English is marked in the English column. */
+export function missingTermsEn(terms: readonly LineTerm[]): string[] {
+    return [...new Set(terms.filter((term) => term.found === false).map((term) => term.matched))];
+}
+
+function Terms({ terms, onlyMissing = false, t }: { terms: readonly LineTerm[]; onlyMissing?: boolean; t: T }): React.ReactElement | null {
+    const groups = groupTerms(terms, t("glossary.translatorSheet")).filter((g) => !onlyMissing || g.found === false);
+    if (groups.length === 0) return null;
     return (
         <ul className="flex flex-wrap gap-x-3 gap-y-0.5 text-xs" aria-label={t("terms.label")}>
-            {groupTerms(terms, t("glossary.translatorSheet")).map((g) => (
+            {groups.map((g) => (
                 <li key={g.matched} className="inline-flex items-center gap-1" title={g.title}>
                     <span className="text-muted-foreground">{g.matched}</span>
                     <span className="text-subtle-foreground" aria-hidden="true">
@@ -192,9 +201,6 @@ export interface IAnalysis {
     problems: Set<ProblemKind>;
 }
 
-/** A line with a problem stands out in yellow. */
-export const PROBLEM_ROW = "bg-warning/8";
-
 /** "Errors: all (12)", then each problem with its count: the status filter's problem options. */
 export function problemOptions(analyses: readonly IAnalysis[]): { value: "problems" | ProblemKind; count: number }[] {
     const count = (k: ProblemKind) => analyses.filter((a) => a.problems.has(k)).length;
@@ -237,16 +243,48 @@ export interface IRuCellProps {
     find?: IFind | null;
     /** Outside the story: the place of the game data the row stands at (a proposal may ask a separate translation there). */
     here?: GameHere | null;
+    /** The row is opened (a click on it): everything with its buttons in sight. Folded, only the text it stands with and what is wrong. */
+    expanded?: boolean;
     t: T;
 }
 
+/** The text a line stands with once approved: the entry's approval, or a proposal approved for this place only. */
+export function settledText(edits: KeyEdits | undefined, place: EditPlace): { text: string; variant: string; proposalId: number | null } | null {
+    if (edits?.approval) return { text: edits.approval.text, variant: "approved", proposalId: null };
+    const p = proposalsAt(edits, place).find((x) => x.context && x.approvedAt !== null);
+    return p ? { text: p.text, variant: `proposal:${p.id}`, proposalId: p.id } : null;
+}
+
 export function RuCell(props: IRuCellProps): React.ReactElement {
+    const gameOnly = useContext(GameOnly);
+    const all = useContext(OpenAll);
     // Only as in the game: the game's text, nothing else.
-    if (useContext(GameOnly)) {
+    if (gameOnly) {
         const { line, nickname, find = null, t } = props;
         return <div data-sel="ru">{line.ruGame ? <StoryText text={line.ruGame} nickname={nickname} find={find} /> : <span className="text-subtle-foreground">{t("ru.missing")}</span>}</div>;
     }
-    return <FullRuCell {...props} />;
+    if (!all && !props.expanded && props.editor === null) return <FoldedRuCell {...props} />;
+    return (
+        <ActionsShown.Provider value={!all}>
+            <FullRuCell {...props} />
+        </ActionsShown.Provider>
+    );
+}
+
+/** A folded row: the text it stands with (the approved one, else the game's) and what is wrong with it, nothing else. */
+function FoldedRuCell({ line, analysis, place, nickname, edits, find = null, t }: IRuCellProps): React.ReactElement {
+    const settled = settledText(edits, place);
+    const check = analysis.checks.get(settled ? settled.variant : "game");
+    const text = settled?.text ?? line.ruGame;
+    return (
+        <div className="flex flex-col gap-0.5" data-sel="ru">
+            <div>
+                {text ? <StoryText text={text} nickname={nickname} quotes={quotesAt(edits, place)} find={settled ? null : find} /> : <span className="text-subtle-foreground">{t("ru.missing")}</span>}
+                {check ? <Marks check={check} recommended={false} skipGlossary t={t} /> : null}
+            </div>
+            <Terms terms={line.terms} onlyMissing t={t} />
+        </div>
+    );
 }
 
 function FullRuCell({ line, analysis, place, nickname, showVariants, showDiff, edits, outdated, me, editor, onEditor, find = null, here = null, t }: IRuCellProps): React.ReactElement {
@@ -261,13 +299,14 @@ function FullRuCell({ line, analysis, place, nickname, showVariants, showDiff, e
         const check = checks.get(variant);
         return check ? <Marks check={check} recommended={recommended === variant} skipGlossary={skipGlossary} t={t} /> : null;
     };
+    const onHover = useOnHover();
     // A translator's or the machine's variant: Approve (at once, no "propose" step) | propose from it, agree.
     const variantActions = (variant: "sova" | "ai", text: string) => {
         if (!line.editable) return undefined;
         const votes = placeVotes(edits, place, variant);
         return (
             <ActionRow
-                className={votes.length > 0 ? undefined : ON_HOVER}
+                className={votes.length > 0 ? undefined : onHover}
                 main={isLead(me) && approved !== variant ? <ApproveButton place={place} variant={variant} me={me} approved={false} t={t} /> : undefined}
                 secondary={
                     <>
@@ -279,26 +318,53 @@ function FullRuCell({ line, analysis, place, nickname, showVariants, showDiff, e
         );
     };
     const proposalCount = proposalsAt(edits, place).length;
+    // Approved: only the approved text (the game's old one and the proposals are in the history).
+    const settled = settledText(edits, place);
+    const shown = useContext(ActionsShown);
+    const actions =
+        editor === null ? (
+            <CellActions
+                line={line}
+                onOpen={onEditor}
+                onHistory={() => setHistory(true)}
+                main={!settled && line.ruGame && line.editable && approved !== "game" && isLead(me) ? <ApproveButton place={place} variant="game" me={me} approved={false} confirmProposals={proposalCount} t={t} /> : undefined}
+                agree={!settled && line.ruGame && line.editable && (edits?.gameAgreements.length ?? 0) === 0 ? <AgreeButton place={place} variant="game" people={edits?.gameAgreements ?? []} me={me} inBar t={t} /> : undefined}
+                proposeFrom={settled?.text}
+                bare={Boolean(settled)}
+                t={t}
+            />
+        ) : null;
     return (
         <div className="group/cell flex flex-col gap-1" data-sel="ru">
             {history ? <LineHistoryDialog place={place} open={history} onOpenChange={setHistory} nickname={nickname} t={t} /> : null}
-            <ApprovedVariant edits={edits} place={place} me={me} nickname={nickname} marks={marks("approved")} compareWith={showDiff ? line.ruGame : null} t={t} />
-            {/* The actions hang over the game's text, under the approved variant: its line (who approved, Withdraw) stays in sight. */}
-            <div className="relative">
-                {editor === null ? (
-                    <CellActions
-                        line={line}
-                        onOpen={onEditor}
-                        onHistory={() => setHistory(true)}
-                        main={line.ruGame && line.editable && approved !== "game" && isLead(me) ? <ApproveButton place={place} variant="game" me={me} approved={false} confirmProposals={proposalCount} t={t} /> : undefined}
-                        agree={line.ruGame && line.editable && (edits?.gameAgreements.length ?? 0) === 0 ? <AgreeButton place={place} variant="game" people={edits?.gameAgreements ?? []} me={me} inBar t={t} /> : undefined}
+            <ApprovedVariant edits={edits} place={place} me={me} nickname={nickname} marks={marks("approved")} compareWith={showDiff ? line.ruGame : null} actions={actions} t={t} />
+            {settled && !edits?.approval ? (
+                <>
+                    <Proposals
+                        {...notes}
+                        only={settled.proposalId ?? undefined}
+                        nickname={nickname}
+                        compare={showDiff}
+                        ruGame={line.ruGame}
+                        marks={(p) => marks(`proposal:${p.id}`)}
+                        onEdit={(p) => onEditor({ kind: "proposal", text: p.text, source: p.source === "sova" || p.source === "ai" ? p.source : "own", context: p.context, here: p.here })}
                         t={t}
                     />
-                ) : null}
-                {line.ruGame ? <StoryText text={line.ruGame} nickname={nickname} quotes={quotes} find={find} /> : <span className="text-subtle-foreground">{t("ru.missing")}</span>}
-                {marks("game", true)}
-                {line.ruGame && line.editable && (edits?.gameAgreements.length ?? 0) > 0 ? <AgreeButton place={place} variant="game" people={edits?.gameAgreements ?? []} me={me} t={t} /> : null}
-            </div>
+                    {actions}
+                </>
+            ) : null}
+            {settled ? null : (
+                <>
+                    {/* The actions hang over the game's text on hover; in an opened row they stand under it. */}
+                    <div className="relative">
+                        {shown ? null : actions}
+                        {line.ruGame ? <StoryText text={line.ruGame} nickname={nickname} quotes={quotes} find={find} /> : <span className="text-subtle-foreground">{t("ru.missing")}</span>}
+                        {marks("game", true)}
+                        {line.ruGame && line.editable && (edits?.gameAgreements.length ?? 0) > 0 ? <AgreeButton place={place} variant="game" people={edits?.gameAgreements ?? []} me={me} t={t} /> : null}
+                    </div>
+                    {shown ? actions : null}
+                </>
+            )}
             {showDiff && line.ruGame && line.ruGameBefore && line.ruGameChangedAt !== null ? (
                 <Toned tone={TONE.remark} label={t("diff.gameChanged", { date: f.date(line.ruGameChangedAt * 1000, { dateStyle: "medium" }) })}>
                     <TextDiff before={line.ruGameBefore} after={line.ruGame} labels={diffLabels(t)} />
@@ -323,16 +389,18 @@ function FullRuCell({ line, analysis, place, nickname, showVariants, showDiff, e
             ) : null}
             {line.ruGameMatch === "lines" ? <span className="text-subtle-foreground text-xs">{t("ru.lineByLine")}</span> : null}
             <Terms terms={line.terms} t={t} />
-            <Proposals
-                {...notes}
-                nickname={nickname}
-                compare={showDiff}
-                ruGame={line.ruGame}
-                levelTexts={line.levelTexts}
-                marks={(p) => marks(`proposal:${p.id}`)}
-                onEdit={(p) => onEditor({ kind: "proposal", text: p.text, source: p.source === "sova" || p.source === "ai" ? p.source : "own", context: p.context, here: p.here })}
-            />
-            {showVariants ? (
+            {settled ? null : (
+                <Proposals
+                    {...notes}
+                    nickname={nickname}
+                    compare={showDiff}
+                    ruGame={line.ruGame}
+                    levelTexts={line.levelTexts}
+                    marks={(p) => marks(`proposal:${p.id}`)}
+                    onEdit={(p) => onEditor({ kind: "proposal", text: p.text, source: p.source === "sova" || p.source === "ai" ? p.source : "own", context: p.context, here: p.here })}
+                />
+            )}
+            {showVariants && !settled ? (
                 <>
                     {/* Each translator's variant under its author's name. */}
                     {TRANSLATOR_SOURCES.map((source) => {
@@ -451,6 +519,11 @@ export function LinesTable({ storyId, lines, edits, outdated, me, label, showCn,
     }, [outdated]);
     // One editor open at a time: the row's id and what it is open for.
     const [editing, setEditing] = useState<{ id: string; state: EditorState } | null>(null);
+    // The rows opened by a click; the one the address names (#n-…) starts open.
+    const hash = useRouterState({ select: (st) => st.location.hash });
+    const hashed = hash.startsWith("n-") ? lines[Number(hash.slice(2)) - 1] : undefined;
+    const opened = useOpenRows(hashed ? `${hashed.line}.${hashed.part}` : null);
+    const all = useContext(OpenAll);
     const [filter, setFilter] = useState<LineFilter>("all");
     const filterId = useId();
     // Every line's checks and recommendation, for its cell, the filter and the batch approvals.
@@ -520,12 +593,14 @@ export function LinesTable({ storyId, lines, edits, outdated, me, label, showCn,
                         const previous = i > 0 ? lines[i - 1].line : 0;
                         const lineEdits = byKey.get(line.editKey);
                         if (!shows(line, i)) return null;
+                        const open = all || opened.isOpen(id) || editing?.id === id;
                         return (
                             <Fragment key={id}>
                                 {commands && filter === "all" ? <ServiceRow commands={commandsBetween(commands, previous, line.line)} columns={columns} nameOf={nameOf} t={t} /> : null}
                                 <TableRow
                                     id={`n-${i + 1}`}
-                                    className={cn("scroll-mt-(--site-header-height) target:bg-primary/10", line.kind === "option" && "bg-primary/5", analyses[i].problems.size > 0 && PROBLEM_ROW)}
+                                    className={cn("scroll-mt-(--site-header-height) target:bg-primary/10", line.kind === "option" && "bg-primary/5", !all && "cursor-pointer")}
+                                    {...(all ? {} : opened.rowProps(id, editing?.id === id))}
                                     data-line={line.line}
                                     data-kind={line.kind}
                                     data-status={line.status}
@@ -533,6 +608,7 @@ export function LinesTable({ storyId, lines, edits, outdated, me, label, showCn,
                                 >
                                     <TableCell className="py-1.5 align-top text-subtle-foreground text-xs tabular-nums leading-snug">
                                         <span className="flex items-center gap-1.5">
+                                            {all ? null : <RowToggle open={open} onToggle={() => opened.toggle(id)} label={open ? t("row.fold") : t("row.open")} />}
                                             {i + 1}
                                             <StatusDot status={line.status} t={t} />
                                         </span>
@@ -554,11 +630,12 @@ export function LinesTable({ storyId, lines, edits, outdated, me, label, showCn,
                                             me={me}
                                             editor={editing?.id === id ? editing.state : null}
                                             onEditor={(state) => setEditing(state ? { id, state } : null)}
+                                            expanded={open}
                                             t={t}
                                         />
                                     </TableCell>
                                     <TableCell className={PROSE} data-sel="en">
-                                        <StoryText text={line.en} nickname={nickname} quotes={quotesAt(lineEdits, placeOf(storyId, line))} />
+                                        <StoryText text={line.en} nickname={nickname} quotes={[...quotesAt(lineEdits, placeOf(storyId, line)), ...missingTermsEn(line.terms)]} />
                                     </TableCell>
                                     {showCn ? (
                                         <TableCell className={PROSE} data-sel="cn">

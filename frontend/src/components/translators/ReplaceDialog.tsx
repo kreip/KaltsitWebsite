@@ -50,7 +50,7 @@ function Where({ line, t }: { line: GlossaryFixLine; t: T }): React.ReactElement
             {t("places.item", { group: n.group, story: n.story, n: line.ord + 1 })}
         </Link>
     ) : (
-        <>{t("places.itemBare", { story: line.storyId, n: line.ord + 1 })}</>
+        <span>{t("places.itemBare", { story: line.storyId, n: line.ord + 1 })}</span>
     );
 }
 

@@ -43,6 +43,7 @@ import { GlossaryTab } from "./GlossaryTab";
 import { isAdmin, TONE, Toned, useEditMutation } from "./LineEdits";
 import { LinesTable } from "./LinesTable";
 import { MyEditsTab } from "./MyEditsTab";
+import { OpenAll } from "./openRows";
 import { type SearchSection, type SearchStatus, SearchTab } from "./SearchTab";
 import { SectionLocale } from "./SectionLocale";
 import { type GameSection, SectionsTab } from "./SectionsTab";
@@ -71,6 +72,8 @@ export interface ITranslatorsSearch {
     diff?: boolean;
     /** Only as in the game: the game's text (and the English), nothing else. */
     game?: boolean;
+    /** View: every line opened (openRows.tsx), as before. */
+    open?: boolean;
     /** Search: the text looked for, whole words only, the section and the state. */
     q?: string;
     whole?: boolean;
@@ -405,36 +408,38 @@ function MemberTabs({ search, onSearch }: ISearchProps): React.ReactElement {
     return (
         <>
             <GameOnly.Provider value={search.game === true}>
-                <Tabs value={tab} onValueChange={(v: string) => onSearch({ ...search, tab: v === "story" ? undefined : (v as TranslatorsTab) })}>
-                    <TabsList aria-label={t("tabs.label")}>
-                        <TabsTab value="story">{t("tabs.story")}</TabsTab>
-                        <TabsTab value="search">{t("tabs.search")}</TabsTab>
-                        <TabsTab value="sections">{t("tabs.sections")}</TabsTab>
-                        <TabsTab value="glossary">{t("tabs.glossary")}</TabsTab>
-                        <TabsTab value="edits">{t("tabs.edits")}</TabsTab>
-                        {admin ? <TabsTab value="admin">{t("tabs.admin")}</TabsTab> : null}
-                    </TabsList>
-                    <TabsPanel value="story" className="flex flex-col gap-6 pt-4">
-                        <StoryTab search={search} onSearch={onSearch} />
-                    </TabsPanel>
-                    <TabsPanel value="search" className="flex flex-col gap-6 pt-4">
-                        <SearchTab search={search} onSearch={onSearch} />
-                    </TabsPanel>
-                    <TabsPanel value="sections" className="flex flex-col gap-6 pt-4">
-                        <SectionsTab search={search} onSearch={onSearch} />
-                    </TabsPanel>
-                    <TabsPanel value="glossary" className="flex flex-col gap-6 pt-4">
-                        <GlossaryTab query={search.gq ?? ""} onQuery={(gq) => onSearch({ ...search, gq: gq || undefined })} />
-                    </TabsPanel>
-                    <TabsPanel value="edits" className="flex flex-col gap-6 pt-4">
-                        <MyEditsTab />
-                    </TabsPanel>
-                    {admin && me.data ? (
-                        <TabsPanel value="admin" className="flex flex-col gap-6 pt-4">
-                            <AdminTab me={me.data} />
+                <OpenAll.Provider value={search.open === true}>
+                    <Tabs value={tab} onValueChange={(v: string) => onSearch({ ...search, tab: v === "story" ? undefined : (v as TranslatorsTab) })}>
+                        <TabsList aria-label={t("tabs.label")}>
+                            <TabsTab value="story">{t("tabs.story")}</TabsTab>
+                            <TabsTab value="search">{t("tabs.search")}</TabsTab>
+                            <TabsTab value="sections">{t("tabs.sections")}</TabsTab>
+                            <TabsTab value="glossary">{t("tabs.glossary")}</TabsTab>
+                            <TabsTab value="edits">{t("tabs.edits")}</TabsTab>
+                            {admin ? <TabsTab value="admin">{t("tabs.admin")}</TabsTab> : null}
+                        </TabsList>
+                        <TabsPanel value="story" className="flex flex-col gap-6 pt-4">
+                            <StoryTab search={search} onSearch={onSearch} />
                         </TabsPanel>
-                    ) : null}
-                </Tabs>
+                        <TabsPanel value="search" className="flex flex-col gap-6 pt-4">
+                            <SearchTab search={search} onSearch={onSearch} />
+                        </TabsPanel>
+                        <TabsPanel value="sections" className="flex flex-col gap-6 pt-4">
+                            <SectionsTab search={search} onSearch={onSearch} />
+                        </TabsPanel>
+                        <TabsPanel value="glossary" className="flex flex-col gap-6 pt-4">
+                            <GlossaryTab query={search.gq ?? ""} onQuery={(gq) => onSearch({ ...search, gq: gq || undefined })} />
+                        </TabsPanel>
+                        <TabsPanel value="edits" className="flex flex-col gap-6 pt-4">
+                            <MyEditsTab />
+                        </TabsPanel>
+                        {admin && me.data ? (
+                            <TabsPanel value="admin" className="flex flex-col gap-6 pt-4">
+                                <AdminTab me={me.data} />
+                            </TabsPanel>
+                        ) : null}
+                    </Tabs>
+                </OpenAll.Provider>
             </GameOnly.Provider>
             {/* A word selected in any table: find it everywhere, in the glossary, or suggest it for the glossary. The other tabs keep their place in the address. */}
             <SelectionMenu onFind={(q) => onSearch({ ...search, tab: "search", q, whole: undefined, section: undefined, status: undefined })} onGlossary={(gq) => onSearch({ ...search, tab: "glossary", gq })} />

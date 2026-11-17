@@ -12,7 +12,7 @@
 import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import type React from "react";
-import { useEffect, useId, useMemo, useRef, useState } from "react";
+import { useContext, useEffect, useId, useMemo, useRef, useState } from "react";
 import { SearchField } from "#/components/SearchField";
 import { Badge } from "#/components/ui/badge";
 import { Button } from "#/components/ui/button";
@@ -39,9 +39,10 @@ import type { TextSummary } from "#/types/generated/TextSummary";
 import type { TranslatorsMe } from "#/types/generated/TranslatorsMe";
 import type { RecommendRule } from "./checks";
 import { type EditorState, PlacesList, StatusDot } from "./LineEdits";
-import { analyse, filterWord, PROBLEM_ROW, PROSE, RuCell, Speaker } from "./LinesTable";
+import { analyse, filterWord, missingTermsEn, PROSE, RuCell, Speaker } from "./LinesTable";
 import { Folded, isLong, useUnfolded } from "./LongText";
 import { NextUnchecked, TextCounts } from "./Overview";
+import { OpenAll, RowToggle, useOpenRows } from "./openRows";
 import { GamePlace } from "./PlaceWords";
 import { type IFind, StoryText } from "./StoryText";
 import { useStoryNames } from "./storyNames";
@@ -161,6 +162,8 @@ function Results({ rows, edits, me, find, showVariants, showDiff, t }: IResultsP
     // One editor open at a time: the row's text id and what it is open for.
     const [editing, setEditing] = useState<{ id: number; state: EditorState } | null>(null);
     const unfolded = useUnfolded();
+    const opened = useOpenRows();
+    const all = useContext(OpenAll);
     // Who says it, as in the story's table: the column is there once a story line is found.
     const speakers = rows.some((r) => r.line.kind !== "text");
     return (
@@ -182,10 +185,12 @@ function Results({ rows, edits, me, find, showVariants, showDiff, t }: IResultsP
                     const long = isLong(r.line.en, r.line.ruGame);
                     const folded = long && !unfolded.has(String(id)) && editing?.id !== id;
                     const unfold = () => unfolded.toggle(String(id));
+                    const open = all || opened.isOpen(String(id)) || editing?.id === id;
                     return (
-                        <TableRow key={id} className={cn(analyses[i].problems.size > 0 && PROBLEM_ROW)} data-status={r.line.status} data-place={`${r.place.storyId}|${r.place.line}|${r.place.part}`}>
+                        <TableRow key={id} className={cn(!all && "cursor-pointer")} {...(all ? {} : opened.rowProps(String(id), editing?.id === id))} data-status={r.line.status} data-place={`${r.place.storyId}|${r.place.line}|${r.place.part}`}>
                             <TableCell className="py-1.5 align-top text-subtle-foreground text-xs tabular-nums leading-snug">
                                 <span className="flex items-center gap-1.5">
+                                    {all ? null : <RowToggle open={open} onToggle={() => opened.toggle(String(id))} label={open ? t("row.fold") : t("row.open")} />}
                                     {i + 1}
                                     <StatusDot status={r.line.status} t={t} />
                                 </span>
@@ -219,13 +224,14 @@ function Results({ rows, edits, me, find, showVariants, showDiff, t }: IResultsP
                                         onEditor={(state) => setEditing(state ? { id, state } : null)}
                                         find={find}
                                         here={gameHere(r)}
+                                        expanded={open}
                                         t={t}
                                     />
                                 </Folded>
                             </TableCell>
                             <TableCell className={PROSE} data-sel="en">
                                 <Folded folded={folded} onOpen={unfold}>
-                                    <StoryText text={r.line.en} nickname={nickname} find={find} />
+                                    <StoryText text={r.line.en} nickname={nickname} find={find} quotes={missingTermsEn(r.line.terms)} />
                                 </Folded>
                             </TableCell>
                         </TableRow>
