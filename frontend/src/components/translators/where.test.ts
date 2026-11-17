@@ -36,15 +36,15 @@ describe("where a text stands, in words", () => {
     });
 
     it("puts the section and the object first; a table of the rest says no field", () => {
-        expect(gameWhere("operators", "Amiya", "skill.name", 1, t)).toBe("Оператор › Amiya › Навык 1 › название");
-        expect(gameWhere("operators", "Amiya", "name", 0, t)).toBe("Оператор › Amiya › имя");
+        expect(gameWhere("operators", "Amiya", "skill.name", 1, t)).toBe("Оперативник › Amiya › Навык 1 › название");
+        expect(gameWhere("operators", "Amiya", "name", 0, t)).toBe("Оперативник › Amiya › имя");
         expect(gameWhere("items", "LMD", "name", 0, t)).toBe("Предмет › LMD › название");
         expect(gameWhere("other", "campaign_table", "text", 0, t)).toBe("Интерфейс и прочее › Аннигиляция");
     });
 
     it("names a table and a dictionary in words, and leaves an unknown one as it is", () => {
         expect(tableWord("clue_data", t)).toBe("Улики");
-        expect(tableWord("character_table", t)).toBe("Операторы (прочее)");
+        expect(tableWord("character_table", t)).toBe("Оперативники (прочее)");
         expect(tableWord("brand_new_table", t)).toBe("brand_new_table");
         expect(fileWord("13_names.txt", t)).toBe("Без привязки");
         expect(fileWord("plugin:skill", t)).toBe("Каталог плагина");

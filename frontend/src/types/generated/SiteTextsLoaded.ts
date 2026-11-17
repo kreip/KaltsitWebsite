@@ -9,7 +9,7 @@ export type SiteTextsLoaded = {
      */
     total: number;
     /**
-     * Keys written now (new Russian, or the section's own keys).
+     * Keys written now (new Russian, the loader's own Russian changed in the file, or the section's own keys).
      */
     written: number;
     /**

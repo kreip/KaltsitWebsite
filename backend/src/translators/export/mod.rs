@@ -327,10 +327,10 @@ pub async fn only_here_rows(pool: &PgPool) -> Result<Vec<OnlyHereRow>, sqlx::Err
 }
 
 /// A place of the game data as the maintainer reads it:
-/// `Оператор › Amiya [char_002_amiya] › skill.description 2`.
+/// `Оперативник › Amiya [char_002_amiya] › skill.description 2`.
 pub fn only_here_place(r: &OnlyHereRow) -> String {
     let section = match r.section.as_str() {
-        "operators" => "Оператор",
+        "operators" => "Оперативник",
         "enemies" => "Враг",
         "stages" => "Этап",
         "items" => "Предмет",
@@ -988,7 +988,7 @@ mod tests {
         // A separate translation asked for one place of the game data: its own file, never a dictionary.
         assert_eq!(
             out.files[3].content,
-            "место\tанглийский\tбыло\tпредлагают\tкто\tутвердил ведущий\nОператор › Amiya [char_1] › skill.name 2\tGuard\tСтраж\tЗащита\tanna\t\n"
+            "место\tанглийский\tбыло\tпредлагают\tкто\tутвердил ведущий\nОперативник › Amiya [char_1] › skill.name 2\tGuard\tСтраж\tЗащита\tanna\t\n"
         );
         assert_eq!(out.report.only_here_rows, 1);
         assert!(

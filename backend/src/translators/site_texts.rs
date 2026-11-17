@@ -1,11 +1,13 @@
 //! The site's Russian around the section (the header, the menus, the sign-in
 //! dialog, the shared buttons: `site-ru.json`), loaded into the site's
 //! translations (`ui_messages`, locale `ru`) at every start and from the
-//! admin panel's "Refresh site texts". Only keys with no Russian yet are
-//! written, so a translation made in the admin panel is never overwritten —
-//! except the key that names the section itself (its menu item), written
-//! every time so a rename reaches the site. A key the site's catalog does
-//! not know yet (`bun run i18n:sync` not run) is skipped and counted.
+//! admin panel's "Refresh site texts". A key is written when it has no
+//! Russian yet, or when its Russian is this loader's own (no author: a
+//! change of the file, such as «Операторы» → «Оперативники», reaches the
+//! site); a translation a person made in the admin panel (it has an author)
+//! is never overwritten — except the key that names the section itself (its
+//! menu item), written every time. A key the site's catalog does not know
+//! yet (`bun run i18n:sync` not run) is skipped and counted.
 //!
 //! The section's own texts (`translators.*`) are not loaded: the page ships
 //! them (`translators.ru.json`) and shows the catalog's value only where a
@@ -32,7 +34,7 @@ const OWN_KEYS: &[&str] = &["nav.header.translators"];
 pub struct SiteTextsLoaded {
     /// Keys in the file.
     pub total: i32,
-    /// Keys written now (new Russian, or the section's own keys).
+    /// Keys written now (new Russian, the loader's own Russian changed in the file, or the section's own keys).
     pub written: i32,
     /// Keys the site's catalog does not know yet (the frontend's `i18n:sync` has not run).
     pub unknown: i32,
@@ -64,7 +66,8 @@ pub async fn load(pool: &PgPool) -> Result<SiteTextsLoaded, sqlx::Error> {
          ON CONFLICT (key, locale) DO UPDATE
              SET value = EXCLUDED.value, source_hash = EXCLUDED.source_hash,
                  source_text = EXCLUDED.source_text, updated_at = NOW()
-             WHERE ui_messages.key = ANY($3::text[]) AND ui_messages.value IS DISTINCT FROM EXCLUDED.value
+             WHERE (ui_messages.key = ANY($3::text[]) OR ui_messages.updated_by IS NULL)
+               AND ui_messages.value IS DISTINCT FROM EXCLUDED.value
          RETURNING key",
     )
     .bind(&keys)
