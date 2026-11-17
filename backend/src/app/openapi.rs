@@ -123,9 +123,9 @@ impl Modify for SecurityAddon {
 #[derive(OpenApi)]
 #[openapi(
     info(
-        title = "myrtle.moe API",
+        title = "Muelsyse API",
         description = "\
-The public HTTP API behind [myrtle.moe](https://myrtle.moe), an Arknights companion app.
+The public HTTP API behind [Muelsyse](https://myrtle.moe), an Arknights companion app.
 
 Every endpoint lives under `/api`. Responses are JSON unless noted; errors share a single \
 envelope whose `error.code` is the stable field to branch on.
@@ -134,8 +134,8 @@ This document is generated from the server's own route definitions, so it descri
 the running server actually serves: a route and its OpenAPI operation are the same \
 declaration, and a test refuses any route that lacks one. If an endpoint is missing here, \
 it is missing from the server too.",
-        license(name = "Documentation for the myrtle.moe API"),
-        contact(name = "myrtle.moe", url = "https://myrtle.moe")
+        license(name = "Documentation for the Muelsyse API"),
+        contact(name = "Muelsyse", url = "https://myrtle.moe")
     ),
     servers(
         (url = "https://api.myrtle.moe", description = "Production"),

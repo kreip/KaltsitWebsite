@@ -421,7 +421,7 @@ export async function toPdf(book: Book, opts: PdfOptions, deps: PdfDeps): Promis
     };
     const coverImage = await deps.cover(book, signal);
     const doc = (children: React.ReactNode) => (
-        <Document title={book.meta.title} author="Hypergryph / Yostar (story text and art)" creator="myrtle.moe" producer="myrtle.moe" language={book.meta.language}>
+        <Document title={book.meta.title} author="Hypergryph / Yostar (story text and art)" creator="Muelsyse" producer="Muelsyse" language={book.meta.language}>
             {children}
         </Document>
     );
@@ -607,8 +607,8 @@ export async function toPdf(book: Book, opts: PdfOptions, deps: PdfDeps): Promis
     writeOutline(merged, outline);
     merged.setTitle(book.meta.title);
     merged.setAuthor("Hypergryph / Yostar (story text and art)");
-    merged.setCreator("myrtle.moe");
-    merged.setProducer("myrtle.moe");
+    merged.setCreator("Muelsyse");
+    merged.setProducer("Muelsyse");
     merged.setLanguage(book.meta.language);
     const out = await merged.save();
     return { blob: new Blob([out as BlobPart], { type: "application/pdf" }), images: blobs.size, failedImages: failed, sections: placed, pages: merged.getPageCount() };

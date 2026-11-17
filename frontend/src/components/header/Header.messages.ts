@@ -9,8 +9,12 @@ export const messages = {
         description: "Link hidden until a keyboard user tabs to it, the first stop on every page. It jumps past the header to the page's own content.",
     },
     "header.homeLink": {
-        text: "myrtle.moe home",
-        description: "Accessible name of the logo link at the left of the header, which goes to the landing page. 'myrtle.moe' is the site's name and stays as-is.",
+        text: "Muelsyse home",
+        description: "Accessible name of the logo link at the left of the header, which goes to the landing page. 'Muelsyse' is the site's name and stays as-is.",
+    },
+    "header.siteName": {
+        text: "Muelsyse",
+        description: "The site's name, the wordmark beside the logo in the header and the mobile menu's title. It is the operator Muelsyse's name; write it as the game does in this language.",
     },
     "header.home": {
         text: "Home",

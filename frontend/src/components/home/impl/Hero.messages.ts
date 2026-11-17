@@ -4,7 +4,7 @@ export const namespace = "home";
 
 export const messages = {
     "hero.title": {
-        text: "myrtle.moe",
+        text: "Muelsyse",
         description: "Home page headline. It is the site's own name; keep it as-is unless the site is known by another name in this language.",
     },
     "hero.lead": {

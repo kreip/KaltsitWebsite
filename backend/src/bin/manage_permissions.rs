@@ -25,7 +25,7 @@ async fn main() -> Result<()> {
     dotenv().ok();
 
     println!("\n========================================");
-    println!("   Myrtle Permission Management Tool");
+    println!("   Muelsyse Permission Management Tool");
     println!("========================================\n");
 
     let database_url = std::env::var("DATABASE_URL").context("DATABASE_URL must be set")?;

@@ -35,7 +35,7 @@ export function BrandRow({ kicker = "ARKNIGHTS · COMPANION", kickerShadow }: { 
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", width: "100%" }}>
             <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
                 <BrandMark />
-                <div style={{ display: "flex", fontFamily: "Geist Mono", fontSize: 16, letterSpacing: "0.22em", textTransform: "uppercase", fontWeight: 600, color: "#d7dbe0" }}>MYRTLE</div>
+                <div style={{ display: "flex", fontFamily: "Geist Mono", fontSize: 16, letterSpacing: "0.22em", textTransform: "uppercase", fontWeight: 600, color: "#d7dbe0" }}>MUELSYSE</div>
             </div>
             <div style={{ display: "flex", fontFamily: "Geist Mono", fontSize: 13, letterSpacing: "0.2em", textTransform: "uppercase", color: FG_55, ...(kickerShadow ? { textShadow: kickerShadow } : {}) }}>{kicker}</div>
         </div>

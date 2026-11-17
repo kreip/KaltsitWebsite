@@ -17,12 +17,12 @@ export const namespace = "meta";
  */
 export const messages = {
     "root.title": {
-        text: "Myrtle",
-        description: "Site name, used as the default document title and in the `X • Myrtle` suffix.",
+        text: "Muelsyse",
+        description: "Site name, used as the default document title and in the `X • Muelsyse` suffix.",
     },
     "root.notFoundTitle": {
         text: "Page not found",
-        description: "Document title of the 404 page, shown when no page exists at the address. The site name is appended as `Page not found • Myrtle`.",
+        description: "Document title of the 404 page, shown when no page exists at the address. The site name is appended as `Page not found • Muelsyse`.",
     },
     "root.description": {
         text: "Arknights companion: operators, rosters, tier lists.",
@@ -30,7 +30,7 @@ export const messages = {
     },
 
     "home.title": {
-        text: "Myrtle",
+        text: "Muelsyse",
         description: "Document title of the landing page. The site name on its own, deliberately.",
     },
     "home.description": {
@@ -131,7 +131,7 @@ export const messages = {
         description: "Document title of a tier-list page whose data failed to load, so no list title is known.",
     },
     "tierList.descriptionFallback": {
-        text: "{type, select, official {Official tier list with {count} tiers on myrtle.moe.} other {Community tier list with {count} tiers on myrtle.moe.}}",
+        text: "{type, select, official {Official tier list with {count} tiers on Muelsyse.} other {Community tier list with {count} tiers on Muelsyse.}}",
         description: "Meta description of a tier list whose author wrote none. `{type}` is `official` or `community`; `{count}` is the number of tiers and is deliberately not pluralised, matching the English source.",
     },
     "myTierLists.title": {
@@ -163,7 +163,7 @@ export const messages = {
         description: "Document title of a grid page whose data failed to load.",
     },
     "grid.descriptionFallback": {
-        text: "A {rows} by {cols} Arknights grid by {owner} on myrtle.moe.",
+        text: "A {rows} by {cols} Arknights grid by {owner} on Muelsyse.",
         description: "Meta description of a grid whose owner wrote none. {rows} and {cols} are its size; {owner} is the owner's display name.",
     },
     "myGrids.title": {
@@ -230,7 +230,7 @@ export const messages = {
         description: "Document title of the site-wide index counts page.",
     },
     "stats.description": {
-        text: "A live count of every operator, skill, module, tier list, and roster indexed on myrtle.moe.",
+        text: "A live count of every operator, skill, module, tier list, and roster indexed on Muelsyse.",
         description: "Meta description of the site-wide index counts page.",
     },
 
@@ -239,7 +239,7 @@ export const messages = {
         description: "Document title of the changelog.",
     },
     "changelog.description": {
-        text: "Every commit shipped to myrtle.moe, pulled live from GitHub and grouped by day, week, and month.",
+        text: "Every commit shipped to Muelsyse, pulled live from GitHub and grouped by day, week, and month.",
         description: "Meta description of the changelog.",
     },
 
@@ -266,7 +266,7 @@ export const messages = {
         description: "Document title of the privacy policy.",
     },
     "privacy.description": {
-        text: "What Myrtle stores about you, who can see it, and how to delete it.",
+        text: "What Muelsyse stores about you, who can see it, and how to delete it.",
         description: "Meta description of the privacy policy.",
     },
     "terms.title": {
@@ -274,7 +274,7 @@ export const messages = {
         description: "Document title of the terms of service.",
     },
     "terms.description": {
-        text: "Legal agreement governing your use of Myrtle.",
+        text: "Legal agreement governing your use of Muelsyse.",
         description: "Meta description of the terms of service.",
     },
 
@@ -344,11 +344,11 @@ export const messages = {
     },
 
     "admin.title": {
-        text: "myrtle.moe · admin",
-        description: "Document title of the internal operations console. `myrtle.moe` is the domain and stays as-is; the separator is a middle dot.",
+        text: "Muelsyse · admin",
+        description: "Document title of the internal operations console. `Muelsyse` is the domain and stays as-is; the separator is a middle dot.",
     },
     "admin.description": {
-        text: "Operations console for myrtle.moe.",
+        text: "Operations console for Muelsyse.",
         description: "Meta description of the internal operations console.",
     },
 } satisfies MessageMap;

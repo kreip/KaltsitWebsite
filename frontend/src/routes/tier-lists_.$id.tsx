@@ -52,7 +52,7 @@ function buildOgData(detail: ITierListDetail, server: string | undefined): ITier
         listType: detail.listType,
         flairLabel: detail.flair?.label,
         flairColor: flairColor || undefined,
-        authorName: detail.author?.nickname?.trim() || (detail.listType === "official" ? "Myrtle" : "Community"),
+        authorName: detail.author?.nickname?.trim() || (detail.listType === "official" ? "Muelsyse" : "Community"),
         authorAvatarURL: detail.author?.avatarId ? getAvatarById(detail.author.avatarId) : undefined,
         views: detail.stats?.viewCount ?? 0,
         favorites: detail.stats?.favoriteCount ?? 0,

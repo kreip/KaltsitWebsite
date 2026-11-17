@@ -8,8 +8,8 @@ export const messages = {
         description: "Heading of the changelog page. 'Shipped' means released to users. No full stop in the source.",
     },
     "page.blurb": {
-        text: "Every commit pushed to myrtle.moe, pulled live from GitHub and grouped by day.",
-        description: "Caption under the changelog heading. 'myrtle.moe' is this site's name and 'GitHub' a product name; both stay as-is.",
+        text: "Every commit pushed to Muelsyse, pulled live from GitHub and grouped by day.",
+        description: "Caption under the changelog heading. 'Muelsyse' is this site's name and 'GitHub' a product name; both stay as-is.",
     },
     "page.tab.notes": {
         text: "Release notes",

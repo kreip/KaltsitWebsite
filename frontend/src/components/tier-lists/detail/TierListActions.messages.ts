@@ -64,8 +64,8 @@ export const messages = {
         description: "Accessible name of the share button.",
     },
     "detail.actions.share.text": {
-        text: "{title} - tier list on myrtle.moe",
-        description: "Text handed to the device's share sheet when the list has no description of its own. myrtle.moe is the site's name and stays as-is.",
+        text: "{title} - tier list on Muelsyse",
+        description: "Text handed to the device's share sheet when the list has no description of its own. Muelsyse is the site's name and stays as-is.",
     },
     "detail.actions.share.okTitle": {
         text: "Link copied",

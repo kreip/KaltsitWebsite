@@ -375,7 +375,7 @@ export async function toEpub(book: Book, opts: EpubOptions, deps: EpubDeps): Pro
                     el("dc:title", {}, book.meta.title),
                     el("dc:language", {}, lang),
                     el("dc:creator", {}, "Hypergryph / Yostar (story text and art)"),
-                    el("dc:contributor", {}, "myrtle.moe"),
+                    el("dc:contributor", {}, "Muelsyse"),
                     book.meta.description ? el("dc:description", {}, book.meta.description) : null,
                     el("meta", { property: "dcterms:modified" }, modified),
                     cover ? el("meta", { name: "cover", content: "cover-image" }) : null,

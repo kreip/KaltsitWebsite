@@ -10,7 +10,7 @@ export const OG_CONFIG = {
     // enemy, squad, archive and music kinds.
     designVersion: 5,
 
-    siteName: "Myrtle",
+    siteName: "Muelsyse",
     siteURL: env.VITE_SITE_URL ?? "http://localhost:3000",
 
     defaultImage: "/api/og/default",

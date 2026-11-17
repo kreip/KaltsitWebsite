@@ -109,7 +109,7 @@ pub async fn stats(ctx: Context<'_>) -> Result<(), Error> {
 
     let Ok(s) = api::stats::stats(&data.http_client, base_url).await else {
         let embed = CreateEmbed::new()
-            .author(CreateEmbedAuthor::new("myrtle.moe").url("https://myrtle.moe"))
+            .author(CreateEmbedAuthor::new("Muelsyse").url("https://myrtle.moe"))
             .title("Stats unavailable")
             .description(format!(
                 "Couldn't reach the **{}** backend. Please try again shortly.",
@@ -158,7 +158,7 @@ pub async fn stats(ctx: Context<'_>) -> Result<(), Error> {
     };
 
     let embed = CreateEmbed::new()
-        .author(CreateEmbedAuthor::new("myrtle.moe").url("https://myrtle.moe"))
+        .author(CreateEmbedAuthor::new("Muelsyse").url("https://myrtle.moe"))
         .title("Statistics")
         .colour(COLOR_OK)
         .field(

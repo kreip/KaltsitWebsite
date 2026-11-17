@@ -32,7 +32,7 @@ export const messages = {
     },
 
     "og.login.title": {
-        text: "Sign in to Myrtle",
+        text: "Sign in to Muelsyse",
         description: "Headline on the sign-in social card.",
     },
     "og.login.subtitle": {
@@ -81,7 +81,7 @@ export const messages = {
         description: "Headline on the site-wide index counts social card.",
     },
     "og.stats.subtitle": {
-        text: "A live count of every operator, tier list, and roster indexed on myrtle.moe.",
+        text: "A live count of every operator, tier list, and roster indexed on Muelsyse.",
         description: "Subtitle on the site-wide index counts social card.",
     },
 
@@ -216,7 +216,7 @@ export const messages = {
         description: "Headline on the terms of service social card.",
     },
     "og.terms.subtitle": {
-        text: "Legal agreement governing your use of Myrtle.",
+        text: "Legal agreement governing your use of Muelsyse.",
         description: "Subtitle on the terms of service social card.",
     },
 
@@ -234,7 +234,7 @@ export const messages = {
         description: "Headline on the changelog social card.",
     },
     "og.changelog.subtitle": {
-        text: "Every commit and change shipped to myrtle.moe.",
+        text: "Every commit and change shipped to Muelsyse.",
         description: "Subtitle on the changelog social card.",
     },
 

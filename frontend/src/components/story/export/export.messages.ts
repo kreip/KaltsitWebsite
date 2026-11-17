@@ -316,7 +316,7 @@ export const messages = {
         description: "Credit line on the colophon page and at the end of an exported book.",
     },
     "book.madeWith": {
-        text: "Made with myrtle.moe.",
+        text: "Made with Muelsyse.",
         description: "Line on the colophon page naming the site that made the file.",
     },
     "book.rights": {

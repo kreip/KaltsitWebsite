@@ -23,7 +23,7 @@ export default function Footer() {
                     <div className="inline-flex items-center gap-2.5 font-sans font-semibold text-foreground text-sm leading-none">
                         <img src="/logo/bust_128.png" alt="" width={22} height={22} className="h-5.5 w-5.5 shrink-0 object-contain" />
                         <span>
-                            myrtle.moe <span className="font-normal text-muted-foreground">· v3</span>
+                            {t("footer.siteName")} <span className="font-normal text-muted-foreground">· v3</span>
                         </span>
                     </div>
                     <nav aria-label={t("footer.siteLinks")} className="inline-flex flex-wrap items-center gap-x-4">

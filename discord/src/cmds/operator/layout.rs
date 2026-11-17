@@ -555,7 +555,7 @@ mod tests {
         assert!(parts.len() >= 2);
         for (i, part) in parts.0.iter().enumerate() {
             assert!(part.len() <= EMBEDS_PER_MESSAGE);
-            assert!(parts.chars(i, "myrtle.moe · Lore") <= CHARS_PER_MESSAGE);
+            assert!(parts.chars(i, "Muelsyse · Lore") <= CHARS_PER_MESSAGE);
             for block in part {
                 assert!(
                     block

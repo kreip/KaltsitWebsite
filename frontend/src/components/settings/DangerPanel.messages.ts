@@ -8,7 +8,7 @@ export const messages = {
         description: "Card title of the account-deletion section. Rendered in the destructive colour.",
     },
     "danger.delete.desc": {
-        text: "Wipe your Myrtle account and everything we've stored for it. It happens right away and can't be undone.",
+        text: "Wipe your Muelsyse account and everything we've stored for it. It happens right away and can't be undone.",
         description: "Card description warning what account deletion does.",
     },
     "danger.delete.action": {

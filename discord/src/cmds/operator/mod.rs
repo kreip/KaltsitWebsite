@@ -287,7 +287,7 @@ pub fn view(src: &Sources<'_>, pages: &[Page], state: &ViewState) -> Result<View
     let built = build(src, state.page, state.sel.map(usize::from))?;
     let parts = Parts::pack(built.blocks, &built.slim);
     let part = usize::from(state.part).min(parts.len().saturating_sub(1));
-    let mut footer = format!("myrtle.moe · {}", state.page.label());
+    let mut footer = format!("Muelsyse · {}", state.page.label());
     if let Some(detail) = built.detail.as_deref() {
         let _ = write!(footer, " · {detail}");
     }

@@ -364,7 +364,7 @@ const tierListHandler = /* @__PURE__ */ defineOgHandler<ITierListOgData>(ogHashe
             listType,
             flairLabel: detail.flair?.label,
             flairColor: flairColor || undefined,
-            authorName: detail.author?.nickname?.trim() || (listType === "official" ? "Myrtle" : "Community"),
+            authorName: detail.author?.nickname?.trim() || (listType === "official" ? "Muelsyse" : "Community"),
             authorAvatarURL: detail.author?.avatar_id ? avatarURL(detail.author.avatar_id) : undefined,
             views: detail.stats?.view_count ?? 0,
             favorites: detail.stats?.favorite_count ?? 0,

@@ -1,5 +1,5 @@
 import { formatNumberCompact } from "#/lib/utils";
-import { AccentStrip, BG, BrandMark, FG, FG_06, FG_08, FG_45, FG_55, FG_70, FootRow } from "./Frame";
+import { AccentStrip, BG, BrandMark, FG, FG_06, FG_08, FG_45, FG_55, FG_70, FootRow, siteHost } from "./Frame";
 
 export interface ITierListOperatorPreview {
     id: string;
@@ -113,7 +113,7 @@ export function TierListTemplate(data: ITierListOgData) {
         >
             <HeroPanel title={title} description={description} listType={listType} flairLabel={flairLabel} authorName={authorName} authorAvatarURL={authorAvatarURL} updatedRelative={updatedRelative} isTrending={isTrending} accent={accent} accentDeep={accentDeep} accentTint={accentTint} tiers={tiers} />
             <SidePanel slug={slug} totalOperators={totalOperators} tierCount={tierCount} views={views} favorites={favorites} tiers={tiers} />
-            <FootRow path={`myrtle.moe / tier-lists`} />
+            <FootRow path={`${siteHost()} / tier-lists`} />
             <AccentStrip color={accent} />
         </div>
     );
@@ -430,7 +430,7 @@ function SidePanel({ slug, totalOperators, tierCount, views, favorites, tiers }:
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
                     <BrandMark />
-                    <div style={{ display: "flex", fontFamily: "Geist Mono", fontSize: 14, letterSpacing: "0.22em", textTransform: "uppercase", fontWeight: 600, color: "#d7dbe0" }}>MYRTLE</div>
+                    <div style={{ display: "flex", fontFamily: "Geist Mono", fontSize: 14, letterSpacing: "0.22em", textTransform: "uppercase", fontWeight: 600, color: "#d7dbe0" }}>MUELSYSE</div>
                 </div>
                 <div style={{ display: "flex", fontFamily: "Geist Mono", fontSize: 11, letterSpacing: "0.18em", textTransform: "uppercase", color: FG_45 }}>
                     SLUG&nbsp;·&nbsp;<span style={{ color: FG_70, marginLeft: 4 }}>{truncatedSlug}</span>

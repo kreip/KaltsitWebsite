@@ -4,8 +4,8 @@ export const namespace = "stats";
 
 export const messages = {
     "header.title": {
-        text: "A count of everything on myrtle.moe.",
-        description: "Stats-page headline. 'myrtle.moe' is this site's name and is never translated.",
+        text: "A count of everything on Muelsyse.",
+        description: "Stats-page headline. 'Muelsyse' is this site's name and is never translated.",
     },
     "header.blurb": {
         text: "Live snapshot of the game catalog we index, the tier lists the community maintains, and the rosters players have synced with their Yostar accounts.",

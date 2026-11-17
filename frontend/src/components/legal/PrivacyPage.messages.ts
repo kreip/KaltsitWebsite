@@ -79,8 +79,8 @@ export const messages = {
         description: "Subheading under Yostar Account Integration.",
     },
     "privacy.yostar.intro": {
-        text: "Myrtle uses Yostar's official OAuth system to sync your Arknights account data. Here's how it works:",
-        description: "Opening paragraph of the Yostar section. 'Myrtle' is this site's name.",
+        text: "Muelsyse uses Yostar's official OAuth system to sync your Arknights account data. Here's how it works:",
+        description: "Opening paragraph of the Yostar section. 'Muelsyse' is this site's name.",
     },
     "privacy.yostar.auth.title": {
         text: "How Authentication Works",
@@ -99,7 +99,7 @@ export const messages = {
         description: "First paragraph of the callout. Roster, promotions, masteries, modules and base are in-game systems.",
     },
     "privacy.yostar.receive.p2": {
-        text: "We keep that token so re-syncing works without emailing you a new code every time. It is stored encrypted, never leaves our server, and is never shown to you or to anyone else. It stays until you disconnect your game account or delete your Myrtle account.",
+        text: "We keep that token so re-syncing works without emailing you a new code every time. It is stored encrypted, never leaves our server, and is never shown to you or to anyone else. It stays until you disconnect your game account or delete your Muelsyse account.",
         description: "Second paragraph of the same callout, separated from the first by a blank line.",
     },
     "privacy.yostar.revoke.body": {
@@ -148,7 +148,7 @@ export const messages = {
         description: "Bolded term of a list item.",
     },
     "privacy.collect.account.settings.body": {
-        text: "- your Myrtle preferences: theme, accent color, profile visibility, leaderboard opt-in, and notification settings",
+        text: "- your Muelsyse preferences: theme, accent color, profile visibility, leaderboard opt-in, and notification settings",
         description: "Gloss following the bolded term. Begins with a hyphen and a space.",
     },
     "privacy.collect.emailNote": {
@@ -461,7 +461,7 @@ export const messages = {
         description: "Bolded lead-in of a list item, including its colon. Both are company names.",
     },
     "privacy.thirdParty.yostar.body": {
-        text: "We use Yostar's OAuth system to authenticate you and fetch your game data. We are not affiliated with Yostar or Hypergryph - Myrtle is an independent fan project.",
+        text: "We use Yostar's OAuth system to authenticate you and fetch your game data. We are not affiliated with Yostar or Hypergryph - Muelsyse is an independent fan project.",
         description: "Body of the Yostar / Hypergryph list item, following the bolded lead-in.",
     },
     "privacy.thirdParty.servers.label": {

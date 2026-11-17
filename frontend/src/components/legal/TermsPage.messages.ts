@@ -14,8 +14,8 @@ export const messages = {
         description: "Page title of the terms of service.",
     },
     "terms.hero.subtitle": {
-        text: "Legal agreement governing your use of Myrtle",
-        description: "Standfirst under the terms title. 'Myrtle' is this site's name.",
+        text: "Legal agreement governing your use of Muelsyse",
+        description: "Standfirst under the terms title. 'Muelsyse' is this site's name.",
     },
     "terms.hero.version": {
         text: "Version {version}",
@@ -30,7 +30,7 @@ export const messages = {
         description: "Line giving the date the terms were last revised. {date} is an already-formatted date.",
     },
     "terms.tldr": {
-        text: "By accessing or using Myrtle, you agree to be bound by these Terms of Service. Please read them carefully before continuing.",
+        text: "By accessing or using Muelsyse, you agree to be bound by these Terms of Service. Please read them carefully before continuing.",
         description: "Banner above the terms, summarising that use implies agreement.",
     },
 
@@ -84,7 +84,7 @@ export const messages = {
         description: "Heading of section 1. Keep the leading number.",
     },
     "terms.s1.p1": {
-        text: 'By accessing, browsing, or using the Myrtle platform ("Service"), you acknowledge that you have read, understood, and agree to be bound by these Terms of Service and all applicable laws and regulations.',
+        text: 'By accessing, browsing, or using the Muelsyse platform ("Service"), you acknowledge that you have read, understood, and agree to be bound by these Terms of Service and all applicable laws and regulations.',
         description: "First paragraph of section 1. The quoted word defines a term used throughout the document.",
     },
     "terms.s1.p2": {
@@ -92,7 +92,7 @@ export const messages = {
         description: "Second paragraph of section 1.",
     },
     "terms.s1.p3": {
-        text: 'These terms constitute a legally binding agreement between you ("User," "you," or "your") and Myrtle ("we," "us," or "our"). Your continued use of the Service signifies your acceptance of these terms and any modifications thereto.',
+        text: 'These terms constitute a legally binding agreement between you ("User," "you," or "your") and Muelsyse ("we," "us," or "our"). Your continued use of the Service signifies your acceptance of these terms and any modifications thereto.',
         description: "Third paragraph of section 1. The quoted words define terms used throughout; note the commas sit inside the quotation marks.",
     },
 
@@ -121,7 +121,7 @@ export const messages = {
         description: "List item under 2.2.",
     },
     "terms.s2.security.item2": {
-        text: "All activities that occur under your Myrtle account",
+        text: "All activities that occur under your Muelsyse account",
         description: "List item under 2.2.",
     },
     "terms.s2.security.item3": {
@@ -236,11 +236,11 @@ export const messages = {
         description: "Heading of section 5. Keep the leading number.",
     },
     "terms.s5.code.heading": {
-        text: "5.1 Myrtle Code and Content",
+        text: "5.1 Muelsyse Code and Content",
         description: "Sub-heading 5.1.",
     },
     "terms.s5.code.body": {
-        text: "The Myrtle platform code is open source and available on GitHub. Original features, designs, and documentation created for Myrtle are provided under applicable open source licenses. See our {link} for specific license terms.",
+        text: "The Muelsyse platform code is open source and available on GitHub. Original features, designs, and documentation created for Muelsyse are provided under applicable open source licenses. See our {link} for specific license terms.",
         description: "Paragraph under 5.1. {link} is a link to the source repository, labelled by terms.s5.code.link; move it wherever the sentence needs it.",
     },
     "terms.s5.code.link": {
@@ -256,7 +256,7 @@ export const messages = {
         description: "First paragraph under 5.2. The two company names are legal entities and must not be altered.",
     },
     "terms.s5.assets.p2": {
-        text: "We use game assets under fair use for the purpose of providing game companion tools to the community. All operator data, images, Spine animations, and other game content displayed on Myrtle are sourced from the official Arknights game files.",
+        text: "We use game assets under fair use for the purpose of providing game companion tools to the community. All operator data, images, Spine animations, and other game content displayed on Muelsyse are sourced from the official Arknights game files.",
         description: "Second paragraph under 5.2. 'Spine' is the animation runtime's name and stays as-is.",
     },
     "terms.s5.thirdParty.heading": {
@@ -298,7 +298,7 @@ export const messages = {
         description: "First paragraph of section 7. The quoted capitals are standard warranty-disclaimer wording.",
     },
     "terms.s7.p2": {
-        text: "To the maximum extent permitted by law, Myrtle shall not be liable for any indirect, incidental, special, consequential, or punitive damages, including but not limited to loss of profits, data, or other intangible losses, resulting from:",
+        text: "To the maximum extent permitted by law, Muelsyse shall not be liable for any indirect, incidental, special, consequential, or punitive damages, including but not limited to loss of profits, data, or other intangible losses, resulting from:",
         description: "Second paragraph of section 7, which runs into the list below it.",
     },
     "terms.s7.item1": {

@@ -271,8 +271,8 @@ export async function renderSquadImage(canvas: HTMLCanvasElement, data: IShareIm
     ctx.textBaseline = "middle";
     ctx.fillStyle = PALETTE.accent;
     ctx.font = `700 20px ${FONT}`;
-    ctx.fillText("myrtle", layout.footer.x, layout.footer.y + layout.footer.h / 2);
-    const brandW = ctx.measureText("myrtle").width;
+    ctx.fillText("Muelsyse", layout.footer.x, layout.footer.y + layout.footer.h / 2);
+    const brandW = ctx.measureText("Muelsyse").width;
     ctx.fillStyle = PALETTE.muted;
     ctx.font = `500 16px ${FONT}`;
     ctx.fillText(data.footer, layout.footer.x + brandW + 14, layout.footer.y + layout.footer.h / 2);

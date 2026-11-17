@@ -383,8 +383,8 @@ export const messages = {
         description: "Lead paragraph of the 2026-10-09 release note, rendered as Markdown. 'Showcase' is a profile tab name and must match its translation.",
     },
     "note.2026-10-09.item.1": {
-        text: "The Myrtle Discord bot can show every page of an operator (skills, modules, costs, outfits, lore, voice lines and more), play voice lines and read voice-channel chat aloud, and lists Challenge Mode conditions on stages.",
-        description: "Bullet in the 2026-10-09 release note, filed under 'New'. Myrtle is the site's name; Challenge Mode is a stage variant and keeps the game's name.",
+        text: "The Muelsyse Discord bot can show every page of an operator (skills, modules, costs, outfits, lore, voice lines and more), play voice lines and read voice-channel chat aloud, and lists Challenge Mode conditions on stages.",
+        description: "Bullet in the 2026-10-09 release note, filed under 'New'. Muelsyse is the site's name; Challenge Mode is a stage variant and keeps the game's name.",
     },
     "note.2026-10-09.item.2": {
         text: "The base optimizer no longer moves Proviso to the level-3 trading post when Shamare and Tequila there earn more.",

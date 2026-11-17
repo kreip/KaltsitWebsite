@@ -17,6 +17,7 @@ import { REPO_URL } from "#/lib/constants";
 import { useI18n, useT } from "#/lib/i18n";
 import type { TypedT } from "#/lib/i18n/messages";
 import { cn, getAvatarSkinId } from "#/lib/utils";
+import type { messages as headerMessages } from "../Header.messages";
 import { ActiveIndicator } from "./ActiveIndicator";
 import { LazyAuthDialog } from "./LazyAuthDialog";
 import type { INavItem } from "./MainNav";
@@ -35,6 +36,7 @@ export function MobileNav({ items, forceVisible = false }: IMobileNavProps) {
     const router = useRouterState();
     const pathname = router.location.pathname;
     const t: TypedT<typeof messages> = useT("nav");
+    const tBrand: TypedT<typeof headerMessages> = useT("nav");
     const tCommon: TypedT<typeof localeSwitcherMessages & typeof gamedataServerMessages> = useT("common");
     const { locale, available } = useI18n();
     const switchLocale = useLocaleSwitch();
@@ -101,7 +103,7 @@ export function MobileNav({ items, forceVisible = false }: IMobileNavProps) {
                 <DrawerHeader>
                     <DrawerTitle className="flex items-center gap-2">
                         <img src="/logo/bust_128.png" alt="" width={28} height={28} className="h-7 w-7 shrink-0 object-contain" />
-                        myrtle.moe
+                        {tBrand("header.siteName")}
                     </DrawerTitle>
                 </DrawerHeader>
                 <DrawerPanel scrollFade={false}>

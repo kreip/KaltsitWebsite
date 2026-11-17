@@ -3,6 +3,10 @@ import { defineMessages, type MessageMap } from "#/lib/i18n/messages";
 export const namespace = "common";
 
 export const messages = {
+    "footer.siteName": {
+        text: "Muelsyse",
+        description: "The site's name beside the logo at the left of the footer, followed by the version (· v3). It is the operator Muelsyse's name; write it as the game does in this language.",
+    },
     "footer.siteLinks": {
         text: "Site links",
         description: "Accessible name of the footer <nav> landmark holding the changelog, legal and community links.",

@@ -44,7 +44,7 @@ export const DEFAULT_LABELS: BookLabels = {
     figureAlt: "Illustration",
     synopsis: "Synopsis",
     credit: "Story text and art by Hypergryph and Yostar, from Arknights.",
-    madeWith: "Made with myrtle.moe.",
+    madeWith: "Made with Muelsyse.",
     rights: "Arknights and all of its story text and art belong to Hypergryph and Yostar. This book is a personal reading copy.",
 };
 

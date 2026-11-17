@@ -78,7 +78,7 @@ describe("toEpub", () => {
         const meta = (tag: string) => opf.getElementsByTagName(tag)[0]?.textContent;
         expect(meta("dc:identifier")).toBe("urn:myrtle:story:en:main_0");
         expect(meta("dc:creator")).toBe("Hypergryph / Yostar (story text and art)");
-        expect(meta("dc:contributor")).toBe("myrtle.moe");
+        expect(meta("dc:contributor")).toBe("Muelsyse");
         expect(meta("dc:language")).toBe("en");
         expect(meta("dc:description")).toContain("Amiya wakes the Doctor.");
         expect(opf.querySelector('meta[property="dcterms:modified"]')?.textContent).toBe("2026-09-30T12:34:56Z");

@@ -28,12 +28,12 @@ export const messages = {
         description: "Caption listing what a re-sync fetches. 'IS' is Integrated Strategies, 'RA' is Reclamation Algorithm and 'base' the player's home installation - all in-game systems.",
     },
     "data.yourData.title": {
-        text: "Your data on Myrtle",
-        description: "Card title over the export and profile links. 'Myrtle' is this site's name.",
+        text: "Your data on Muelsyse",
+        description: "Card title over the export and profile links. 'Muelsyse' is this site's name.",
     },
     "data.yourData.desc": {
         text: "Everything we store is visible on your profile page. For a portable copy or a GDPR request, email privacy@myrtle.moe.",
-        description: "Card description under Your data on Myrtle. GDPR is the EU data-protection regulation.",
+        description: "Card description under Your data on Muelsyse. GDPR is the EU data-protection regulation.",
     },
     "data.viewProfile.title": {
         text: "View on your profile",

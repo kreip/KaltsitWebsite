@@ -1,14 +1,14 @@
 {
   "openapi": "3.1.0",
   "info": {
-    "title": "myrtle.moe API",
-    "description": "The public HTTP API behind [myrtle.moe](https://myrtle.moe), an Arknights companion app.\n\nEvery endpoint lives under `/api`. Responses are JSON unless noted; errors share a single envelope whose `error.code` is the stable field to branch on.\n\nThis document is generated from the server's own route definitions, so it describes what the running server actually serves: a route and its OpenAPI operation are the same declaration, and a test refuses any route that lacks one. If an endpoint is missing here, it is missing from the server too.",
+    "title": "Muelsyse API",
+    "description": "The public HTTP API behind [Muelsyse](https://myrtle.moe), an Arknights companion app.\n\nEvery endpoint lives under `/api`. Responses are JSON unless noted; errors share a single envelope whose `error.code` is the stable field to branch on.\n\nThis document is generated from the server's own route definitions, so it describes what the running server actually serves: a route and its OpenAPI operation are the same declaration, and a test refuses any route that lacks one. If an endpoint is missing here, it is missing from the server too.",
     "contact": {
-      "name": "myrtle.moe",
+      "name": "Muelsyse",
       "url": "https://myrtle.moe"
     },
     "license": {
-      "name": "Documentation for the myrtle.moe API"
+      "name": "Documentation for the Muelsyse API"
     },
     "version": "0.1.0"
   },

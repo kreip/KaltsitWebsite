@@ -28,8 +28,8 @@ export const messages = {
         description: "Field label for the operator shown on the in-game home screen. 'Assistant' is the game's own term.",
     },
     "profile.assistant.desc": {
-        text: "The operator displayed on your in-game and Myrtle profile.",
-        description: "Caption under the assistant-operator field. 'Myrtle' is this site's name.",
+        text: "The operator displayed on your in-game and Muelsyse profile.",
+        description: "Caption under the assistant-operator field. 'Muelsyse' is this site's name.",
     },
 } satisfies MessageMap;
 
