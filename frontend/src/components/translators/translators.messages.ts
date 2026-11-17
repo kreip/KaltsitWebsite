@@ -2611,6 +2611,18 @@ export const messages = {
         text: "Every place of the text",
         description: "Accessible name of the table of an entry's places (№, where, was, now, English, Chinese).",
     },
+    "replace.all": {
+        text: "Tick all",
+        description: "Replace dialog: ticks every line that can be replaced.",
+    },
+    "replace.none": {
+        text: "Untick all",
+        description: "Replace dialog: unticks every line.",
+    },
+    "replace.pick": {
+        text: "Replace in this line",
+        description: "Replace dialog: accessible name of a line's tick box (only ticked lines get a proposal).",
+    },
 } satisfies MessageMap;
 
 export const { keys } = defineMessages({ namespace, messages });

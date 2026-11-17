@@ -366,9 +366,9 @@ pub(super) fn phrase_hit<'a>(text: &str, forms: &'a [String]) -> Option<(fix::Hi
     forms
         .iter()
         .filter_map(|f| {
-            let stems = fix::form_stems(f);
-            (stems.len() >= 2)
-                .then(|| fix::best_window(text, &stems))
+            let words = fix::form_folded(f);
+            (words.len() >= 2)
+                .then(|| fix::best_window(text, &words))
                 .flatten()
                 .map(|h| (h, f.as_str()))
         })

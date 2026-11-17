@@ -590,9 +590,15 @@ pub async fn fix_glossary_variant(
     for (row, fix) in rows.iter().zip(&fixes) {
         let Some(fix) = fix else { continue };
         let Some(text) = row.text() else { continue };
+        let picked = input.picked.as_ref().is_none_or(|p| {
+            p.iter()
+                .any(|l| l.story_id == row.story_id && l.ord == row.ord)
+        });
         if fix.is_none() {
             unsure += 1;
-        } else if let Some(result) = fix {
+        } else if let Some(result) = fix
+            && picked
+        {
             per_key
                 .entry(row.edit_key.as_str())
                 .or_insert((row, result.clone()));

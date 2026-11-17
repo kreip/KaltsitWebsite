@@ -30,6 +30,7 @@ import type { ImportStatus } from "#/types/generated/ImportStatus";
 import type { KeyPlaces } from "#/types/generated/KeyPlaces";
 import type { LevelsApplied } from "#/types/generated/LevelsApplied";
 import type { LineHistory } from "#/types/generated/LineHistory";
+import type { LinePick } from "#/types/generated/LinePick";
 import type { LoginResponse } from "#/types/generated/LoginResponse";
 import type { MemberRow } from "#/types/generated/MemberRow";
 import type { NameRu } from "#/types/generated/NameRu";
@@ -332,9 +333,9 @@ export function glossaryLinesQueryOptions(id: number, missing: boolean) {
 
 /** "Replace with the glossary's form" for one of a term's game variants (by its stem): the lines it would change, and with `apply` my proposals written for them. */
 export const fixGlossaryVariantFn = createServerFn({ method: "POST" })
-    .inputValidator((d: { id: number; stem: string; apply: boolean }) => d)
+    .inputValidator((d: { id: number; stem: string; apply: boolean; picked?: LinePick[] }) => d)
     .handler(async ({ data }): Promise<GlossaryFix> => {
-        const res = await send(`/translators/glossary/${data.id}/fix`, "POST", { stem: data.stem, apply: data.apply });
+        const res = await send(`/translators/glossary/${data.id}/fix`, "POST", { stem: data.stem, apply: data.apply, picked: data.picked });
         return (await res.json()) as GlossaryFix;
     });
 

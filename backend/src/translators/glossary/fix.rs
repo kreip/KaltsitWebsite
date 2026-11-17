@@ -3,15 +3,16 @@
 //! "Рэндоллу"): the "Replace with the glossary's form" button of the Glossary
 //! tab and the "As in the game" column for a term of several words.
 //!
-//! The case is carried over by the ending the stem rule cuts (`matcher::stem`):
-//! the glossary's stem plus the game word's ending. That is sure only when the
-//! two words are the same word spelled differently — the game word is in the
-//! nominative (no ending cut), or its ending is the glossary form's own, or
-//! the stems differ by a letter or two and end alike (both in a consonant, or
-//! in the same letter). A different word ("апреля" for "Эйприл": the name
-//! does not decline, the month does) is left to a person.
+//! The case is carried over by the glossary word's own case forms
+//! (`matcher::paradigm`: names and nouns in -ия, -а, -я, a consonant; a few
+//! adjective endings): the game word's ending is found among them and the
+//! glossary's stem gets it, when the stems are the same word spelled
+//! differently (a letter or two apart, ending alike). The game word in the
+//! nominative gets the form itself. A word whose case cannot be told that
+//! way ("Зои" for "Зоуи", "апреля" for "Эйприл") is left to a person: the
+//! nominative is never put in for another case ("У Зоя царапина").
 
-use super::matcher::{stem, word_spans};
+use super::matcher::{inflects, is_consonant, paradigm, stem, word_spans};
 
 /// One word of the game's text where a term stands.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -85,24 +86,42 @@ pub fn form_stems(form: &str) -> Vec<String> {
         .collect()
 }
 
-/// Where a form of `stems.len()` words stands in `text`: the run of as many
-/// words with the most words matching the form by stem, position by position
-/// (at least one); ties go to the run with more capitalised words, then the
-/// earliest. None when no word of the form is in the text.
-pub fn best_window(text: &str, stems: &[String]) -> Option<Hit> {
-    if stems.is_empty() {
+/// The words of a glossary form, lower case, `ё` = `е` (quotes and `ООО`
+/// dropped, as `has_form`).
+pub fn form_folded(form: &str) -> Vec<String> {
+    form.replace(['"', '«', '»', '„', '“', '”'], " ")
+        .split(|c: char| !c.is_alphanumeric())
+        .filter(|w| !w.is_empty())
+        .map(fold)
+        .filter(|w| w != "ооо")
+        .collect()
+}
+
+/// Whether a game word (lower case, `ё` = `е`) is the glossary's word: by
+/// stem or as one of its case forms.
+pub fn is_form_word(word: &str, form: &str) -> bool {
+    word.starts_with(stem(form).as_str()) || inflects(word, form)
+}
+
+/// Where a form of `forms.len()` words (`form_folded`) stands in `text`: the
+/// run of as many words with the most words matching the form (by stem or a
+/// case form), position by position (at least one); ties go to the run with
+/// more capitalised words, then the earliest. None when no word of the form
+/// is in the text.
+pub fn best_window(text: &str, forms: &[String]) -> Option<Hit> {
+    if forms.is_empty() {
         return None;
     }
     let spans = word_spans(text);
     let mut best: Option<(usize, usize, Hit)> = None;
-    for win in spans.windows(stems.len()) {
+    for win in spans.windows(forms.len()) {
         let words: Vec<WordHit> = win
             .iter()
-            .zip(stems)
-            .map(|(&(start, end), s)| WordHit {
+            .zip(forms)
+            .map(|(&(start, end), f)| WordHit {
                 start,
                 end,
-                ok: fold(&text[start..end]).starts_with(s.as_str()),
+                ok: is_form_word(&fold(&text[start..end]), f),
             })
             .collect();
         let ok = words.iter().filter(|w| w.ok).count();
@@ -131,31 +150,6 @@ pub fn root_word(text: &str, root: &str) -> Option<(usize, usize)> {
         let st = stem(&fold(&text[s..e]));
         st == root || (root.chars().count() >= 4 && st.starts_with(root))
     })
-}
-
-fn is_consonant(c: char) -> bool {
-    matches!(
-        c,
-        'б' | 'в'
-            | 'г'
-            | 'д'
-            | 'ж'
-            | 'з'
-            | 'к'
-            | 'л'
-            | 'м'
-            | 'н'
-            | 'п'
-            | 'р'
-            | 'с'
-            | 'т'
-            | 'ф'
-            | 'х'
-            | 'ц'
-            | 'ч'
-            | 'ш'
-            | 'щ'
-    )
 }
 
 /// `word` with the case of `like`: capitalised when `like` is, all capitals when `like` is.
@@ -208,34 +202,49 @@ fn same_word(a: &str, b: &str) -> bool {
     distance(a, b) <= if n >= 6 { 2 } else { 1 }
 }
 
+/// Two stems are alike when they end alike: in the same letter, or both in a consonant.
+fn end_alike(a: &str, b: &str) -> bool {
+    match (a.chars().next_back(), b.chars().next_back()) {
+        (Some(x), Some(y)) => x == y || (is_consonant(x) && is_consonant(y)),
+        _ => false,
+    }
+}
+
 /// The glossary's `form` word in the case of the game's `word`, or None
 /// when the case cannot be carried over for sure.
 pub fn fix_word(word: &str, form: &str) -> Option<String> {
     let lower = fold(word);
-    let word_stem = stem(&lower);
-    let ending = &lower[word_stem.len()..];
     let form_lower = fold(form);
-    let form_stem = stem(&form_lower);
-    let form_ending = &form_lower[form_stem.len()..];
-    if ending.is_empty() || ending == form_ending {
-        return Some(with_case(form, word));
-    }
-    // A form in a soft sign may not decline at all (Чэнь): a person decides.
-    if form_ending == "ь" {
+    if let Some((form_stem, ends)) = paradigm(&form_lower) {
+        let kept: String = form.chars().take(form_stem.chars().count()).collect();
+        let nominative = ends[0];
+        let mut ends = ends.to_vec();
+        ends.sort_by_key(|e| std::cmp::Reverse(e.chars().count()));
+        for e in ends {
+            let Some(base) = lower.strip_suffix(e) else {
+                continue;
+            };
+            if base.is_empty() {
+                continue;
+            }
+            // The game word in the nominative: the form itself, whatever its spelling.
+            let sure = base == form_stem
+                || (same_word(base, &form_stem) && (end_alike(base, &form_stem) || e == nominative));
+            if sure {
+                return Some(with_case(&format!("{kept}{e}"), word));
+            }
+        }
         return None;
     }
-    let last = |s: &str| s.chars().next_back();
-    match (last(&word_stem), last(&form_stem)) {
-        (Some(a), Some(b))
-            if (a == b || (is_consonant(a) && is_consonant(b)))
-                && same_word(&word_stem, &form_stem) =>
-        {
-            // The form as written up to its stem, then the game word's ending.
-            let kept: String = form.chars().take(form_stem.chars().count()).collect();
-            Some(with_case(&format!("{kept}{ending}"), word))
-        }
-        _ => None,
+    // No case forms known: only when the game word ends as the form does.
+    let word_stem = stem(&lower);
+    let ending = &lower[word_stem.len()..];
+    let form_stem = stem(&form_lower);
+    let form_ending = &form_lower[form_stem.len()..];
+    if ending == form_ending && (word_stem == form_stem || same_word(&word_stem, &form_stem)) {
+        return Some(with_case(form, word));
     }
+    None
 }
 
 /// `text` with the words of `hit` that are not the glossary's replaced by
@@ -293,7 +302,7 @@ pub fn plan(
                 let (start, end) = root_word(text, stem_key)?;
                 let form = forms.first().and_then(|f| form_words(f).first().copied())?;
                 // The word is the glossary's already (another ending): nothing to do.
-                if fold(&text[start..end]).starts_with(stem(&fold(form)).as_str()) {
+                if is_form_word(&fold(&text[start..end]), &fold(form)) {
                     return None;
                 }
                 fix_word(&text[start..end], form)
@@ -328,8 +337,33 @@ mod tests {
     }
 
     #[test]
+    fn the_nominative_never_takes_another_case() {
+        // "Зои" for "Зоуи": the case of "Зои" cannot be told by the form's
+        // rules (no ending known for -и), a person decides.
+        assert_eq!(fix_word("Зои", "Зоуи"), None);
+        // A form with case rules: the ending carried over, never the nominative.
+        assert_eq!(fix_word("Зоэи", "Зоя"), None);
+        assert_eq!(fix_word("Маргорите", "Маргарита").as_deref(), Some("Маргарите"));
+        assert_eq!(fix_word("Маргоритой", "Маргарита").as_deref(), Some("Маргаритой"));
+        assert_eq!(fix_word("Маргорита", "Маргарита").as_deref(), Some("Маргарита"));
+        assert_eq!(fix_word("Амийей", "Амия"), None);
+        assert_eq!(fix_word("Бибеку", "Байбик"), None);
+        assert_eq!(fix_word("Байбека", "Байбик").as_deref(), Some("Байбика"));
+    }
+
+    #[test]
+    fn a_line_already_in_a_case_of_the_form_is_left() {
+        let zoe = super::super::parse::Term {
+            key: "Zoe".into(),
+            ru: "Зоя".into(),
+            ..Default::default()
+        };
+        assert_eq!(plan(&zoe, "зои", &[(Some("У Зои царапина."), false)]), vec![None]);
+    }
+
+    #[test]
     fn a_phrase_is_found_by_its_matching_words() {
-        let stems = form_stems("Рэндолл Хофштадтер");
+        let stems = form_folded("Рэндолл Хофштадтер");
         let text = "Письмо для вас, Рэндалл Хофштадтер.";
         let hit = best_window(text, &stems).expect("found");
         assert_eq!(hit.spelling(text), "Рэндалл Хофштадтер");

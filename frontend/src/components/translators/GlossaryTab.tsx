@@ -23,7 +23,7 @@ import { Alert, AlertDescription } from "#/components/ui/alert";
 import { Badge } from "#/components/ui/badge";
 import { Button } from "#/components/ui/button";
 import { Collapsible, CollapsiblePanel, CollapsibleTrigger } from "#/components/ui/collapsible";
-import { Dialog, DialogDescription, DialogFooter, DialogHeader, DialogPanel, DialogPopup, DialogTitle, DialogTrigger } from "#/components/ui/dialog";
+import { Dialog, DialogDescription, DialogHeader, DialogPanel, DialogPopup, DialogTitle, DialogTrigger } from "#/components/ui/dialog";
 import { Empty, EmptyHeader, EmptyTitle } from "#/components/ui/empty";
 import { Label } from "#/components/ui/label";
 import { LoadFailed } from "#/components/ui/load-failed";
@@ -40,11 +40,12 @@ import type { GameVariant } from "#/types/generated/GameVariant";
 import type { Glossary } from "#/types/generated/Glossary";
 import type { GlossarySuggestion } from "#/types/generated/GlossarySuggestion";
 import type { GlossaryTerm } from "#/types/generated/GlossaryTerm";
+import type { LinePick } from "#/types/generated/LinePick";
 import type { TranslatorsMe } from "#/types/generated/TranslatorsMe";
-import { diffLabels, isLead } from "./LineEdits";
+import { isLead } from "./LineEdits";
+import { ReplaceDialogBody } from "./ReplaceDialog";
 import { StoryText } from "./StoryText";
 import { useStoryNames } from "./storyNames";
-import { TextDiff } from "./TextDiff";
 import type { messages } from "./translators.messages";
 
 type T = TypedT<typeof messages>;
@@ -142,15 +143,14 @@ function VariantWords({ v }: { v: GameVariant }): React.ReactElement {
     );
 }
 
-/** "Replace with the glossary's form": the lines a variant stands in, what each would get, and the button that writes the proposals. */
+/** "Replace with the glossary's form": the lines a variant stands in, what each would get, and the button that writes the proposals for the ticked ones. */
 function FixDialog({ term, variant, onDone, t }: { term: GlossaryTerm; variant: GameVariant; onDone: () => void; t: T }): React.ReactElement {
     const queryClient = useQueryClient();
-    const nameOf = useStoryNames();
     const me = useQuery(translatorsMeQueryOptions());
     const nickname = me.data?.nickname ?? t("nickname.fallback");
     const preview = useQuery(glossaryFixQueryOptions(term.id, variant.stem));
     const apply = useMutation({
-        mutationFn: () => fixGlossaryVariantFn({ data: { id: term.id, stem: variant.stem, apply: true } }),
+        mutationFn: (picked: LinePick[]) => fixGlossaryVariantFn({ data: { id: term.id, stem: variant.stem, apply: true, picked } }),
         onSuccess: (data) => {
             toastManager.add({ title: t("glossary.fix.done", { count: data.created }), type: "success" });
             for (const root of EDIT_QUERY_ROOTS) queryClient.invalidateQueries({ queryKey: root });
@@ -159,75 +159,7 @@ function FixDialog({ term, variant, onDone, t }: { term: GlossaryTerm; variant: 
         },
         onError: () => toastManager.add({ title: t("glossary.fix.failed"), type: "error" }),
     });
-    const sure = preview.data?.lines.filter((l) => l.result !== null) ?? [];
-    const entries = new Set(sure.map((l) => `${l.storyId}:${l.en}`)).size;
-    const prose = "whitespace-normal py-1.5 align-top leading-snug";
-    return (
-        <>
-            <DialogHeader>
-                <DialogTitle>{t("glossary.fix.title", { from: variant.ru, to: term.ru })}</DialogTitle>
-                <DialogDescription>{t("glossary.fix.description")}</DialogDescription>
-            </DialogHeader>
-            <DialogPanel>
-                {preview.isError ? (
-                    <LoadFailed layout="inline" message={t("glossary.lines.load")} onRetry={() => preview.refetch()} />
-                ) : !preview.data ? (
-                    <Skeleton className="h-40 w-full" />
-                ) : preview.data.lines.length === 0 ? (
-                    <p className="text-muted-foreground text-sm">{t("glossary.lines.empty")}</p>
-                ) : (
-                    <div className="flex flex-col gap-2">
-                        <p className="text-subtle-foreground text-xs">{t("glossary.fix.summary", { sure: sure.length, unsure: preview.data.unsure })}</p>
-                        <div className="max-h-[60vh] overflow-y-auto">
-                            <Table aria-label={t("glossary.fix.table")} className="wrap-anywhere text-xs">
-                                <TableHeader>
-                                    <TableRow>
-                                        <TableHead className="w-48">{t("edits.col.where")}</TableHead>
-                                        <TableHead>{t("edits.col.was")}</TableHead>
-                                        <TableHead>{t("glossary.fix.col.result")}</TableHead>
-                                        <TableHead>{t("table.en")}</TableHead>
-                                    </TableRow>
-                                </TableHeader>
-                                <TableBody>
-                                    {preview.data.lines.map((l) => {
-                                        const n = nameOf(l.storyId);
-                                        return (
-                                            <TableRow key={`${l.storyId}-${l.ord}`}>
-                                                <TableCell className={prose}>
-                                                    {n ? (
-                                                        <Link to="/translators" search={{ group: n.groupId, story: l.storyId }} hash={`n-${l.ord + 1}`} className="underline-offset-4 hover:underline">
-                                                            {t("places.item", { group: n.group, story: n.story, n: l.ord + 1 })}
-                                                        </Link>
-                                                    ) : (
-                                                        t("places.itemBare", { story: l.storyId, n: l.ord + 1 })
-                                                    )}
-                                                    {l.places > 1 ? <span className="text-subtle-foreground"> · {t("where.places", { count: l.places })}</span> : null}
-                                                    {l.approved ? <span className="text-subtle-foreground"> · {t("glossary.fix.approved")}</span> : null}
-                                                </TableCell>
-                                                <TableCell className={prose}>
-                                                    <StoryText text={l.text} nickname={nickname} />
-                                                </TableCell>
-                                                <TableCell className={prose}>{l.result !== null ? <TextDiff before={l.text} after={l.result} labels={diffLabels(t)} /> : <span className="text-warning-foreground">{t("glossary.fix.byHand")}</span>}</TableCell>
-                                                <TableCell className={`${prose} text-muted-foreground`}>
-                                                    <StoryText text={l.en} nickname={nickname} />
-                                                </TableCell>
-                                            </TableRow>
-                                        );
-                                    })}
-                                </TableBody>
-                            </Table>
-                        </div>
-                    </div>
-                )}
-            </DialogPanel>
-            <DialogFooter>
-                <Button onClick={() => apply.mutate()} disabled={apply.isPending || entries === 0}>
-                    {apply.isPending ? <Spinner /> : <Replace aria-hidden="true" />}
-                    {t("glossary.fix.apply", { count: entries })}
-                </Button>
-            </DialogFooter>
-        </>
-    );
+    return <ReplaceDialogBody title={t("glossary.fix.title", { from: variant.ru, to: term.ru })} description={t("glossary.fix.description")} data={preview.data} isError={preview.isError} onRetry={() => preview.refetch()} pending={apply.isPending} onApply={(picked) => apply.mutate(picked)} nickname={nickname} t={t} />;
 }
 
 function GameVariants({ term, t }: { term: GlossaryTerm; t: T }): React.ReactElement {

@@ -62,22 +62,86 @@ pub fn stem(word: &str) -> String {
     word.to_owned()
 }
 
-/// Whether `text` holds `form`, word by word by stem, in a row.
+/// Whether `text` holds `form`, word by word in a row: by stem, or as one of
+/// the word's case forms (`paradigm`).
 pub fn has_form(text: &str, form: &str) -> bool {
     let cleaned = form.replace(['"', '«', '»', '„', '“', '”'], " ");
-    let stems: Vec<String> = words(&cleaned)
+    let forms: Vec<String> = words(&cleaned)
         .into_iter()
         .filter(|w| w != "ооо")
-        .map(|w| stem(&w))
         .collect();
-    if stems.is_empty() {
+    if forms.is_empty() {
         return false;
     }
+    let stems: Vec<String> = forms.iter().map(|w| stem(w)).collect();
     let text_words = words(text);
-    text_words.windows(stems.len()).any(|win| {
+    text_words.windows(forms.len()).any(|win| {
         win.iter()
-            .zip(&stems)
-            .all(|(w, s)| w.starts_with(s.as_str()))
+            .zip(forms.iter().zip(&stems))
+            .all(|(w, (f, s))| w.starts_with(s.as_str()) || inflects(w, f))
+    })
+}
+
+pub fn is_consonant(c: char) -> bool {
+    "бвгджзклмнпрстфхцчшщ".contains(c)
+}
+
+const ENDS_IA: &[&str] = &["я", "и", "ю", "ей", "ею"];
+const ENDS_YA: &[&str] = &["я", "и", "е", "ю", "ей", "ею"];
+const ENDS_A: &[&str] = &["а", "ы", "е", "у", "ой", "ою"];
+/// After г к х ж ш ч щ: `и`, not `ы`; after a hushing letter `ей` too.
+const ENDS_A_SOFT: &[&str] = &["а", "и", "е", "у", "ой", "ою", "ей", "ею"];
+const ENDS_CONSONANT: &[&str] = &["", "а", "у", "ом", "е"];
+const ENDS_CONSONANT_HUSHING: &[&str] = &["", "а", "у", "ом", "ем", "е"];
+const ENDS_YI: &[&str] = &["ый", "ого", "ому", "ым", "ом"];
+const ENDS_OE: &[&str] = &["ое", "ого", "ому", "ым", "ом"];
+const ENDS_AYA: &[&str] = &["ая", "ой", "ую", "ою"];
+const ENDS_AYA_HUSHING: &[&str] = &["ая", "ей", "ую", "ею", "ой"];
+
+/// The singular case forms of a glossary word (lower case, `ё` = `е`) by
+/// simple rules: its stem (what stays) and the endings, the nominative's
+/// first. Names and nouns in `-ия` (Амия: Амии, Амию, Амией), `-а`
+/// (Маргарита: Маргариты, Маргарите, Маргариту, Маргаритой), `-я` (Зоя: Зои,
+/// Зое, Зою, Зоей), a consonant (Рэндолл: Рэндолла, Рэндоллу, Рэндоллом,
+/// Рэндолле); adjectives in `-ый`, `-ое`, `-ая`. None for any other word
+/// (`-ь` may not decline at all — Чэнь; `-о`, `-и`, `-ий`…).
+pub fn paradigm(word: &str) -> Option<(String, &'static [&'static str])> {
+    let chars: Vec<char> = word.chars().collect();
+    let n = chars.len();
+    if n < 2 || !chars.iter().all(|c| c.is_alphabetic()) {
+        return None;
+    }
+    let keep = |k: usize| chars[..n - k].iter().collect::<String>();
+    let at = |k: usize| chars[n - 1 - k];
+    let hushing = |c: char| "жшчщц".contains(c);
+    let velar = |c: char| "гкхжшчщ".contains(c);
+    let last = at(0);
+    let end2: String = chars[n - 2..].iter().collect();
+    if n >= 4 {
+        match end2.as_str() {
+            "ый" => return Some((keep(2), ENDS_YI)),
+            "ое" => return Some((keep(2), ENDS_OE)),
+            "ая" if hushing(at(2)) => return Some((keep(2), ENDS_AYA_HUSHING)),
+            "ая" => return Some((keep(2), ENDS_AYA)),
+            _ => {}
+        }
+    }
+    match last {
+        'я' if at(1) == 'и' => Some((keep(1), ENDS_IA)),
+        'я' => Some((keep(1), ENDS_YA)),
+        'а' if velar(at(1)) => Some((keep(1), ENDS_A_SOFT)),
+        'а' => Some((keep(1), ENDS_A)),
+        c if is_consonant(c) && hushing(c) => Some((keep(0), ENDS_CONSONANT_HUSHING)),
+        c if is_consonant(c) => Some((keep(0), ENDS_CONSONANT)),
+        _ => None,
+    }
+}
+
+/// Whether `word` is a case form of `form` by `paradigm` (both lower case, `ё` = `е`).
+pub fn inflects(word: &str, form: &str) -> bool {
+    paradigm(form).is_some_and(|(stem, ends)| {
+        word.strip_prefix(stem.as_str())
+            .is_some_and(|e| ends.contains(&e))
     })
 }
 
@@ -207,6 +271,24 @@ mod tests {
         assert!(has_form("Ёжик", "ежик"));
         assert!(!has_form("Айленд Родос", "Родос Айленд"));
         assert!(!has_form("Ничего нет", "Амия"));
+    }
+
+    #[test]
+    fn simple_case_forms_count() {
+        for text in ["У Зои царапина.", "Скажи Зое.", "Вижу Зою.", "С Зоей.", "Зоя тут."] {
+            assert!(has_form(text, "Зоя"), "{text}");
+        }
+        assert!(!has_form("У Зоуи царапина.", "Зоя"));
+        assert!(has_form("Спроси Амию.", "Амия"));
+        assert!(has_form("С Амией.", "Амия"));
+        assert!(has_form("Письмо Рэндоллу.", "Рэндолл"));
+        assert!(has_form("Он с Рэндоллом.", "Рэндолл"));
+        assert!(has_form("С Маргаритой.", "Маргарита"));
+        assert!(has_form("У Ольги.", "Ольга"));
+        assert!(!has_form("Чени нет.", "Чэнь"));
+        assert_eq!(paradigm("чэнь"), None);
+        assert!(inflects("фармацевтической", "фармацевтическая"));
+        assert!(!inflects("фармацевтическаой", "фармацевтическая"));
     }
 
     #[test]

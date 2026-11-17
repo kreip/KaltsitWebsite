@@ -238,6 +238,18 @@ pub struct GlossaryFixInput {
     /// Write the proposals (else only list what would be written).
     #[serde(default)]
     pub apply: bool,
+    /// With `apply`: only these lines (the ticked ones); absent — every sure line.
+    #[serde(default)]
+    pub picked: Option<Vec<LinePick>>,
+}
+
+/// One line of a replacement list, as `GlossaryFixLine` names it.
+#[derive(Debug, Clone, serde::Deserialize, TS, ToSchema)]
+#[serde(rename_all = "camelCase")]
+#[ts(export)]
+pub struct LinePick {
+    pub story_id: String,
+    pub ord: i32,
 }
 
 /// One line the glossary's form would be put into.
