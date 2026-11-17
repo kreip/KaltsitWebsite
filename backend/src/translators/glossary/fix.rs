@@ -237,7 +237,12 @@ pub fn fix_word(word: &str, form: &str) -> Option<String> {
         }
         return None;
     }
-    // No case forms known: only when the game word ends as the form does.
+    // No case forms known: only when the game word ends as the form does, and
+    // neither word may be another word's oblique case ("Зои" / "Зое": Zoey,
+    // or Зоя's genitive / dative) — the case is a guess then.
+    if may_be_oblique(&lower) || may_be_oblique(&form_lower) {
+        return None;
+    }
     let word_stem = stem(&lower);
     let ending = &lower[word_stem.len()..];
     let form_stem = stem(&form_lower);
@@ -271,6 +276,8 @@ pub fn carry_case(word: &str, from: &str, to: &str) -> Option<String> {
                 let kept: String = to.chars().take(p.stem.chars().count()).collect();
                 format!("{kept}{}", p.cases[case][0])
             }
+            // A word without case rules goes in as it is, unless it reads as another word's oblique case.
+            None if may_be_oblique(&target) => return None,
             None if case == 0 || super::matcher::indeclinable(&target) => to.to_owned(),
             None => return None,
         };
@@ -311,6 +318,44 @@ fn nominatives(word: &str) -> Vec<(String, Vec<usize>)> {
         }
     }
     out
+}
+
+thread_local! {
+    /// The glossary's Russian words (lower case, `ё` = `е`) while a plan is
+    /// worked out (`with_known`): the words another word may be a case of.
+    static KNOWN: std::cell::RefCell<std::collections::HashSet<String>> =
+        std::cell::RefCell::new(std::collections::HashSet::new());
+}
+
+/// Run `f` (a plan, a replacement) knowing the glossary's Russian words, so
+/// that a word that may be a known word's oblique case is left to a person.
+pub fn with_known<R>(known: std::collections::HashSet<String>, f: impl FnOnce() -> R) -> R {
+    KNOWN.with(|k| *k.borrow_mut() = known);
+    let out = f();
+    KNOWN.with(|k| k.borrow_mut().clear());
+    out
+}
+
+/// The glossary's Russian words, for `with_known`.
+pub fn known_words(terms: &[super::parse::Term]) -> std::collections::HashSet<String> {
+    terms
+        .iter()
+        .flat_map(|t| super::term_forms(t))
+        .flat_map(|f| form_folded(&f))
+        .collect()
+}
+
+/// Whether a word (lower case, `ё` = `е`) may also be an oblique case of
+/// another word the glossary has, by the case rules: `зои` (Зоя's
+/// genitive, dative, prepositional), `зое` (Зоя's dative) while «Зоя» is a
+/// term. Its case in a line cannot be told then, so nothing is put in for it.
+pub fn may_be_oblique(word: &str) -> bool {
+    KNOWN.with(|k| {
+        let known = k.borrow();
+        nominatives(word)
+            .iter()
+            .any(|(n, cases)| n != word && known.contains(n) && cases.iter().any(|&c| c != 0))
+    })
 }
 
 /// The old and the new word of a proposal (`Бибеку` → `Байбику`, the same
@@ -493,6 +538,37 @@ mod tests {
             replace_word("<i>„Бибек“</i>, — сказал он.", "Бибек", "Байбик"),
             Some(Some("<i>„Байбик“</i>, — сказал он.".into()))
         );
+    }
+
+    #[test]
+    fn a_word_that_may_be_another_words_case_is_left_to_a_person() {
+        // Zoey Perris: «Зое Перрис» in the glossary, «Зои Перрис» in the game;
+        // both read as Зоя's oblique cases too — never «Я Зое Перрис».
+        let zoya = super::super::parse::Term {
+            key: "Zoya".into(),
+            ru: "Зоя".into(),
+            ..Default::default()
+        };
+        let zoey = super::super::parse::Term {
+            key: "Zoey Perris".into(),
+            ru: "Зое Перрис".into(),
+            ..Default::default()
+        };
+        let known = known_words(&[zoya, zoey.clone()]);
+        with_known(known, || {
+            assert!(may_be_oblique("зои"));
+            assert!(may_be_oblique("зое"));
+            assert!(!may_be_oblique("зоуи"));
+            assert!(!may_be_oblique("рэндолл"));
+            assert_eq!(fix_word("Зои", "Зое"), None);
+            assert_eq!(
+                plan(&zoey, "зои перрис", &[(Some("Я Зои Перрис."), false)]),
+                vec![Some(None)]
+            );
+            assert_eq!(carry_case("Зоуи", "Зоуи", "Зое"), None);
+        });
+        // Without «Зоя» in the glossary «Зои» is just a name.
+        assert!(!may_be_oblique("зои"));
     }
 
     #[test]

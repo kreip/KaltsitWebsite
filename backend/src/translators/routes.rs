@@ -568,14 +568,16 @@ pub async fn fix_glossary_variant(
     let terms: Vec<_> = stored.iter().map(glossary::StoredTerm::as_term).collect();
     let term = &terms[at];
     let rows = term_lines(&state.db, &terms, at).await?;
-    let fixes = glossary::fix::plan(
-        term,
-        &input.stem,
-        &rows
-            .iter()
-            .map(|r| (r.text(), glossary::verified(term, r.approved_at)))
-            .collect::<Vec<_>>(),
-    );
+    let fixes = glossary::fix::with_known(glossary::fix::known_words(&terms), || {
+        glossary::fix::plan(
+            term,
+            &input.stem,
+            &rows
+                .iter()
+                .map(|r| (r.text(), glossary::verified(term, r.approved_at)))
+                .collect::<Vec<_>>(),
+        )
+    });
     let keys: Vec<String> = rows
         .iter()
         .map(|r| r.edit_key.clone())
@@ -705,27 +707,32 @@ pub async fn replace_word(
     .persistent(false)
     .fetch_all(&state.db)
     .await?;
-    let mut found: Vec<(&Row, String, Option<String>)> = Vec::new();
-    let mut more = false;
-    for row in &rows {
-        if input.skip.as_deref() == Some(row.1.as_str()) {
-            continue;
+    let stored = glossary::load(&state.db).await?;
+    let terms: Vec<_> = stored.iter().map(glossary::StoredTerm::as_term).collect();
+    let (found, more) = glossary::fix::with_known(glossary::fix::known_words(&terms), || {
+        let mut found: Vec<(&Row, String, Option<String>)> = Vec::new();
+        let mut more = false;
+        for row in &rows {
+            if input.skip.as_deref() == Some(row.1.as_str()) {
+                continue;
+            }
+            let Some(text) = row.5.as_deref().or(row.4.as_deref()) else {
+                continue;
+            };
+            let Some(result) = glossary::fix::replace_word(text, from, to) else {
+                continue;
+            };
+            if result.as_deref() == Some(text) {
+                continue;
+            }
+            if found.len() == WORD_REPLACE_LIMIT {
+                more = true;
+                break;
+            }
+            found.push((row, text.to_owned(), result));
         }
-        let Some(text) = row.5.as_deref().or(row.4.as_deref()) else {
-            continue;
-        };
-        let Some(result) = glossary::fix::replace_word(text, from, to) else {
-            continue;
-        };
-        if result.as_deref() == Some(text) {
-            continue;
-        }
-        if found.len() == WORD_REPLACE_LIMIT {
-            more = true;
-            break;
-        }
-        found.push((row, text.to_owned(), result));
-    }
+        (found, more)
+    });
     // A text of the story is shown (and its proposal made) at its first story line.
     let story_keys: Vec<String> = found
         .iter()
@@ -788,10 +795,8 @@ pub async fn replace_word(
     }
     // The glossary's terms whose Russian is the old word, unless they already say the new one.
     let to_folded = to.to_lowercase().replace('ё', "е");
-    let glossary_terms: Vec<WordGlossaryTerm> = glossary::load(&state.db)
-        .await?
+    let glossary_terms: Vec<WordGlossaryTerm> = terms
         .iter()
-        .map(glossary::StoredTerm::as_term)
         .filter(|t| {
             let words = glossary::fix::form_folded(&t.ru);
             words.iter().any(|w| glossary::fix::is_word_of(w, &folded))
