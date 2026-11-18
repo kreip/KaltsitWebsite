@@ -277,6 +277,60 @@ pub fn collect(
             },
         );
     }
+    // A record's name by its code (`char_487_bobb`): the pack names it so for
+    // the plugin, which shows the name by the code (13_names.txt).
+    let by_code: HashMap<String, (&'static str, String, String)> = b
+        .places
+        .iter()
+        .filter(|p| {
+            p.field == "name"
+                && [gamedata::OPERATORS, gamedata::ENEMIES, gamedata::ITEMS].contains(&p.section)
+        })
+        .filter_map(|p| {
+            let row = &b.rows[*b.by_key.get(&p.edit_key)?];
+            Some((
+                p.object_id.clone(),
+                (p.section, p.object_en.clone(), row.en.clone()),
+            ))
+        })
+        .collect();
+    let mut codes: Vec<(&String, &super::import::xunity::Entry)> = dict
+        .entries
+        .iter()
+        .filter(|(k, _)| by_code.contains_key(k.as_str()) && !b.by_key.contains_key(*k))
+        .collect();
+    codes.sort_by(|a, c| a.0.cmp(c.0));
+    for (key, e) in codes {
+        let (section, object_en, name) = &by_code[key.as_str()];
+        let (role, ru_plugin) = match b.plugin.get(plain(key).as_str()) {
+            Some((role, ru)) => (Some((*role).to_owned()), Some((*ru).to_owned())),
+            None => (None, None),
+        };
+        // Its English is the record's name, the code stays the key.
+        let i = b.push(TextRow {
+            edit_key: key.clone(),
+            en: name.clone(),
+            ru: Some(e.value.clone()),
+            file: Some(e.file.clone()),
+            plugin_role: role,
+            ru_plugin: ru_plugin.filter(|p| *p != e.value),
+            sections: Vec::new(),
+            places: 0,
+        });
+        b.place(
+            i,
+            &GamePlace {
+                section,
+                object_id: key.clone(),
+                object_en: object_en.clone(),
+                field: NAME_BY_CODE,
+                idx: 0,
+                note: String::new(),
+                text: name.clone(),
+                of_key: None,
+            },
+        );
+    }
     // The other tables: what the pack translates and no section above holds.
     let mut other: Vec<(String, String)> = Vec::new();
     gamedata::every_string(excel_dir, |table, s| {
@@ -315,55 +369,11 @@ pub fn collect(
         .filter(|(k, _)| !b.by_key.contains_key(*k))
         .collect();
     left.sort_by(|a, c| a.0.cmp(c.0));
-    // A record's name by its code (`char_487_bobb`): the pack names it so for
-    // the plugin, which shows the name by the code (13_names.txt).
-    let by_code: HashMap<String, (&'static str, String, String)> = b
-        .places
-        .iter()
-        .filter(|p| {
-            p.field == "name"
-                && [gamedata::OPERATORS, gamedata::ENEMIES, gamedata::ITEMS].contains(&p.section)
-        })
-        .filter_map(|p| {
-            let row = &b.rows[*b.by_key.get(&p.edit_key)?];
-            Some((
-                p.object_id.clone(),
-                (p.section, p.object_en.clone(), row.en.clone()),
-            ))
-        })
-        .collect();
     for (key, e) in left {
         let (role, ru_plugin) = match b.plugin.get(plain(key).as_str()) {
             Some((role, ru)) => (Some((*role).to_owned()), Some((*ru).to_owned())),
             None => (None, None),
         };
-        // A name by its code: its English is the record's name, the code stays the key.
-        if let Some((section, object_en, name)) = by_code.get(key.as_str()) {
-            let i = b.push(TextRow {
-                edit_key: key.clone(),
-                en: name.clone(),
-                ru: Some(e.value.clone()),
-                file: Some(e.file.clone()),
-                plugin_role: role,
-                ru_plugin: ru_plugin.filter(|p| *p != e.value),
-                sections: Vec::new(),
-                places: 0,
-            });
-            b.place(
-                i,
-                &GamePlace {
-                    section,
-                    object_id: key.clone(),
-                    object_en: object_en.clone(),
-                    field: NAME_BY_CODE,
-                    idx: 0,
-                    note: String::new(),
-                    text: name.clone(),
-                    of_key: None,
-                },
-            );
-            continue;
-        }
         let i = b.push(TextRow {
             edit_key: key.clone(),
             en: key.clone(),
