@@ -31,6 +31,7 @@ import { cn } from "#/lib/utils";
 import type { TranslatorsMe } from "#/types/generated/TranslatorsMe";
 import { ApproveMatching } from "./ApproveMatching";
 import { hasError, type ProblemKind, type RecommendRule } from "./checks";
+import { Hint } from "./Hint";
 import { type EditorState, isLead, StatusDot } from "./LineEdits";
 import { analyse, filterWord, missingTermsEn, PROSE, problemOptions, RuCell } from "./LinesTable";
 import { Folded, isLong, useUnfolded } from "./LongText";
@@ -42,7 +43,7 @@ import { useStoryNames } from "./storyNames";
 import type { messages } from "./translators.messages";
 import { useScrollToRow } from "./useScrollToRow";
 import { ViewMenu, viewOf } from "./ViewMenu";
-import { type CardSection, fieldLabel, LEVEL_FIELD, noteStories, noteWords } from "./where";
+import { type CardSection, fieldLabel, isCode, LEVEL_FIELD, noteStories, noteWords } from "./where";
 
 type T = TypedT<typeof messages>;
 
@@ -297,7 +298,12 @@ function Card({ section, item, me, showVariants, showDiff, t }: ICardProps): Rea
                                 </TableCell>
                                 <TableCell className={PROSE} data-sel="en">
                                     <Folded folded={folded} onOpen={() => unfolded.toggle(id)}>
-                                        <StoryText text={r.line.en} nickname={nickname} quotes={missingTermsEn(r.line.terms)} />
+                                        {/* A name written by its code (`char_487_bobb`): the name, the code on hover. */}
+                                        <Hint text={isCode(r.line.editKey) && r.line.editKey !== r.line.en ? r.line.editKey : null}>
+                                            <span>
+                                                <StoryText text={r.line.en} nickname={nickname} quotes={missingTermsEn(r.line.terms)} />
+                                            </span>
+                                        </Hint>
                                     </Folded>
                                 </TableCell>
                             </TableRow>

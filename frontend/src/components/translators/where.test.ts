@@ -77,3 +77,13 @@ describe("where a text stands, in words", () => {
         expect(isCardSection("archives")).toBe(true);
     });
 });
+
+describe("names written by their code", () => {
+    it("tells a game code from English", async () => {
+        const { isCode } = await import("./where");
+        expect(isCode("char_487_bobb")).toBe(true);
+        expect(isCode("enemy_1007_slime_2")).toBe(true);
+        expect(isCode("Bobbing")).toBe(false);
+        expect(isCode("A long_dash text")).toBe(false);
+    });
+});

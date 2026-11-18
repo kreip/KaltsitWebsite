@@ -284,7 +284,10 @@ number a `#`) and tells the level by the blackboard's values (`{atk_scale:0%}` �
 `text_places.field = 'skill.level'`, the note the level(s), `of_key` the template's entry.
 The operator's card folds them under the skill's description ("N entries with the levels'
 numbers"); the search names them «Skill 1 › skill level 4». An entry tied to nothing is
-«Interface and other › Not tied» (the file name on hover). A speaker's name the pack translates
+«Interface and other › Not tied» (the file name on hover). A name the pack writes by its record's code for the plugin (`char_487_bobb=Бобби` in
+13_names.txt: the plugin shows the name by the code) stands at its record — «Оперативник › Bobbing › Имя
+оперативника · запись плагина» (`texts::NAME_BY_CODE`, field `name.code`); its English is the record's name
+(«Bobbing»), the code is its key and shows on hover. Replacing a word everywhere takes these entries too. A speaker's name the pack translates
 stands at every scene it speaks in («Story › Speakers › chapter › scene», `text_places.field =
 'speaker'`, the object the story). On my proposal for a template,
 "Apply to the levels" (`POST /api/translators/proposals/{id}/levels`) writes my proposals

@@ -2911,6 +2911,18 @@ export const messages = {
         text: "Reset",
         description: "Link beside «Draft restored»: drop the draft and start from the original text again.",
     },
+    "at.field.nameByCode.operator": {
+        text: "Operator's name · plugin entry",
+        description: "Where a text stands: an operator's name written by its code (char_487_bobb) in the pack's 13_names.txt, read by the plugin.",
+    },
+    "at.field.nameByCode.enemy": {
+        text: "Enemy's name · plugin entry",
+        description: "Where a text stands: an enemy's name written by its code in the pack's 13_names.txt, read by the plugin.",
+    },
+    "at.field.nameByCode.item": {
+        text: "Item's name · plugin entry",
+        description: "Where a text stands: an item's name written by its code in the pack's 13_names.txt, read by the plugin.",
+    },
 } satisfies MessageMap;
 
 export const { keys } = defineMessages({ namespace, messages });

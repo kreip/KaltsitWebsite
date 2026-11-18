@@ -49,7 +49,7 @@ import { type IFind, StoryText } from "./StoryText";
 import { useStoryNames } from "./storyNames";
 import type { messages } from "./translators.messages";
 import { ViewMenu, viewOf } from "./ViewMenu";
-import { fileWord, isCardSection, sectionWord } from "./where";
+import { fileWord, isCardSection, isCode, sectionWord } from "./where";
 
 type T = TypedT<typeof messages>;
 
@@ -234,7 +234,12 @@ function Results({ rows, edits, me, find, showVariants, showDiff, t }: IResultsP
                             </TableCell>
                             <TableCell className={PROSE} data-sel="en">
                                 <Folded folded={folded} onOpen={unfold}>
-                                    <StoryText text={r.line.en} nickname={nickname} find={find} quotes={missingTermsEn(r.line.terms)} />
+                                    {/* A name written by its code (`char_487_bobb`): the name, the code on hover. */}
+                                    <Hint text={isCode(r.line.editKey) && r.line.editKey !== r.line.en ? r.line.editKey : null}>
+                                        <span>
+                                            <StoryText text={r.line.en} nickname={nickname} find={find} quotes={missingTermsEn(r.line.terms)} />
+                                        </span>
+                                    </Hint>
                                 </Folded>
                             </TableCell>
                         </TableRow>

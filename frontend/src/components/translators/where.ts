@@ -23,6 +23,8 @@ export function fieldWords(field: string, idx: number, t: T, separator = " › "
     const dot = field.indexOf(".");
     // An operator and an enemy have a name; a stage, an item, a skill have a title.
     if (field === "name" && (section === "operators" || section === "enemies")) return t("at.field.who");
+    // A record's name by its code, for the plugin (`char_487_bobb` in 13_names.txt).
+    if (field === NAME_BY_CODE) return section === "enemies" ? t("at.field.nameByCode.enemy") : section === "items" ? t("at.field.nameByCode.item") : t("at.field.nameByCode.operator");
     if (dot < 0) return `${leaf(field)}${n}`;
     const part = field.slice(0, dot);
     const head = PARTS.has(part) ? t(`at.part.${part}` as "at.part.skill") : part;
@@ -188,6 +190,14 @@ export function gameWhere(section: string, object: string | null, field: string 
     if (object) parts.push(section === "other" ? tableWord(object, t) : object);
     if (field && !(section === "other" && field === "text")) parts.push(fieldWords(field, idx ?? 0, t, " › ", section, note));
     return parts.join(" › ");
+}
+
+/** A record's name written by its code for the plugin (the backend's `texts::NAME_BY_CODE`): the key is the code. */
+export const NAME_BY_CODE = "name.code";
+
+/** A key that is a game code (`char_487_bobb`, `enemy_1007_slime`), not English. */
+export function isCode(key: string): boolean {
+    return /^[a-z]+_[0-9a-z]+_[0-9a-z_]+$/.test(key);
 }
 
 /** A speaker's name in a story scene (the backend's `texts::SPEAKER`; the object is the story). */

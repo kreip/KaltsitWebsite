@@ -746,5 +746,8 @@
     "admin.tags.copyFailed": "Не удалось скопировать: браузер не разрешил.",
     "admin.tags.load": "Не удалось загрузить слова.",
     "draft.restored": "Восстановлен черновик",
-    "draft.reset": "Сбросить"
+    "draft.reset": "Сбросить",
+    "at.field.nameByCode.operator": "Имя оперативника · запись плагина",
+    "at.field.nameByCode.enemy": "Имя врага · запись плагина",
+    "at.field.nameByCode.item": "Название предмета · запись плагина"
 }
