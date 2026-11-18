@@ -32,7 +32,7 @@ export const messages = {
         description: "Card title over the export and profile links. 'Muelsyse' is this site's name.",
     },
     "data.yourData.desc": {
-        text: "Everything we store is visible on your profile page. For a portable copy or a GDPR request, email privacy@myrtle.moe.",
+        text: "Everything we store is visible on your profile page. For a portable copy or a GDPR request, write to the ArknightsRU channel (t.me/ru_arknights).",
         description: "Card description under Your data on Muelsyse. GDPR is the EU data-protection regulation.",
     },
     "data.viewProfile.title": {
@@ -52,12 +52,12 @@ export const messages = {
         description: "Label of the row about getting a portable copy of the stored data.",
     },
     "data.export.desc": {
-        text: "Email privacy@myrtle.moe to receive a portable copy of your data.",
-        description: "Caption under the data-export row. The address is literal and must not be changed.",
+        text: "Write to the ArknightsRU channel to receive a portable copy of your data.",
+        description: "Caption under the data-export row. 'ArknightsRU' is a name and stays as-is.",
     },
     "data.export.action": {
-        text: "Email privacy@myrtle.moe",
-        description: "Button that opens a pre-addressed email. The address is literal and must not be changed.",
+        text: "Write to the channel",
+        description: "Button that opens the ArknightsRU Telegram channel, to ask for a copy of one's data.",
     },
     "data.linked.title": {
         text: "Linked Yostar account",

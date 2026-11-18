@@ -5,6 +5,7 @@ import { Button } from "#/components/ui/button";
 import { Dialog, DialogContent, DialogTitle } from "#/components/ui/dialog";
 import { TooltipProvider } from "#/components/ui/tooltip";
 import type { IBoard } from "#/lib/base/board";
+import { CONTACT_URL } from "#/lib/constants";
 import { useFormatters, useT } from "#/lib/i18n";
 import type { TypedT } from "#/lib/i18n/messages";
 import type { messages } from "./BasePanel.messages";
@@ -44,7 +45,7 @@ export function BasePanel({ board }: { board: IBoard }) {
                     <TriangleAlert />
                     <AlertDescription className="block text-[12px] text-foreground">
                         {t("profile.base.wip")}{" "}
-                        <a className="relative underline underline-offset-2 pointer-coarse:after:absolute pointer-coarse:after:inset-x-0 pointer-coarse:after:top-1/2 pointer-coarse:after:h-11 pointer-coarse:after:-translate-y-1/2" href="/discord" rel="noreferrer" target="_blank">
+                        <a className="relative underline underline-offset-2 pointer-coarse:after:absolute pointer-coarse:after:inset-x-0 pointer-coarse:after:top-1/2 pointer-coarse:after:h-11 pointer-coarse:after:-translate-y-1/2" href={CONTACT_URL} rel="noreferrer" target="_blank">
                             {t("profile.base.wip.link")}
                         </a>
                     </AlertDescription>

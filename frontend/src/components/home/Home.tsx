@@ -1,5 +1,6 @@
 import { MaintenanceBanner } from "#/components/maintenance/MaintenanceCountdown";
 import { useCommand } from "#/lib/command-context";
+import { SHOW_CHANGELOG } from "#/lib/constants";
 import styles from "./impl/Digest.module.css";
 import HappeningNow from "./impl/HappeningNow";
 import Hero from "./impl/Hero";
@@ -21,7 +22,7 @@ export default function Home() {
             <HappeningNow id={LIVE_SECTION_ID} />
             <section className={`${shared.container} ${styles.section}`}>
                 <TopPlayers />
-                <LatestUpdates />
+                {SHOW_CHANGELOG ? <LatestUpdates /> : null}
             </section>
         </div>
     );

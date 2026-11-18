@@ -16,12 +16,12 @@ export const messages = {
         description: "Button that opens the confirmation dialog for deleting the account and all its data.",
     },
     "danger.delete.note": {
-        text: "Can't sign in anymore? Email {email} from the address on your Yostar account and we'll delete it for you.",
+        text: "Can't sign in anymore? Write to {email} and we'll help delete your account.",
         description: "Note under the delete button, the fallback for someone who can't sign in. {email} is the deletion address, shown in monospace; move it wherever the sentence needs it.",
     },
     "danger.delete.noteEmail": {
-        text: "privacy@myrtle.moe",
-        description: "The deletion address substituted into danger.delete.note as {email}, shown in monospace. Leave it exactly as it is.",
+        text: "t.me/ru_arknights",
+        description: "The ArknightsRU channel's address substituted into danger.delete.note as {email}, shown in monospace. Leave it exactly as it is.",
     },
     "danger.dialog.title": {
         text: "Delete everything?",

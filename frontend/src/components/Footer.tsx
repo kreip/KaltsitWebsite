@@ -1,5 +1,5 @@
 import { Link } from "@tanstack/react-router";
-import { SHOW_DONATE } from "#/lib/constants";
+import { CONTACT_URL, SHOW_CHANGELOG, SHOW_DONATE } from "#/lib/constants";
 import { useT } from "#/lib/i18n";
 import type { TypedT } from "#/lib/i18n/messages";
 import type { messages } from "./Footer.messages";
@@ -21,18 +21,20 @@ export default function Footer() {
                         </span>
                     </div>
                     <nav aria-label={t("footer.siteLinks")} className="inline-flex flex-wrap items-center gap-x-4">
-                        <Link to="/changelog" className={FOOTER_LINK}>
-                            {t("footer.changelog")}
-                        </Link>
+                        {SHOW_CHANGELOG ? (
+                            <Link to="/changelog" className={FOOTER_LINK}>
+                                {t("footer.changelog")}
+                            </Link>
+                        ) : null}
                         <Link to="/terms" className={FOOTER_LINK}>
                             {t("footer.terms")}
                         </Link>
                         <Link to="/privacy" className={FOOTER_LINK}>
                             {t("footer.privacy")}
                         </Link>
-                        <Link to="/discord" className={FOOTER_LINK}>
-                            {t("footer.discord")}
-                        </Link>
+                        <a href={CONTACT_URL} target="_blank" rel="noreferrer" className={FOOTER_LINK}>
+                            {t("footer.channel")}
+                        </a>
                         <Link to="/credits" className={FOOTER_LINK}>
                             {t("footer.credits")}
                         </Link>

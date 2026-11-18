@@ -1,12 +1,17 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, redirect } from "@tanstack/react-router";
 import { ChangelogError } from "#/components/changelog/ChangelogError";
 import { ChangelogPage } from "#/components/changelog/ChangelogPage";
 import { changelogQueryOptions } from "#/lib/api/changelog";
+import { SHOW_CHANGELOG } from "#/lib/constants";
 import { metaT } from "#/lib/meta";
 import { defaultOgURL } from "#/lib/og";
 import { seo } from "#/lib/seo";
 
 export const Route = createFileRoute("/changelog")({
+    // The original project's development history: hidden in this fork (SHOW_CHANGELOG), the address leads home.
+    beforeLoad: () => {
+        if (!SHOW_CHANGELOG) throw redirect({ to: "/" });
+    },
     component: ChangelogPage,
     errorComponent: ChangelogError,
     loader: ({ context }) => context.queryClient.ensureQueryData(changelogQueryOptions()),

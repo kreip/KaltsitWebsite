@@ -4,7 +4,7 @@ import type { ReactNode } from "react";
 import { LegalContainer, LegalDivider, LegalHeader, LegalHeaderLine, RelatedDocLink, RelatedLinksFooter, SectionHeading } from "#/components/legal/LegalShell";
 import { Alert, AlertDescription, AlertTitle } from "#/components/ui/alert";
 import { Button } from "#/components/ui/button";
-import { CONTACT_EMAIL, CONTACT_MAILTO, PRIVACY_EMAIL, PRIVACY_MAILTO, REPO_URL } from "#/lib/constants";
+import { CONTACT_LABEL, CONTACT_URL, REPO_URL } from "#/lib/constants";
 import { type TypedRichT, useRichT, useT } from "#/lib/i18n";
 import type { TypedT } from "#/lib/i18n/messages";
 import type { messages } from "./PrivacyPage.messages";
@@ -166,7 +166,11 @@ export function PrivacyPage() {
                         {rt("privacy.yostar.revoke.body", {
                             path: <strong className="text-foreground">{t("privacy.yostar.revoke.path")}</strong>,
                             deletePath: <strong className="text-foreground">{t("privacy.deletePath")}</strong>,
-                            email: <A href={CONTACT_MAILTO}>{CONTACT_EMAIL}</A>,
+                            email: (
+                                <A href={CONTACT_URL} external>
+                                    {CONTACT_LABEL}
+                                </A>
+                            ),
                         })}
                     </p>
                 </div>
@@ -329,7 +333,16 @@ export function PrivacyPage() {
                     <Disclosure summary={t("privacy.rights.access.summary")}>{t("privacy.rights.access.body")}</Disclosure>
                     <Disclosure summary={t("privacy.rights.correction.summary")}>{t("privacy.rights.correction.body")}</Disclosure>
                     <Disclosure summary={t("privacy.rights.visibility.summary")}>{t("privacy.rights.visibility.body")}</Disclosure>
-                    <Disclosure summary={t("privacy.rights.deletion.summary")}>{rt("privacy.rights.deletion.body", { deletePath: <strong className="text-foreground">{t("privacy.deletePath")}</strong>, email: <A href={CONTACT_MAILTO}>{CONTACT_EMAIL}</A> })}</Disclosure>
+                    <Disclosure summary={t("privacy.rights.deletion.summary")}>
+                        {rt("privacy.rights.deletion.body", {
+                            deletePath: <strong className="text-foreground">{t("privacy.deletePath")}</strong>,
+                            email: (
+                                <A href={CONTACT_URL} external>
+                                    {CONTACT_LABEL}
+                                </A>
+                            ),
+                        })}
+                    </Disclosure>
                 </div>
             </Section>
 
@@ -377,12 +390,10 @@ export function PrivacyPage() {
                         <p className="m-0 mt-1.5 mb-4 font-sans text-[14px] text-muted-foreground leading-[1.55]">{t("privacy.contact.intro")}</p>
                         <div className="my-3.5 first:mt-0 last:mb-0">
                             <p className="m-0 mb-1 font-medium font-sans text-[14px] text-foreground">{t("privacy.contact.gdpr.label")}</p>
-                            <A href={PRIVACY_MAILTO}>{PRIVACY_EMAIL}</A>
+                            <A href={CONTACT_URL} external>
+                                {CONTACT_LABEL}
+                            </A>
                             <p className="m-0 mt-1 font-sans text-[12.5px] text-muted-foreground leading-normal">{t("privacy.contact.gdpr.note")}</p>
-                        </div>
-                        <div className="my-3.5 first:mt-0 last:mb-0">
-                            <p className="m-0 mb-1 font-medium font-sans text-[14px] text-foreground">{t("privacy.contact.general.label")}</p>
-                            <A href={CONTACT_MAILTO}>{CONTACT_EMAIL}</A>
                         </div>
                         <div className="my-3.5 first:mt-0 last:mb-0">
                             <p className="m-0 mb-1 font-medium font-sans text-[14px] text-foreground">{t("privacy.contact.source.label")}</p>

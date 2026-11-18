@@ -1,6 +1,6 @@
 {
     "generatedBy": "bun run i18n:extract",
-    "generatedAt": "2026-11-18T15:36:49.756Z",
+    "generatedAt": "2026-11-18T15:42:23.501Z",
     "entries": [
         {
             "key": "admin.home.access.everyList",
@@ -9248,6 +9248,13 @@
             "placeholders": []
         },
         {
+            "key": "common.footer.channel",
+            "namespace": "common",
+            "source_text": "ArknightsRU channel",
+            "description": "Footer link to the ArknightsRU team's Telegram channel (the site's community). 'ArknightsRU' is a name and stays as-is.",
+            "placeholders": []
+        },
+        {
             "key": "common.footer.credits",
             "namespace": "common",
             "source_text": "Credits and licences",
@@ -9259,13 +9266,6 @@
             "namespace": "common",
             "source_text": "Not affiliated with Hypergryph or Yostar. Game data and assets are property of their respective owners.",
             "description": "Legal disclaimer in the footer. 'Hypergryph' and 'Yostar' are company names and stay as-is.",
-            "placeholders": []
-        },
-        {
-            "key": "common.footer.discord",
-            "namespace": "common",
-            "source_text": "Discord",
-            "description": "Footer link to the community chat. 'Discord' is a product name and stays as-is.",
             "placeholders": []
         },
         {
@@ -17482,13 +17482,6 @@
             "placeholders": []
         },
         {
-            "key": "legal.privacy.contact.general.label",
-            "namespace": "legal",
-            "source_text": "General contact",
-            "description": "Label over the general mailbox.",
-            "placeholders": []
-        },
-        {
             "key": "legal.privacy.contact.getInTouch",
             "namespace": "legal",
             "source_text": "Get in Touch",
@@ -17691,8 +17684,8 @@
         {
             "key": "legal.privacy.rights.deletion.body",
             "namespace": "legal",
-            "source_text": "Delete your account and all its data yourself from {deletePath}. It removes your profile, synced game data, scores, gacha history, plans, grids, the tier lists you made, your settings, and the saved Yostar login, right away and for good. Official tier lists and translations you worked on stay up without your name. If you can't sign in, email {email} and we'll do it for you.",
-            "description": "Body of the Account Deletion panel. {deletePath} is the bolded settings path (privacy.deletePath) and {email} is the contact address, rendered as a mail link; move them wherever the sentence needs them.",
+            "source_text": "Delete your account and all its data yourself from {deletePath}. It removes your profile, synced game data, scores, gacha history, plans, grids, the tier lists you made, your settings, and the saved Yostar login, right away and for good. Official tier lists and translations you worked on stay up without your name. If you can't sign in, write to {email} and we'll do it for you.",
+            "description": "Body of the Account Deletion panel. {deletePath} is the bolded settings path (privacy.deletePath) and {email} is the contact (the ArknightsRU channel), rendered as a link; move them wherever the sentence needs them.",
             "placeholders": [
                 "deletePath",
                 "email"
@@ -18165,8 +18158,8 @@
         {
             "key": "legal.privacy.yostar.revoke.body",
             "namespace": "legal",
-            "source_text": "We are not affiliated with Hypergryph or Yostar. We access your data through the same APIs the official game client uses. You can revoke that access yourself at any time: {path} deletes the stored token, and your synced data stays on your profile. To remove the data too, {deletePath} deletes your account and everything in it. If you can't sign in anymore, email {email} instead.",
-            "description": "Closing paragraph of the Yostar section. {path} and {deletePath} are bolded settings paths (privacy.yostar.revoke.path and privacy.deletePath) and {email} is the contact address, rendered as a mail link; move them wherever the sentence needs them.",
+            "source_text": "We are not affiliated with Hypergryph or Yostar. We access your data through the same APIs the official game client uses. You can revoke that access yourself at any time: {path} deletes the stored token, and your synced data stays on your profile. To remove the data too, {deletePath} deletes your account and everything in it. If you can't sign in anymore, write to {email} instead.",
+            "description": "Closing paragraph of the Yostar section. {path} and {deletePath} are bolded settings paths (privacy.yostar.revoke.path and privacy.deletePath) and {email} is the contact (the ArknightsRU channel), rendered as a link; move them wherever the sentence needs them.",
             "placeholders": [
                 "deletePath",
                 "email",
@@ -18692,13 +18685,6 @@
             "namespace": "legal",
             "source_text": "For access, rectification, erasure, portability, or objection requests under the GDPR (or comparable data-protection laws).",
             "description": "Caption under the privacy mailbox, naming the GDPR rights it serves.",
-            "placeholders": []
-        },
-        {
-            "key": "legal.terms.s9.general.label",
-            "namespace": "legal",
-            "source_text": "General contact",
-            "description": "Label over the general mailbox.",
             "placeholders": []
         },
         {
@@ -25834,7 +25820,7 @@
         {
             "key": "settings.danger.delete.note",
             "namespace": "settings",
-            "source_text": "Can't sign in anymore? Email {email} from the address on your Yostar account and we'll delete it for you.",
+            "source_text": "Can't sign in anymore? Write to {email} and we'll help delete your account.",
             "description": "Note under the delete button, the fallback for someone who can't sign in. {email} is the deletion address, shown in monospace; move it wherever the sentence needs it.",
             "placeholders": [
                 "email"
@@ -25843,8 +25829,8 @@
         {
             "key": "settings.danger.delete.noteEmail",
             "namespace": "settings",
-            "source_text": "privacy@myrtle.moe",
-            "description": "The deletion address substituted into danger.delete.note as {email}, shown in monospace. Leave it exactly as it is.",
+            "source_text": "t.me/ru_arknights",
+            "description": "The ArknightsRU channel's address substituted into danger.delete.note as {email}, shown in monospace. Leave it exactly as it is.",
             "placeholders": []
         },
         {
@@ -25929,15 +25915,15 @@
         {
             "key": "settings.data.export.action",
             "namespace": "settings",
-            "source_text": "Email privacy@myrtle.moe",
-            "description": "Button that opens a pre-addressed email. The address is literal and must not be changed.",
+            "source_text": "Write to the channel",
+            "description": "Button that opens the ArknightsRU Telegram channel, to ask for a copy of one's data.",
             "placeholders": []
         },
         {
             "key": "settings.data.export.desc",
             "namespace": "settings",
-            "source_text": "Email privacy@myrtle.moe to receive a portable copy of your data.",
-            "description": "Caption under the data-export row. The address is literal and must not be changed.",
+            "source_text": "Write to the ArknightsRU channel to receive a portable copy of your data.",
+            "description": "Caption under the data-export row. 'ArknightsRU' is a name and stays as-is.",
             "placeholders": []
         },
         {
@@ -26050,7 +26036,7 @@
         {
             "key": "settings.data.yourData.desc",
             "namespace": "settings",
-            "source_text": "Everything we store is visible on your profile page. For a portable copy or a GDPR request, email privacy@myrtle.moe.",
+            "source_text": "Everything we store is visible on your profile page. For a portable copy or a GDPR request, write to the ArknightsRU channel (t.me/ru_arknights).",
             "description": "Card description under Your data on Muelsyse. GDPR is the EU data-protection regulation.",
             "placeholders": []
         },
@@ -63129,15 +63115,15 @@
         {
             "key": "user.profile.base.wip",
             "namespace": "user",
-            "source_text": "The base optimizer is a work in progress. If a recommendation looks wrong, report it on Discord.",
-            "description": "Disclaimer shown at the top of the base optimizer tab. 'Discord' is a link to the community server.",
+            "source_text": "The base optimizer is a work in progress. If a recommendation looks wrong, tell us:",
+            "description": "Disclaimer shown at the top of the base optimizer tab, followed by a link to the ArknightsRU channel.",
             "placeholders": []
         },
         {
             "key": "user.profile.base.wip.link",
             "namespace": "user",
-            "source_text": "Discord",
-            "description": "The link text inside the base optimizer disclaimer, pointing at the community Discord server.",
+            "source_text": "ArknightsRU channel",
+            "description": "The link text after the base optimizer disclaimer, pointing at the ArknightsRU Telegram channel. 'ArknightsRU' is a name and stays as-is.",
             "placeholders": []
         },
         {

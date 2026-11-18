@@ -2,7 +2,7 @@ import { Link } from "@tanstack/react-router";
 import { Calendar, FileText, ShieldIcon } from "lucide-react";
 import { LegalContainer, LegalDivider, LegalHeader, LegalHeaderLine, RelatedDocLink, RelatedLinksFooter } from "#/components/legal/LegalShell";
 import { Alert, AlertDescription } from "#/components/ui/alert";
-import { CONTACT_EMAIL, CONTACT_MAILTO, PRIVACY_EMAIL, PRIVACY_MAILTO, REPO_URL } from "#/lib/constants";
+import { CONTACT_LABEL, CONTACT_URL, REPO_URL } from "#/lib/constants";
 import { type TypedRichT, useRichT, useT } from "#/lib/i18n";
 import type { TypedT } from "#/lib/i18n/messages";
 import type { messages } from "./TermsPage.messages";
@@ -229,12 +229,10 @@ export function TermsPage() {
                 <div className="rounded-2xl border border-border bg-card px-6 py-5">
                     <div className="my-3.5 first:mt-0 last:mb-0">
                         <p className="m-0 mb-1 font-medium font-sans text-[14px] text-foreground">{t("terms.s9.gdpr.label")}</p>
-                        <A href={PRIVACY_MAILTO}>{PRIVACY_EMAIL}</A>
+                        <A href={CONTACT_URL} external>
+                            {CONTACT_LABEL}
+                        </A>
                         <p className="m-0 mt-1 font-sans text-[12.5px] text-muted-foreground leading-normal">{t("terms.s9.gdpr.note")}</p>
-                    </div>
-                    <div className="my-3.5 first:mt-0 last:mb-0">
-                        <p className="m-0 mb-1 font-medium font-sans text-[14px] text-foreground">{t("terms.s9.general.label")}</p>
-                        <A href={CONTACT_MAILTO}>{CONTACT_EMAIL}</A>
                     </div>
                     <div className="my-3.5 first:mt-0 last:mb-0">
                         <p className="m-0 mb-1 font-medium font-sans text-[14px] text-foreground">{t("terms.s9.source.label")}</p>

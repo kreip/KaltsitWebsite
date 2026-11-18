@@ -347,10 +347,6 @@ export const messages = {
         text: "For access, rectification, erasure, portability, or objection requests under the GDPR (or comparable data-protection laws).",
         description: "Caption under the privacy mailbox, naming the GDPR rights it serves.",
     },
-    "terms.s9.general.label": {
-        text: "General contact",
-        description: "Label over the general mailbox.",
-    },
     "terms.s9.source.label": {
         text: "Source code",
         description: "Label over the link to the source repository.",

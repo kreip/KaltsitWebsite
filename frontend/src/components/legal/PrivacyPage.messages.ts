@@ -103,8 +103,8 @@ export const messages = {
         description: "Second paragraph of the same callout, separated from the first by a blank line.",
     },
     "privacy.yostar.revoke.body": {
-        text: "We are not affiliated with Hypergryph or Yostar. We access your data through the same APIs the official game client uses. You can revoke that access yourself at any time: {path} deletes the stored token, and your synced data stays on your profile. To remove the data too, {deletePath} deletes your account and everything in it. If you can't sign in anymore, email {email} instead.",
-        description: "Closing paragraph of the Yostar section. {path} and {deletePath} are bolded settings paths (privacy.yostar.revoke.path and privacy.deletePath) and {email} is the contact address, rendered as a mail link; move them wherever the sentence needs them.",
+        text: "We are not affiliated with Hypergryph or Yostar. We access your data through the same APIs the official game client uses. You can revoke that access yourself at any time: {path} deletes the stored token, and your synced data stays on your profile. To remove the data too, {deletePath} deletes your account and everything in it. If you can't sign in anymore, write to {email} instead.",
+        description: "Closing paragraph of the Yostar section. {path} and {deletePath} are bolded settings paths (privacy.yostar.revoke.path and privacy.deletePath) and {email} is the contact (the ArknightsRU channel), rendered as a link; move them wherever the sentence needs them.",
     },
     "privacy.deletePath": {
         text: "Settings → Danger zone → Delete my data",
@@ -444,8 +444,8 @@ export const messages = {
         description: "Summary line of an expandable panel.",
     },
     "privacy.rights.deletion.body": {
-        text: "Delete your account and all its data yourself from {deletePath}. It removes your profile, synced game data, scores, gacha history, plans, grids, the tier lists you made, your settings, and the saved Yostar login, right away and for good. Official tier lists and translations you worked on stay up without your name. If you can't sign in, email {email} and we'll do it for you.",
-        description: "Body of the Account Deletion panel. {deletePath} is the bolded settings path (privacy.deletePath) and {email} is the contact address, rendered as a mail link; move them wherever the sentence needs them.",
+        text: "Delete your account and all its data yourself from {deletePath}. It removes your profile, synced game data, scores, gacha history, plans, grids, the tier lists you made, your settings, and the saved Yostar login, right away and for good. Official tier lists and translations you worked on stay up without your name. If you can't sign in, write to {email} and we'll do it for you.",
+        description: "Body of the Account Deletion panel. {deletePath} is the bolded settings path (privacy.deletePath) and {email} is the contact (the ArknightsRU channel), rendered as a link; move them wherever the sentence needs them.",
     },
 
     "privacy.thirdParty.heading": {
@@ -530,10 +530,6 @@ export const messages = {
     "privacy.contact.gdpr.note": {
         text: "For access, rectification, erasure, portability, or objection requests under the GDPR (or comparable data-protection laws).",
         description: "Caption under the privacy mailbox, naming the GDPR rights it serves.",
-    },
-    "privacy.contact.general.label": {
-        text: "General contact",
-        description: "Label over the general mailbox.",
     },
     "privacy.contact.source.label": {
         text: "Source code",

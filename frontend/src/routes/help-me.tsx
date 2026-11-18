@@ -1,10 +1,14 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, redirect } from "@tanstack/react-router";
 import { seo } from "#/lib/seo";
 
 // A deliberately awful page. Every choice on it is wrong on purpose: Times New
 // Roman, WordArt, a marquee, blinking text, a visitor counter, a table with
 // border=1. It lives inside the real site chrome because that is the joke.
 export const Route = createFileRoute("/help-me")({
+    // The original author's own joke page (it asks to join his Discord): hidden in this fork, the address leads home.
+    beforeLoad: () => {
+        throw redirect({ to: "/" });
+    },
     component: HelpMe,
     head: () => {
         const { meta, links } = seo({

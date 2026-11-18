@@ -23,9 +23,9 @@ export const messages = {
         text: "Privacy",
         description: "Footer link to the privacy policy. Short by design; it sits in a single row of small links.",
     },
-    "footer.discord": {
-        text: "Discord",
-        description: "Footer link to the community chat. 'Discord' is a product name and stays as-is.",
+    "footer.channel": {
+        text: "ArknightsRU channel",
+        description: "Footer link to the ArknightsRU team's Telegram channel (the site's community). 'ArknightsRU' is a name and stays as-is.",
     },
     "footer.credits": {
         text: "Credits and licences",

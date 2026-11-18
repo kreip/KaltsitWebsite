@@ -25,7 +25,6 @@ export const SITEMAP_PATHS = [
     "/gacha/community",
     "/gallery/music",
     "/stats",
-    "/changelog",
     "/tools/birthdays",
     "/tools/dps",
     "/tools/hps",

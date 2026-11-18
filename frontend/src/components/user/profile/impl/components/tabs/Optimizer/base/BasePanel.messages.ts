@@ -48,12 +48,12 @@ export const messages = {
         description: "Button label that runs the optimizer again over an already-planned board.",
     },
     "profile.base.wip": {
-        text: "The base optimizer is a work in progress. If a recommendation looks wrong, report it on Discord.",
-        description: "Disclaimer shown at the top of the base optimizer tab. 'Discord' is a link to the community server.",
+        text: "The base optimizer is a work in progress. If a recommendation looks wrong, tell us:",
+        description: "Disclaimer shown at the top of the base optimizer tab, followed by a link to the ArknightsRU channel.",
     },
     "profile.base.wip.link": {
-        text: "Discord",
-        description: "The link text inside the base optimizer disclaimer, pointing at the community Discord server.",
+        text: "ArknightsRU channel",
+        description: "The link text after the base optimizer disclaimer, pointing at the ArknightsRU Telegram channel. 'ArknightsRU' is a name and stays as-is.",
     },
     "profile.base.optimize": {
         text: "Optimize",

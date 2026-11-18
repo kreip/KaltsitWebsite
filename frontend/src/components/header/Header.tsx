@@ -9,7 +9,7 @@ import { Separator } from "#/components/ui/separator";
 import { useAuth } from "#/hooks/use-auth";
 import { useIsMac } from "#/hooks/use-is-mac";
 import { useCommand } from "#/lib/command-context";
-import { SHOW_DONATE } from "#/lib/constants";
+import { SHOW_CHANGELOG, SHOW_DONATE } from "#/lib/constants";
 import { useT } from "#/lib/i18n";
 import type { TypedT } from "#/lib/i18n/messages";
 import { getToolsByCategory, modKey } from "#/lib/registry/tools";
@@ -162,7 +162,7 @@ export default function Header() {
                                 <LanguageToggle />
                                 <ThemeToggle />
                             </div>
-                            <WhatsNewButton />
+                            {SHOW_CHANGELOG ? <WhatsNewButton /> : null}
                             {/* Signed-out visitors have no avatar menu, so the two
                             outbound links stay in the bar for them. Signed-in
                             visitors find both inside UserMenu instead. */}

@@ -10,6 +10,7 @@ import { useMaintenance } from "#/hooks/use-maintenance";
 import { useOperatorName } from "#/hooks/use-operator-name";
 import { operatorsIndexQueryOptions } from "#/lib/api/operators";
 import { formatServerWithPublisher } from "#/lib/auth/login";
+import { CONTACT_URL } from "#/lib/constants";
 import { useGamedataServer, useT } from "#/lib/i18n";
 import type { TypedT } from "#/lib/i18n/messages";
 import { formatSpan, isGameDown } from "#/lib/maintenance";
@@ -136,7 +137,7 @@ export function AccountPanel({ user, onResync, syncing, onSignOut, signingOut, o
                         description={t("data.export.desc")}
                         control={
                             // biome-ignore lint/a11y/useAnchorContent: anchor children are slotted in by Button via render prop
-                            <Button variant="outline" size="sm" render={<a href="mailto:privacy@myrtle.moe?subject=Data%20export%20request" />}>
+                            <Button variant="outline" size="sm" render={<a href={CONTACT_URL} target="_blank" rel="noreferrer" />}>
                                 <MailIcon className="size-3.5" />
                                 {t("data.export.action")}
                             </Button>
