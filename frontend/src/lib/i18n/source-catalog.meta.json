@@ -1,6 +1,6 @@
 {
     "generatedBy": "bun run i18n:extract",
-    "generatedAt": "2026-11-18T15:42:23.501Z",
+    "generatedAt": "2026-11-18T19:32:20.748Z",
     "entries": [
         {
             "key": "admin.home.access.everyList",
@@ -54946,6 +54946,27 @@
             "placeholders": []
         },
         {
+            "key": "translators.at.field.nameByCode.enemy",
+            "namespace": "translators",
+            "source_text": "Enemy's name · plugin entry",
+            "description": "Where a text stands: an enemy's name written by its code in the pack's 13_names.txt, read by the plugin.",
+            "placeholders": []
+        },
+        {
+            "key": "translators.at.field.nameByCode.item",
+            "namespace": "translators",
+            "source_text": "Item's name · plugin entry",
+            "description": "Where a text stands: an item's name written by its code in the pack's 13_names.txt, read by the plugin.",
+            "placeholders": []
+        },
+        {
+            "key": "translators.at.field.nameByCode.operator",
+            "namespace": "translators",
+            "source_text": "Operator's name · plugin entry",
+            "description": "Where a text stands: an operator's name written by its code (char_487_bobb) in the pack's 13_names.txt, read by the plugin.",
+            "placeholders": []
+        },
+        {
             "key": "translators.at.field.obtain",
             "namespace": "translators",
             "source_text": "how to get",
@@ -56035,6 +56056,20 @@
             "placeholders": []
         },
         {
+            "key": "translators.draft.reset",
+            "namespace": "translators",
+            "source_text": "Reset",
+            "description": "Link beside «Draft restored»: drop the draft and start from the original text again.",
+            "placeholders": []
+        },
+        {
+            "key": "translators.draft.restored",
+            "namespace": "translators",
+            "source_text": "Draft restored",
+            "description": "Above the proposal box: the text typed earlier was kept in this browser and put back.",
+            "placeholders": []
+        },
+        {
             "key": "translators.edit.failedDelete",
             "namespace": "translators",
             "source_text": "Couldn't delete the proposal.",
@@ -56153,6 +56188,13 @@
             "placeholders": []
         },
         {
+            "key": "translators.editor.tagBroken",
+            "namespace": "translators",
+            "source_text": "A tag is broken: left open, or half a tag.",
+            "description": "Warning under the editor (warning colour): a tag not closed or broken.",
+            "placeholders": []
+        },
+        {
             "key": "translators.editor.tagsDiffer",
             "namespace": "translators",
             "source_text": "The tags are not the original's.",
@@ -56162,8 +56204,8 @@
         {
             "key": "translators.editor.tagsExtra",
             "namespace": "translators",
-            "source_text": "Extra: {tags}.",
-            "description": "Part of the tags warning under the editor: tags the English does not have.",
+            "source_text": "Tags the original lacks: {tags}.",
+            "description": "Warning under the editor (warning colour): tags the English does not have.",
             "placeholders": [
                 "tags"
             ]
@@ -56175,6 +56217,24 @@
             "description": "Part of the tags warning under the editor: tags of the English the translation lacks.",
             "placeholders": [
                 "tags"
+            ]
+        },
+        {
+            "key": "translators.editor.tokensAdded",
+            "namespace": "translators",
+            "source_text": "Substitutions the original lacks: {tokens}.",
+            "description": "Warning under the editor (warning colour): substitutions the English does not have.",
+            "placeholders": [
+                "tokens"
+            ]
+        },
+        {
+            "key": "translators.editor.tokensLost",
+            "namespace": "translators",
+            "source_text": "Substitutions lost: {tokens}.",
+            "description": "Warning under the editor (warning colour): substitutions of the English ({0}, {atk_scale:0%}) the text lacks — the game would show the text without the number.",
+            "placeholders": [
+                "tokens"
             ]
         },
         {
