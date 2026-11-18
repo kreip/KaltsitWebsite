@@ -42,6 +42,7 @@ import type { GlossarySuggestion } from "#/types/generated/GlossarySuggestion";
 import type { GlossaryTerm } from "#/types/generated/GlossaryTerm";
 import type { LinePick } from "#/types/generated/LinePick";
 import type { TranslatorsMe } from "#/types/generated/TranslatorsMe";
+import { Hint } from "./Hint";
 import { isLead } from "./LineEdits";
 import { ReplaceDialogBody } from "./ReplaceDialog";
 import { StoryText } from "./StoryText";
@@ -173,20 +174,26 @@ function GameVariants({ term, t }: { term: GlossaryTerm; t: T }): React.ReactEle
                     <VariantWords v={v} />
                     <span className="text-subtle-foreground tabular-nums">{f.number(v.lines)}</span>
                     {v.glossary ? (
-                        <span className="inline-flex text-success-foreground" title={t("glossary.variantGlossary")}>
-                            <Check className="size-3.5" aria-hidden="true" />
-                            <span className="sr-only">{t("glossary.variantGlossary")}</span>
-                        </span>
+                        <Hint text={t("glossary.variantGlossary")}>
+                            <span className="inline-flex text-success-foreground">
+                                <Check className="size-3.5" aria-hidden="true" />
+                                <span className="sr-only">{t("glossary.variantGlossary")}</span>
+                            </span>
+                        </Hint>
                     ) : (
                         <>
-                            <span className="inline-flex text-warning-foreground" title={t("glossary.variantOther")}>
-                                <X className="size-3.5" aria-hidden="true" />
-                                <span className="sr-only">{t("glossary.variantOther")}</span>
-                            </span>
+                            <Hint text={t("glossary.variantOther")}>
+                                <span className="inline-flex text-warning-foreground">
+                                    <X className="size-3.5" aria-hidden="true" />
+                                    <span className="sr-only">{t("glossary.variantOther")}</span>
+                                </span>
+                            </Hint>
                             {v.stem ? (
-                                <Button variant="ghost" size="xs" className="h-5 px-1 text-muted-foreground opacity-0 focus-visible:opacity-100 group-hover/variant:opacity-100" title={t("glossary.fix.button")} aria-label={t("glossary.fix.button")} onClick={() => setFixing(v)}>
-                                    <Replace aria-hidden="true" />
-                                </Button>
+                                <Hint text={t("glossary.fix.button")}>
+                                    <Button variant="ghost" size="xs" className="h-5 px-1 text-muted-foreground opacity-0 focus-visible:opacity-100 group-hover/variant:opacity-100" aria-label={t("glossary.fix.button")} onClick={() => setFixing(v)}>
+                                        <Replace aria-hidden="true" />
+                                    </Button>
+                                </Hint>
                             ) : null}
                         </>
                     )}
@@ -500,7 +507,11 @@ export function GlossaryTab({ query: asked, onQuery }: IGlossaryTabProps): React
                             const at = counted.get(term.id);
                             const own = !at || at.id === term.id;
                             const share = consistency(term);
-                            const shared = <span title={t("glossary.sharedHint", { key: at?.en ?? term.key })}>—</span>;
+                            const shared = (
+                                <Hint text={t("glossary.sharedHint", { key: at?.en ?? term.key })}>
+                                    <span>—</span>
+                                </Hint>
+                            );
                             return (
                                 <TableRow key={term.id}>
                                     <TableCell className={PROSE}>
@@ -520,9 +531,27 @@ export function GlossaryTab({ query: asked, onQuery }: IGlossaryTabProps): React
                                     </TableCell>
                                     <TableCell className={PROSE}>{own ? <GameVariants term={term} t={t} /> : shared}</TableCell>
                                     <TableCell className="py-1.5 text-right align-top tabular-nums">
-                                        {!own ? shared : share === null ? <span className="text-subtle-foreground">—</span> : <span title={t("glossary.consistencyHint", { found: term.foundLines, checked: term.checkedLines })}>{f.percent(share)}</span>}
+                                        {!own ? (
+                                            shared
+                                        ) : share === null ? (
+                                            <span className="text-subtle-foreground">—</span>
+                                        ) : (
+                                            <Hint text={t("glossary.consistencyHint", { found: term.foundLines, checked: term.checkedLines })}>
+                                                <span>{f.percent(share)}</span>
+                                            </Hint>
+                                        )}
                                     </TableCell>
-                                    <TableCell className={`${PROSE} whitespace-nowrap`}>{term.cn ? <span>{term.cn}</span> : term.cnGame ? <span title={t("glossary.cnFromGame")}>{term.cnGame}</span> : <span className="text-subtle-foreground">—</span>}</TableCell>
+                                    <TableCell className={`${PROSE} whitespace-nowrap`}>
+                                        {term.cn ? (
+                                            <span>{term.cn}</span>
+                                        ) : term.cnGame ? (
+                                            <Hint text={t("glossary.cnFromGame")}>
+                                                <span>{term.cnGame}</span>
+                                            </Hint>
+                                        ) : (
+                                            <span className="text-subtle-foreground">—</span>
+                                        )}
+                                    </TableCell>
                                     <TableCell className={PROSE}>
                                         <span className="flex flex-col items-start gap-0.5 text-xs">
                                             {term.fromSova ? (

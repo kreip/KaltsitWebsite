@@ -43,6 +43,7 @@ import type { Proposal } from "#/types/generated/Proposal";
 import type { TranslatorLine } from "#/types/generated/TranslatorLine";
 import type { TranslatorsMe } from "#/types/generated/TranslatorsMe";
 import { missingTerms } from "./glossaryForm";
+import { Hint } from "./Hint";
 import { tagDiff, tagPairs, tokensIn } from "./markup";
 import { GamePlace } from "./PlaceWords";
 import { StoryText } from "./StoryText";
@@ -157,10 +158,12 @@ export function StatusDot({ status, t }: { status: string; t: T }): React.ReactE
     const tone = STATUS_TONE[status];
     if (!tone) return null;
     return (
-        <span className="inline-flex items-center" title={t(`status.${status}` as "status.proposed")}>
-            <span className="size-2 rounded-full bg-(--tone)" style={{ "--tone": tone } as React.CSSProperties} aria-hidden="true" />
-            <span className="sr-only">{t(`status.${status}` as "status.proposed")}</span>
-        </span>
+        <Hint text={t(`status.${status}` as "status.proposed")}>
+            <span className="inline-flex items-center">
+                <span className="size-2 rounded-full bg-(--tone)" style={{ "--tone": tone } as React.CSSProperties} aria-hidden="true" />
+                <span className="sr-only">{t(`status.${status}` as "status.proposed")}</span>
+            </span>
+        </Hint>
     );
 }
 
@@ -313,20 +316,21 @@ export function AgreeButton({ place, variant, proposalId, people, me, own = fals
     if (own && count === 0) return null;
     const title = count > 0 ? t("agree.who", { count, names: names(people) }) : t("agree.hint");
     return (
-        <Button
-            variant="ghost"
-            size="xs"
-            className={cn("h-auto gap-0.5 px-1 py-0.5 align-baseline text-muted-foreground text-xs", count === 0 && !inBar && !shown && "opacity-0 pointer-coarse:opacity-100 focus-visible:opacity-100 group-hover/cell:opacity-100")}
-            aria-pressed={mine}
-            data-pressed={mine ? "" : undefined}
-            disabled={own || vote.isPending}
-            title={title}
-            onClick={() => vote.mutate(!mine)}
-        >
-            <ThumbsUp className={cn("size-3", mine && "fill-current")} aria-hidden="true" />
-            {count > 0 ? f.number(count) : null}
-            <span className="sr-only">{own ? title : t("agree.label")}</span>
-        </Button>
+        <Hint text={title}>
+            <Button
+                variant="ghost"
+                size="xs"
+                className={cn("h-auto gap-0.5 px-1 py-0.5 align-baseline text-muted-foreground text-xs", count === 0 && !inBar && !shown && "opacity-0 pointer-coarse:opacity-100 focus-visible:opacity-100 group-hover/cell:opacity-100")}
+                aria-pressed={mine}
+                data-pressed={mine ? "" : undefined}
+                disabled={own || vote.isPending}
+                onClick={() => vote.mutate(!mine)}
+            >
+                <ThumbsUp className={cn("size-3", mine && "fill-current")} aria-hidden="true" />
+                {count > 0 ? f.number(count) : null}
+                <span className="sr-only">{own ? title : t("agree.label")}</span>
+            </Button>
+        </Hint>
     );
 }
 
@@ -440,9 +444,11 @@ export function RejectButton({ proposalId, me, t }: { proposalId: number; me: Tr
 /** A secondary action: an icon only, gray, its words on hover and for a screen reader. */
 export function IconAction({ icon, label, onClick, onPointerDown, onKeyDown }: { icon: React.ReactNode; label: string; onClick?: () => void; onPointerDown?: (e: React.PointerEvent<HTMLButtonElement>) => void; onKeyDown?: (e: React.KeyboardEvent<HTMLButtonElement>) => void }): React.ReactElement {
     return (
-        <Button variant="ghost" size="icon-xs" className="size-6 text-muted-foreground hover:text-foreground" title={label} aria-label={label} onClick={onClick} onPointerDown={onPointerDown} onKeyDown={onKeyDown}>
-            {icon}
-        </Button>
+        <Hint text={label}>
+            <Button variant="ghost" size="icon-xs" className="size-6 text-muted-foreground hover:text-foreground" aria-label={label} onClick={onClick} onPointerDown={onPointerDown} onKeyDown={onKeyDown}>
+                {icon}
+            </Button>
+        </Hint>
     );
 }
 
@@ -665,10 +671,12 @@ export function Proposals({ edits, place, me, nickname, onEdit, marks, compare =
                                                         <IconAction icon={<PenLine aria-hidden="true" />} label={t("proposal.edit")} onClick={() => onEdit(p)} />
                                                         <IconAction icon={<Trash2 aria-hidden="true" />} label={t("proposal.delete")} onClick={() => remove.mutate(p.id)} />
                                                         {levelTexts > 0 && !p.context ? (
-                                                            <Button variant="ghost" size="xs" className="h-5 px-1 text-muted-foreground text-xs" title={t("levels.hint", { count: levelTexts })} onClick={() => applyLevels(p.id)} disabled={levels.isPending}>
-                                                                <Layers aria-hidden="true" />
-                                                                {t("levels.apply", { count: levelTexts })}
-                                                            </Button>
+                                                            <Hint text={t("levels.hint", { count: levelTexts })}>
+                                                                <Button variant="ghost" size="xs" className="h-5 px-1 text-muted-foreground text-xs" onClick={() => applyLevels(p.id)} disabled={levels.isPending}>
+                                                                    <Layers aria-hidden="true" />
+                                                                    {t("levels.apply", { count: levelTexts })}
+                                                                </Button>
+                                                            </Hint>
                                                         ) : null}
                                                     </>
                                                 ) : null}

@@ -23,6 +23,7 @@ import { useEffect, useRef, useState } from "react";
 import { badgeVariants } from "#/components/ui/badge";
 import { Button } from "#/components/ui/button";
 import { cn } from "#/lib/utils";
+import { Hint } from "./Hint";
 import { type MarkNode, parseMarkup } from "./markup";
 import type { ISpanLook } from "./tags";
 
@@ -343,17 +344,21 @@ export function TokenEditor({ id, initial, nickname, palette, tags, lookup, onCh
                 // biome-ignore lint/a11y/noStaticElementInteractions: only keeps the selection for its buttons
                 <div className="flex flex-wrap items-center gap-1" onMouseDown={(e) => e.preventDefault()}>
                     {palette.map((token) => (
-                        <Button key={token} variant="ghost" size="xs" onClick={() => insert(token)} title={isNickname(token) ? undefined : labels.insertToken(token)}>
-                            {isNickname(token) ? <AtSign aria-hidden="true" /> : <Braces aria-hidden="true" />}
-                            {isNickname(token) ? labels.insertNickname : token}
-                        </Button>
+                        <Hint key={token} text={isNickname(token) ? null : labels.insertToken(token)}>
+                            <Button variant="ghost" size="xs" onClick={() => insert(token)}>
+                                {isNickname(token) ? <AtSign aria-hidden="true" /> : <Braces aria-hidden="true" />}
+                                {isNickname(token) ? labels.insertNickname : token}
+                            </Button>
+                        </Hint>
                     ))}
                     {tags.map((tag) => (
-                        <Button key={tag.open} variant="outline" size="xs" onClick={() => wrap(tag)} title={labels.wrap(tag.label)}>
-                            <span className={tag.look.className} style={tag.look.color ? { color: tag.look.color } : undefined}>
-                                {tag.label}
-                            </span>
-                        </Button>
+                        <Hint key={tag.open} text={labels.wrap(tag.label)}>
+                            <Button variant="outline" size="xs" onClick={() => wrap(tag)}>
+                                <span className={tag.look.className} style={tag.look.color ? { color: tag.look.color } : undefined}>
+                                    {tag.label}
+                                </span>
+                            </Button>
+                        </Hint>
                     ))}
                     {inside ? (
                         <Button variant="ghost" size="xs" onClick={() => unwrap(inside)}>

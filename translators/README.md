@@ -462,3 +462,9 @@ search the backend keeps them per text (`texts.problems`, migration t019, `texts
 redone after every import and glossary download; `status=problems|glossary|brokenTag|noHighlight|
 newlines|longer`). `GET /api/translators/texts/summary` gives the overview above Search and Game
 sections (texts, with Russian, checked) and each problem's count.
+
+## Hints
+
+Every hint of the section is the site's own: the kit `Tooltip` (a frame, padding, plain text; a tap
+opens it where the element has no action of its own) through `Hint.tsx`, never the browser's
+`title`; an explanation beside a field is the kit `InfoHint`.

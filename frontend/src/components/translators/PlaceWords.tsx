@@ -8,6 +8,7 @@
 import { Link } from "@tanstack/react-router";
 import type React from "react";
 import type { TypedT } from "#/lib/i18n/messages";
+import { Hint } from "./Hint";
 import { useStoryNames } from "./storyNames";
 import type { messages } from "./translators.messages";
 import { gameWhere, isCardSection, objectKey, SPEAKER_FIELD, sectionWord } from "./where";
@@ -44,10 +45,17 @@ export function GamePlace({ section, objectId, objectEn, field, idx, note = "", 
     const code = (section === "other" ? objectEn : objectId) ?? undefined;
     const words = gameWhere(section, objectEn, field, idx, t, note);
     const object = objectKey(section, objectId, objectEn);
-    if (!object || !isCardSection(section)) return <span title={code}>{words}</span>;
+    if (!object || !isCardSection(section))
+        return (
+            <Hint text={code}>
+                <span>{words}</span>
+            </Hint>
+        );
     return (
-        <Link to="/translators" search={{ tab: "sections", sec: section === "operators" ? undefined : section, obj: object }} title={code} className="underline-offset-4 hover:underline">
-            {words}
-        </Link>
+        <Hint text={code}>
+            <Link to="/translators" search={{ tab: "sections", sec: section === "operators" ? undefined : section, obj: object }} className="underline-offset-4 hover:underline">
+                {words}
+            </Link>
+        </Hint>
     );
 }

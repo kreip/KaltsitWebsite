@@ -14,6 +14,7 @@ import { ChevronDown, ChevronRight } from "lucide-react";
 import type React from "react";
 import { createContext, useCallback, useEffect, useRef, useState } from "react";
 import { Button } from "#/components/ui/button";
+import { Hint } from "./Hint";
 
 /** "Open every line" (the View menu): every row shows everything, the buttons on hover as before. */
 export const OpenAll = createContext(false);
@@ -99,8 +100,10 @@ export function useOpenRows(initial: string | null = null, groupOf?: (id: string
 /** The № cell's chevron: opens or folds the row (the keyboard's way; the click on the row is a shortcut). */
 export function RowToggle({ open, onToggle, label }: { open: boolean; onToggle: () => void; label: string }): React.ReactElement {
     return (
-        <Button variant="ghost" size="xs" className="-ms-1 h-4 px-0.5 text-subtle-foreground" aria-expanded={open} aria-label={label} title={label} onClick={onToggle}>
-            {open ? <ChevronDown className="size-3" aria-hidden="true" /> : <ChevronRight className="size-3" aria-hidden="true" />}
-        </Button>
+        <Hint text={label}>
+            <Button variant="ghost" size="xs" className="-ms-1 h-4 px-0.5 text-subtle-foreground" aria-expanded={open} aria-label={label} onClick={onToggle}>
+                {open ? <ChevronDown className="size-3" aria-hidden="true" /> : <ChevronRight className="size-3" aria-hidden="true" />}
+            </Button>
+        </Hint>
     );
 }

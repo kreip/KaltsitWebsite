@@ -33,6 +33,7 @@ import type { TranslatorLine } from "#/types/generated/TranslatorLine";
 import type { TranslatorsMe } from "#/types/generated/TranslatorsMe";
 import { BulkApprove, type IBulkLine } from "./BulkApprove";
 import { type Address, checkVariant, type ICandidate, type IVariantCheck, lineProblems, neighbourAddress, PROBLEM_KINDS, type ProblemKind, problemCount, type RecommendRule, recommend } from "./checks";
+import { Hint } from "./Hint";
 import {
     ActionRow,
     ActionsShown,
@@ -139,31 +140,34 @@ function Terms({ terms, onlyMissing = false, t }: { terms: readonly LineTerm[]; 
     return (
         <ul className="flex flex-wrap gap-x-3 gap-y-0.5 text-xs" aria-label={t("terms.label")}>
             {groups.map((g) => (
-                <li key={g.matched} className="inline-flex items-center gap-1" title={g.title}>
-                    <span className="text-muted-foreground">{g.matched}</span>
-                    <span className="text-subtle-foreground" aria-hidden="true">
-                        →
-                    </span>
-                    <span>{g.ru.join(" / ")}</span>
-                    {g.found === true ? (
-                        <span className="inline-flex text-success-foreground">
-                            <Check className="size-3.5" aria-hidden="true" />
-                            <span className="sr-only">{t("terms.found")}</span>
+                // The term's note, and why a gray check: one hint for the whole term.
+                <Hint key={g.matched} text={[g.title, g.verified && g.found === null ? t("terms.verifiedHint") : null].filter(Boolean).join("\n")}>
+                    <li className="inline-flex items-center gap-1">
+                        <span className="text-muted-foreground">{g.matched}</span>
+                        <span className="text-subtle-foreground" aria-hidden="true">
+                            →
                         </span>
-                    ) : g.found === false ? (
-                        <span className="inline-flex items-center gap-0.5 text-warning-foreground">
-                            <X className="size-3.5" aria-hidden="true" />
-                            {g.changed ? t("terms.changedAfterApproval") : t("terms.notFound")}
-                        </span>
-                    ) : g.verified ? (
-                        <span className="inline-flex text-subtle-foreground" title={t("terms.verifiedHint")}>
-                            <Check className="size-3.5" aria-hidden="true" />
-                            <span className="sr-only">{t("terms.verified")}</span>
-                        </span>
-                    ) : g.fromSova ? (
-                        <span className="text-subtle-foreground">({t("terms.variant")})</span>
-                    ) : null}
-                </li>
+                        <span>{g.ru.join(" / ")}</span>
+                        {g.found === true ? (
+                            <span className="inline-flex text-success-foreground">
+                                <Check className="size-3.5" aria-hidden="true" />
+                                <span className="sr-only">{t("terms.found")}</span>
+                            </span>
+                        ) : g.found === false ? (
+                            <span className="inline-flex items-center gap-0.5 text-warning-foreground">
+                                <X className="size-3.5" aria-hidden="true" />
+                                {g.changed ? t("terms.changedAfterApproval") : t("terms.notFound")}
+                            </span>
+                        ) : g.verified ? (
+                            <span className="inline-flex text-subtle-foreground">
+                                <Check className="size-3.5" aria-hidden="true" />
+                                <span className="sr-only">{t("terms.verified")}</span>
+                            </span>
+                        ) : g.fromSova ? (
+                            <span className="text-subtle-foreground">({t("terms.variant")})</span>
+                        ) : null}
+                    </li>
+                </Hint>
             ))}
         </ul>
     );

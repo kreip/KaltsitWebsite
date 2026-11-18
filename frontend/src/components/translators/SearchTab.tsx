@@ -38,6 +38,7 @@ import type { TextAt } from "#/types/generated/TextAt";
 import type { TextSummary } from "#/types/generated/TextSummary";
 import type { TranslatorsMe } from "#/types/generated/TranslatorsMe";
 import type { RecommendRule } from "./checks";
+import { Hint } from "./Hint";
 import { type EditorState, PlacesList, StatusDot } from "./LineEdits";
 import { analyse, filterWord, missingTermsEn, PROSE, RuCell, Speaker } from "./LinesTable";
 import { Folded, isLong, useUnfolded } from "./LongText";
@@ -98,7 +99,9 @@ function Where({ row, nickname, t }: { row: SearchLine; nickname: string; t: T }
                 <Place at={first} t={t} />
             ) : (
                 // An entry of the dictionaries tied to no known place: its section and where it is kept.
-                <span title={hit.file ?? undefined}>{[sectionWord(hit.sections.at(0) ?? "other", t), hit.file ? fileWord(hit.file, t) : null].filter(Boolean).join(" › ")}</span>
+                <Hint text={hit.file}>
+                    <span>{[sectionWord(hit.sections.at(0) ?? "other", t), hit.file ? fileWord(hit.file, t) : null].filter(Boolean).join(" › ")}</span>
+                </Hint>
             )}
             {more > 0 ? <CollapsibleTrigger render={<Button variant="link" size="xs" className="h-auto px-0 text-subtle-foreground text-xs" />}>{open ? t("search.fewer") : t("search.alsoIn", { count: more })}</CollapsibleTrigger> : null}
             <CollapsiblePanel className="w-full">

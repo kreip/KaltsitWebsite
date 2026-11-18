@@ -10,6 +10,7 @@ import type React from "react";
 import { Badge } from "#/components/ui/badge";
 import { useLocale, useT } from "#/lib/i18n";
 import type { TypedT } from "#/lib/i18n/messages";
+import { Hint } from "./Hint";
 import { type MarkNode, parseMarkup } from "./markup";
 import { type GameTags, spanLook, tagWords, termHint, useGameTags } from "./tags";
 import type { messages } from "./translators.messages";
@@ -127,9 +128,11 @@ function renderNodes(nodes: readonly MarkNode[], r: IRender, prefix: string): Re
         // A term carries what the game explains about it; any other span says what it is.
         const title = n.type === "term" ? (termHint(n.name, r.tags, r.locale) ?? tagWords(n, r.tags, r.t, r.locale)) : n.type === "style" ? tagWords(n, r.tags, r.t, r.locale) : undefined;
         return (
-            <span key={key} className={look.className} style={look.color ? { color: look.color } : undefined} title={title} data-tag={n.name}>
-                {children}
-            </span>
+            <Hint key={key} text={title}>
+                <span className={look.className} style={look.color ? { color: look.color } : undefined} data-tag={n.name}>
+                    {children}
+                </span>
+            </Hint>
         );
     });
 }

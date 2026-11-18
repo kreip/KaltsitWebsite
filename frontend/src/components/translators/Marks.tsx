@@ -10,17 +10,20 @@ import type React from "react";
 import { useFormatters } from "#/lib/i18n";
 import type { TypedT } from "#/lib/i18n/messages";
 import type { IVariantCheck } from "./checks";
+import { Hint } from "./Hint";
 import type { messages } from "./translators.messages";
 
 type T = TypedT<typeof messages>;
 
 function Warn({ title, children }: { title: string; children: React.ReactNode }): React.ReactElement {
     return (
-        <span className="inline-flex items-center gap-0.5 whitespace-nowrap text-warning-foreground" title={title}>
-            <AlertTriangle className="size-3" aria-hidden="true" />
-            {children}
-            <span className="sr-only">{title}</span>
-        </span>
+        <Hint text={title}>
+            <span className="inline-flex items-center gap-0.5 whitespace-nowrap text-warning-foreground">
+                <AlertTriangle className="size-3" aria-hidden="true" />
+                {children}
+                <span className="sr-only">{title}</span>
+            </span>
+        </Hint>
     );
 }
 
@@ -41,16 +44,20 @@ export function Marks({ check, recommended, skipGlossary = false, t }: IMarksPro
     return (
         <span className="ms-1.5 inline-flex flex-wrap items-center gap-x-1.5 align-baseline text-xs">
             {recommended ? (
-                <span className="inline-flex items-center text-success-foreground" title={t("checks.recommendedHint")}>
-                    <Star className="size-3.5 fill-current" aria-hidden="true" />
-                    <span className="sr-only">{t("checks.recommended")}</span>
-                </span>
+                <Hint text={t("checks.recommendedHint")}>
+                    <span className="inline-flex items-center text-success-foreground">
+                        <Star className="size-3.5 fill-current" aria-hidden="true" />
+                        <span className="sr-only">{t("checks.recommended")}</span>
+                    </span>
+                </Hint>
             ) : null}
             {glossary.length > 0 ? (
-                <span className="inline-flex items-center gap-0.5 text-warning-foreground" title={t("checks.glossaryHint", { terms: glossary.map((g) => `${g.en} → ${g.ru}`).join(", ") })}>
-                    <X className="size-3" aria-hidden="true" />
-                    {glossary.map((g) => g.ru).join(", ")}
-                </span>
+                <Hint text={t("checks.glossaryHint", { terms: glossary.map((g) => `${g.en} → ${g.ru}`).join(", ") })}>
+                    <span className="inline-flex items-center gap-0.5 text-warning-foreground">
+                        <X className="size-3" aria-hidden="true" />
+                        {glossary.map((g) => g.ru).join(", ")}
+                    </span>
+                </Hint>
             ) : null}
             {broken ? (
                 <Warn title={check.placeholders.length > 0 ? `${t("checks.brokenTagHint")} ${t("checks.placeholdersHint")}` : t("checks.brokenTagHint")}>
