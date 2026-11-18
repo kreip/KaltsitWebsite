@@ -32,7 +32,7 @@ import type { StoryCommand } from "#/types/generated/StoryCommand";
 import type { TranslatorLine } from "#/types/generated/TranslatorLine";
 import type { TranslatorsMe } from "#/types/generated/TranslatorsMe";
 import { BulkApprove, type IBulkLine } from "./BulkApprove";
-import { type Address, checkVariant, type ICandidate, type IVariantCheck, lineProblems, neighbourAddress, PROBLEM_KINDS, type ProblemKind, problemCount, type RecommendRule, recommend } from "./checks";
+import { type Address, checkVariant, hasError, type ICandidate, type IVariantCheck, lineProblems, neighbourAddress, PROBLEM_KINDS, type ProblemKind, problemCount, type RecommendRule, recommend } from "./checks";
 import { Hint } from "./Hint";
 import {
     ActionRow,
@@ -223,7 +223,7 @@ export interface IAnalysis {
 /** "Errors: all (12)", then each problem with its count: the status filter's problem options. */
 export function problemOptions(analyses: readonly IAnalysis[]): { value: "problems" | ProblemKind; count: number }[] {
     const count = (k: ProblemKind) => analyses.filter((a) => a.problems.has(k)).length;
-    return [{ value: "problems" as const, count: analyses.filter((a) => a.problems.size > 0).length }, ...PROBLEM_KINDS.map((k) => ({ value: k, count: count(k) }))];
+    return [{ value: "problems" as const, count: analyses.filter((a) => hasError(a.problems)).length }, ...PROBLEM_KINDS.map((k) => ({ value: k, count: count(k) }))];
 }
 
 export function analyse(line: TranslatorLine, edits: KeyEdits | undefined, place: EditPlace, neighbours: Address | null, rule: RecommendRule): IAnalysis {
@@ -594,7 +594,7 @@ export function LinesTable({ storyId, lines, edits, outdated, me, label, showCn,
         if (filter === "proposals") return proposalsAt(e, place).length > 0;
         if (filter === "recommended") return analyses[i].recommended !== null;
         if (filter === "outdated") return line.status === "outdated";
-        if (filter === "problems") return analyses[i].problems.size > 0;
+        if (filter === "problems") return hasError(analyses[i].problems);
         if (filter !== "remarks") return analyses[i].problems.has(filter);
         return (e?.comments ?? []).some((c) => c.kind !== "note" && !c.resolvedBy);
     };

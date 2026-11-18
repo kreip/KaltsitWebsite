@@ -30,7 +30,7 @@ import { objectLinesQueryOptions, objectsQueryOptions, textSummaryQueryOptions, 
 import { cn } from "#/lib/utils";
 import type { TranslatorsMe } from "#/types/generated/TranslatorsMe";
 import { ApproveMatching } from "./ApproveMatching";
-import type { ProblemKind, RecommendRule } from "./checks";
+import { hasError, type ProblemKind, type RecommendRule } from "./checks";
 import { type EditorState, isLead, StatusDot } from "./LineEdits";
 import { analyse, filterWord, missingTermsEn, PROSE, problemOptions, RuCell } from "./LinesTable";
 import { Folded, isLong, useUnfolded } from "./LongText";
@@ -171,7 +171,7 @@ function Card({ section, item, me, showVariants, showDiff, t }: ICardProps): Rea
     const filterId = useId();
     const [filter, setFilter] = useState<CardFilter>("all");
     const problems = problemOptions(analyses);
-    const shows = (i: number) => (filter === "all" ? true : filter === "proposals" ? rows[i].line.status === "proposed" : filter === "problems" ? analyses[i].problems.size > 0 : analyses[i].problems.has(filter));
+    const shows = (i: number) => (filter === "all" ? true : filter === "proposals" ? rows[i].line.status === "proposed" : filter === "problems" ? hasError(analyses[i].problems) : analyses[i].problems.has(filter));
     if (query.isError) return <LoadFailed message={t("sections.load.lines")} onRetry={() => query.refetch()} />;
     if (!query.data) return <Skeleton className="h-96 w-full rounded-2xl" />;
     const nickname = me.nickname ?? t("nickname.fallback");

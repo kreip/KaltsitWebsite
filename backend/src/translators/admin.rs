@@ -856,3 +856,33 @@ pub async fn delete_test_edits(
     }
     Ok(StatusCode::NO_CONTENT)
 }
+
+/// The English words and phrases in the game's colour tags (`<@ba.vup>moderately</>`),
+/// how many texts have each, and the Russian stem the pack writes for it where its text
+/// keeps the tag; the plugin's rule column waits for the plugin's rules (admins only).
+#[utoipa::path(
+    get,
+    path = "/translators/admin/tag-words",
+    tag = "translators",
+    security(("bearer_auth" = [])),
+    responses(
+        (status = 200, description = "The words, the most used first.", body = Vec<super::texts::tag_words::TagWord>),
+        (status = 401, response = crate::app::openapi::responses::Unauthorized),
+        (status = 403, response = crate::app::openapi::responses::Forbidden),
+        (status = 500, response = crate::app::openapi::responses::InternalError)
+    )
+)]
+pub async fn tag_words(
+    State(state): State<AppState>,
+    auth: MaybeAuthUser,
+) -> Result<Json<Vec<super::texts::tag_words::TagWord>>, ApiError> {
+    require_admin(&state, &auth).await?;
+    let texts: Vec<(String, Option<String>)> = sqlx::query_as(
+        "SELECT en, ru FROM translators.texts WHERE server = $1 AND strpos(en, '<@') > 0",
+    )
+    .bind(SERVER)
+    .persistent(false)
+    .fetch_all(&state.db)
+    .await?;
+    Ok(Json(super::texts::tag_words::tag_words(&texts)))
+}

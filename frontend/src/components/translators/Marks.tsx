@@ -39,7 +39,7 @@ export function Marks({ check, recommended, skipGlossary = false, t }: IMarksPro
     const f = useFormatters();
     const glossary = skipGlossary ? [] : check.glossary;
     const broken = check.brokenTag || check.placeholders.length > 0;
-    const any = recommended || glossary.length > 0 || broken || check.noNickname || check.noHighlight || check.newlines || check.longer !== null || check.address;
+    const any = recommended || glossary.length > 0 || broken || check.noNickname || check.newlines || check.longer !== null || check.address;
     if (!any) return null;
     return (
         <span className="ms-1.5 inline-flex flex-wrap items-center gap-x-1.5 align-baseline text-xs">
@@ -66,7 +66,6 @@ export function Marks({ check, recommended, skipGlossary = false, t }: IMarksPro
                 </Warn>
             ) : null}
             {check.noNickname ? <Warn title={t("checks.nicknameHint")}>{t("checks.nickname")}</Warn> : null}
-            {check.noHighlight ? <Warn title={t("checks.noHighlightHint")}>{t("checks.noHighlight")}</Warn> : null}
             {check.newlines ? <Warn title={t("checks.newlinesHint", { en: check.newlines.en, ru: check.newlines.ru })}>{t("checks.newlines", { en: check.newlines.en, ru: check.newlines.ru })}</Warn> : null}
             {check.longer !== null ? <Warn title={t("checks.longerHint")}>{t("checks.longer", { share: f.percent(check.longer) })}</Warn> : null}
             {check.address ? <Warn title={t("checks.addressHint", { form: check.address })}>{t("checks.address", { form: check.address === "ты" ? "вы" : "ты" })}</Warn> : null}

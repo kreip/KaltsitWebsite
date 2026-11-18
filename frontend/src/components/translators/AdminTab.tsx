@@ -6,7 +6,7 @@
  * with the development sign-in on, the test edits to clean away.
  */
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Check, Languages, Play, Trash2, X } from "lucide-react";
+import { Check, Copy, Languages, Play, Trash2, X } from "lucide-react";
 import type React from "react";
 import { useState } from "react";
 import { AlertDialog, AlertDialogClose, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogPopup, AlertDialogTitle } from "#/components/ui/alert-dialog";
@@ -19,10 +19,26 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "#
 import { Skeleton } from "#/components/ui/skeleton";
 import { Spinner } from "#/components/ui/spinner";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "#/components/ui/table";
+import { Tabs, TabsList, TabsPanel, TabsTab } from "#/components/ui/tabs";
 import { toastManager } from "#/components/ui/toast";
 import { useFormatters, useT } from "#/lib/i18n";
 import type { TypedT } from "#/lib/i18n/messages";
-import { ADMIN_QUERY_ROOT, accessRequestsQueryOptions, adminStatsQueryOptions, decideRequestFn, deleteTestEditsFn, importStatusQueryOptions, membersQueryOptions, refreshSiteTextsFn, removeMemberFn, setMemberRoleFn, startImportFn, TRANSLATORS_QUERY_ROOT, testEditsQueryOptions } from "#/lib/translators/api";
+import {
+    ADMIN_QUERY_ROOT,
+    accessRequestsQueryOptions,
+    adminStatsQueryOptions,
+    decideRequestFn,
+    deleteTestEditsFn,
+    importStatusQueryOptions,
+    membersQueryOptions,
+    refreshSiteTextsFn,
+    removeMemberFn,
+    setMemberRoleFn,
+    startImportFn,
+    TRANSLATORS_QUERY_ROOT,
+    tagWordsQueryOptions,
+    testEditsQueryOptions,
+} from "#/lib/translators/api";
 import type { AccessRequest } from "#/types/generated/AccessRequest";
 import type { EditCounts } from "#/types/generated/EditCounts";
 import type { ImportStatus } from "#/types/generated/ImportStatus";
@@ -480,14 +496,87 @@ function TestEditsBlock({ t }: { t: T }): React.ReactElement | null {
     );
 }
 
+/**
+ * «Теги»: every English word or phrase of the game's colour tags («moderately», «Arts damage»), in how many texts,
+ * the Russian stem the pack writes for it where its text keeps the tag, and the plugin's rule (not known until the
+ * plugin's rules are read). "Copy the list for Kolooo" puts it on the clipboard as tab-separated text.
+ */
+function TagWords({ t }: { t: T }): React.ReactElement {
+    const f = useFormatters();
+    const query = useQuery(tagWordsQueryOptions());
+    const copy = async () => {
+        const rows = query.data ?? [];
+        const text = [[t("admin.tags.col.en"), t("admin.tags.col.lines"), t("admin.tags.col.ru"), t("admin.tags.col.rule")].join("\t"), ...rows.map((w) => [w.en, String(w.lines), w.ru ?? "", w.pluginRule ?? t("admin.tags.unknown")].join("\t"))].join("\n");
+        try {
+            await navigator.clipboard.writeText(text);
+            toastManager.add({ title: t("admin.tags.copied", { count: rows.length }), type: "success" });
+        } catch {
+            toastManager.add({ title: t("admin.tags.copyFailed"), type: "error" });
+        }
+    };
+    return (
+        <section className="flex flex-col gap-3">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+                <Heading>{t("admin.tags.title")}</Heading>
+                <Button variant="outline" size="sm" onClick={copy} disabled={!query.data || query.data.length === 0}>
+                    <Copy aria-hidden="true" />
+                    {t("admin.tags.copy")}
+                </Button>
+            </div>
+            <p className="text-muted-foreground text-sm">{t("admin.tags.hint")}</p>
+            {query.isError ? (
+                <LoadFailed layout="inline" message={t("admin.tags.load")} onRetry={() => query.refetch()} />
+            ) : !query.data ? (
+                <Skeleton className="h-64 w-full" />
+            ) : (
+                <div className="max-h-[70vh] overflow-y-auto">
+                    <Table aria-label={t("admin.tags.title")} className="text-sm">
+                        <TableHeader>
+                            <TableRow>
+                                <TableHead>{t("admin.tags.col.en")}</TableHead>
+                                <TableHead className="w-24 text-end">{t("admin.tags.col.lines")}</TableHead>
+                                <TableHead>{t("admin.tags.col.ru")}</TableHead>
+                                <TableHead className="w-48">{t("admin.tags.col.rule")}</TableHead>
+                            </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                            {query.data.map((w) => (
+                                <TableRow key={w.en}>
+                                    <TableCell className={PROSE}>
+                                        {w.en}
+                                        <span className="ms-2 text-subtle-foreground text-xs">{w.styles.join(", ")}</span>
+                                    </TableCell>
+                                    <TableCell className={`${PROSE} text-end tabular-nums`}>{f.number(w.lines)}</TableCell>
+                                    <TableCell className={PROSE}>{w.ru ? <span>{w.ru}</span> : <span className="text-subtle-foreground">—</span>}</TableCell>
+                                    <TableCell className={`${PROSE} text-muted-foreground`}>{w.pluginRule ?? t("admin.tags.unknown")}</TableCell>
+                                </TableRow>
+                            ))}
+                        </TableBody>
+                    </Table>
+                </div>
+            )}
+        </section>
+    );
+}
+
 export function AdminTab({ me }: { me: TranslatorsMe }): React.ReactElement {
     const t: T = useT("translators");
+    const [page, setPage] = useState("main");
     return (
-        <div className="flex flex-col gap-8">
-            <Requests t={t} />
-            <Members me={me} t={t} />
-            <Service t={t} />
-            <Stats t={t} />
-        </div>
+        <Tabs value={page} onValueChange={(v: string) => setPage(v)}>
+            <TabsList aria-label={t("admin.pages")}>
+                <TabsTab value="main">{t("admin.page.main")}</TabsTab>
+                <TabsTab value="tags">{t("admin.page.tags")}</TabsTab>
+            </TabsList>
+            <TabsPanel value="main" className="flex flex-col gap-8 pt-4">
+                <Requests t={t} />
+                <Members me={me} t={t} />
+                <Service t={t} />
+                <Stats t={t} />
+            </TabsPanel>
+            <TabsPanel value="tags" className="pt-4">
+                <TagWords t={t} />
+            </TabsPanel>
+        </Tabs>
     );
 }

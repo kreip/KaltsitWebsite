@@ -41,6 +41,7 @@ import type { Release } from "#/types/generated/Release";
 import type { SearchLines } from "#/types/generated/SearchLines";
 import type { SiteTextsLoaded } from "#/types/generated/SiteTextsLoaded";
 import type { StoryProgress } from "#/types/generated/StoryProgress";
+import type { TagWord } from "#/types/generated/TagWord";
 import type { TestEdits } from "#/types/generated/TestEdits";
 import type { TextSummary } from "#/types/generated/TextSummary";
 import type { TranslatorStoryLines } from "#/types/generated/TranslatorStoryLines";
@@ -593,6 +594,16 @@ export const getAdminStatsFn = createServerFn({ method: "GET" }).handler(async (
 
 export function adminStatsQueryOptions() {
     return queryOptions({ queryKey: [...ADMIN_QUERY_ROOT, "stats"], queryFn: () => getAdminStatsFn(), staleTime: 60_000 });
+}
+
+export const getTagWordsFn = createServerFn({ method: "GET" }).handler(async (): Promise<TagWord[]> => {
+    const res = await send("/translators/admin/tag-words", "GET");
+    return (await res.json()) as TagWord[];
+});
+
+/** The words of the game's colour tags with the pack's Russian stem (an admin): the list for the plugin's word rules. */
+export function tagWordsQueryOptions() {
+    return queryOptions({ queryKey: [...ADMIN_QUERY_ROOT, "tag-words"], queryFn: () => getTagWordsFn(), staleTime: 5 * 60_000 });
 }
 
 export type ProposalDecision = "approve" | "reject" | "withdraw" | "reopen";

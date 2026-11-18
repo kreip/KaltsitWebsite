@@ -13186,6 +13186,44 @@
         ]
       }
     },
+    "/api/translators/admin/tag-words": {
+      "get": {
+        "tags": [
+          "translators"
+        ],
+        "summary": "The English words and phrases in the game's colour tags (`<@ba.vup>moderately</>`),\nhow many texts have each, and the Russian stem the pack writes for it where its text\nkeeps the tag; the plugin's rule column waits for the plugin's rules (admins only).",
+        "operationId": "tag_words",
+        "responses": {
+          "200": {
+            "description": "The words, the most used first.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/TagWord"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        },
+        "security": [
+          {
+            "bearer_auth": []
+          }
+        ]
+      }
+    },
     "/api/translators/admin/test-edits": {
       "get": {
         "tags": [
@@ -39521,6 +39559,53 @@
           "next",
           "unknown"
         ]
+      },
+      "TagWord": {
+        "type": "object",
+        "description": "One English word or phrase found in a colour tag.",
+        "required": [
+          "en",
+          "styles",
+          "lines",
+          "ruLines"
+        ],
+        "properties": {
+          "en": {
+            "type": "string",
+            "description": "As the English writes it, lower case."
+          },
+          "lines": {
+            "type": "integer",
+            "format": "int32",
+            "description": "Texts whose English has it in a colour tag."
+          },
+          "pluginRule": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The plugin's rule for it; null — not known yet (the plugin's rules are not read)."
+          },
+          "ru": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The Russian stem seen for it in the pack's text where the tag is kept\n(`умеренн-`, `урон искусств-`), the most frequent; null when no text keeps the tag."
+          },
+          "ruLines": {
+            "type": "integer",
+            "format": "int32",
+            "description": "Texts that gave that stem."
+          },
+          "styles": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "The styles it stands in (`ba.vup`, `ba.kw`), the most used first."
+          }
+        }
       },
       "TestEdit": {
         "type": "object",

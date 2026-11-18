@@ -2557,7 +2557,7 @@ export const messages = {
     },
     "problem.noHighlight": {
         text: "no highlight",
-        description: "Error: the original has a colour tag the Russian lacks and the RichTextFix plugin does not put back (it colours numbers again); the text is whole. A term <$…> never counts: the game shows it plain.",
+        description: "Status filter item (not an error, not in «every error»): the original has a colour tag the Russian lacks; the text is whole, and the RichTextFix plugin may colour it by its own rules. A term <$…> never counts: the game shows it plain.",
     },
     "problem.newlines": {
         text: "line breaks differ",
@@ -2578,14 +2578,6 @@ export const messages = {
     "checks.brokenTagHint": {
         text: "A tag is left open or broken, a closer has nothing to close, or a tag the English lacks.",
         description: "Hint of the broken tag mark.",
-    },
-    "checks.noHighlight": {
-        text: "no highlight",
-        description: "Mark on a variant: a colour tag of the English missing that the plugin does not put back (the game shows the text without its colour).",
-    },
-    "checks.noHighlightHint": {
-        text: "The English has a tag (colour, italics) this text lacks, and the plugin will not put it back: it colours numbers again, not words. The text is whole.",
-        description: "Hint of the no highlight mark.",
     },
     "overview.counts": {
         text: "Texts: {total} · with Russian: {ru} · checked: {approved} ({share})",
@@ -2854,6 +2846,62 @@ export const messages = {
     "edits.allHint": {
         text: "Every member's proposals, not only mine.",
         description: "View menu of the Edits tab: the hint under Everyone's edits.",
+    },
+    "admin.pages": {
+        text: "Admin pages",
+        description: "Accessible name of the Admin tab's inner tabs.",
+    },
+    "admin.page.main": {
+        text: "General",
+        description: "Admin inner tab: requests, members, maintenance, statistics.",
+    },
+    "admin.page.tags": {
+        text: "Tags",
+        description: "Admin inner tab: the words of the game's colour tags for the plugin's rules.",
+    },
+    "admin.tags.title": {
+        text: "Words in colour tags",
+        description: "Heading of the Admin › Tags page.",
+    },
+    "admin.tags.hint": {
+        text: "Each English word or phrase the game colours with a tag, in how many texts, and the Russian stem the pack writes for it where its text keeps the tag. The plugin's rules are not connected yet.",
+        description: "Line under the heading of Admin › Tags.",
+    },
+    "admin.tags.col.en": {
+        text: "English in a colour tag",
+        description: "Column: the English word or phrase inside a colour tag.",
+    },
+    "admin.tags.col.lines": {
+        text: "Lines",
+        description: "Column: how many texts have it in a colour tag.",
+    },
+    "admin.tags.col.ru": {
+        text: "Russian stem in the translation",
+        description: "Column: the Russian stem the pack writes for it (умеренн-, урон искусств-).",
+    },
+    "admin.tags.col.rule": {
+        text: "Rule in the plugin",
+        description: "Column: the plugin's rule for the word.",
+    },
+    "admin.tags.unknown": {
+        text: "unknown",
+        description: "The plugin's rule is not known (its rules are not read yet).",
+    },
+    "admin.tags.copy": {
+        text: "Copy the list for Kolooo",
+        description: "Button: copy the table as tab-separated text.",
+    },
+    "admin.tags.copied": {
+        text: "Copied: {count, plural, one {# line} other {# lines}}",
+        description: "Toast after copying the list.",
+    },
+    "admin.tags.copyFailed": {
+        text: "Couldn't copy: the browser did not allow it.",
+        description: "Toast when the clipboard refused.",
+    },
+    "admin.tags.load": {
+        text: "Couldn't load the words.",
+        description: "Admin › Tags: the list failed to load.",
     },
 } satisfies MessageMap;
 

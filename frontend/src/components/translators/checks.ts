@@ -135,15 +135,24 @@ export function checkVariant(text: string, variant: string, line: TranslatorLine
     };
 }
 
-/** How many errors a text has (each glossary term counts; length is no error): "Approve" asks first when any. */
+/**
+ * How many errors a text has (each glossary term counts; length is no error, nor «no highlight»: the text is
+ * whole and the plugin may colour it by its own rules): "Approve" asks first when any.
+ */
 export function problemCount(c: IVariantCheck | undefined): number {
     if (!c) return 0;
-    return c.glossary.length + Number(c.brokenTag || c.placeholders.length > 0) + Number(c.noNickname) + Number(c.noHighlight) + Number(c.newlines !== null) + Number(c.address !== null);
+    return c.glossary.length + Number(c.brokenTag || c.placeholders.length > 0) + Number(c.noNickname) + Number(c.newlines !== null) + Number(c.address !== null);
 }
 
-/** Whether a variant passes every check. */
+/** Whether a variant passes every check («no highlight» is no error). */
 export function passes(c: IVariantCheck): boolean {
-    return c.glossary.length === 0 && !c.brokenTag && !c.noHighlight && c.placeholders.length === 0 && !c.noNickname && c.newlines === null && c.longer === null && c.address === null;
+    return c.glossary.length === 0 && !c.brokenTag && c.placeholders.length === 0 && !c.noNickname && c.newlines === null && c.longer === null && c.address === null;
+}
+
+/** Whether a line's problems hold an error — «Status: every error»; «no highlight» is only its own filter item. */
+export function hasError(problems: ReadonlySet<ProblemKind>): boolean {
+    for (const p of problems) if (p !== "noHighlight") return true;
+    return false;
 }
 
 export interface ICandidate {

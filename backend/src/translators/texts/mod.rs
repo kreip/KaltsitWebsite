@@ -13,6 +13,7 @@ pub mod levels;
 pub mod plugin_styles;
 pub mod problems;
 pub mod routes;
+pub mod tag_words;
 pub mod tags;
 
 use std::collections::HashMap;

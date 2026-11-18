@@ -256,15 +256,19 @@ substitutions and tags of the line's English: a tag's button wraps the selection
 the cursor inside a span "Remove the tag" drops both halves at once. A warning names the
 original's tags a translation lacks or adds; the same test marks every variant.
 
-"No highlight" is honest about the RichTextFix plugin (`markup.ts::lostHighlights`,
-`texts/problems.rs::lost_highlights`; the plugin's `RichTextStyleRestorer`, read by
-decompiling): into a plain translation the plugin puts back a style that covers the whole
-text, a style whose text stands in the translation as it is (a number, `SP`), and a
-style's colour on its numbers (a substitution counts as one) found as many times; it never
-puts back words, a style it does not know (`pluginStyles.ts` / `plugin_styles.rs`, the
-plugin's own list; the names are matched case-sensitively) or anything into a translation
-that has tags of its own (whole-text styles aside). A term `<$…>` is never a lost
-highlight: the game shows its words plain.
+"No highlight" (`markup.ts::lostHighlights`, `texts/problems.rs::lost_highlights`) is **not an error**:
+the text is whole, and the RichTextFix plugin colours words back by its own rules (Kolooo's word rules,
+not read by the site yet). It never shows as a mark in the rows, does not count in «every error» nor in
+"Approve"'s question, and stays only as its own item of the Status filter. It counts a colour tag of
+the English (`<@…>`, italics, `<color>`) the Russian lacks that the plugin's known behaviour (a style
+over the whole text, a number, a style it does not know: `pluginStyles.ts` / `plugin_styles.rs`) does
+not explain; a term `<$…>` never counts — the game shows its words plain.
+
+**Admin › Tags** (`GET /api/translators/admin/tag-words`, `texts/tag_words.rs`): every English word or
+phrase in a colour tag («moderately», «Arts damage»), in how many texts, the Russian stem the pack
+writes for it where its text keeps the same tag (the n-th span of that style: «умеренн-», «урон
+искусств»), and the plugin's rule — «неизвестно» until Kolooo's rules are connected; "Copy the list for
+Kolooo" copies it as tab-separated text.
 
 ## Skill levels in the dictionary
 
