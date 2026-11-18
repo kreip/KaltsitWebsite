@@ -13,7 +13,7 @@
  */
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
-import { Check, ChevronDown, ChevronRight, History, PenLine, RotateCcw, Trash2, Undo2, X } from "lucide-react";
+import { Check, ChevronDown, ChevronRight, Eye, History, PenLine, RotateCcw, Trash2, Undo2, X } from "lucide-react";
 import type React from "react";
 import { Fragment, useId, useMemo, useRef, useState } from "react";
 import { Badge } from "#/components/ui/badge";
@@ -21,13 +21,13 @@ import { Button } from "#/components/ui/button";
 import { Checkbox } from "#/components/ui/checkbox";
 import { Collapsible, CollapsiblePanel, CollapsibleTrigger } from "#/components/ui/collapsible";
 import { Empty, EmptyDescription, EmptyHeader, EmptyTitle } from "#/components/ui/empty";
+import { Label } from "#/components/ui/label";
 import { LoadFailed } from "#/components/ui/load-failed";
 import { Menu, MenuItem, MenuPopup, MenuTrigger } from "#/components/ui/menu";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "#/components/ui/select";
 import { Skeleton } from "#/components/ui/skeleton";
 import { Spinner } from "#/components/ui/spinner";
-import { Switch } from "#/components/ui/switch";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "#/components/ui/table";
-import { ToggleGroup, ToggleGroupItem } from "#/components/ui/toggle-group";
 import { useFormatters, useLocale, useT } from "#/lib/i18n";
 import type { TypedT } from "#/lib/i18n/messages";
 import { deleteProposalFn, editsQueryOptions, type ProposalDecision, proposalVersionsQueryOptions, rewriteProposalFn, translatorsMeQueryOptions } from "#/lib/translators/api";
@@ -42,6 +42,7 @@ import { TextDiff } from "./TextDiff";
 import { TokenEditor } from "./TokenEditor";
 import type { messages } from "./translators.messages";
 import { fromWords } from "./translatorVariants";
+import { ViewItem } from "./ViewMenu";
 import { plainText, TEXT_PLACE } from "./where";
 
 type T = TypedT<typeof messages>;
@@ -353,20 +354,46 @@ function inFilter(row: EditRow, filter: EditFilter): boolean {
 }
 
 /** The state chips above the list, each with its count; the two rarer states only when they have rows. */
-function FilterChips({ rows, value, onChange, t }: { rows: readonly EditRow[]; value: EditFilter; onChange: (next: EditFilter) => void; t: T }): React.ReactElement {
-    const f = useFormatters();
+/** The Status filter, as on the other tabs: every state with its count (approved by another and outdated only when there are such). */
+function StatusSelect({ rows, value, onChange, t }: { rows: readonly EditRow[]; value: EditFilter; onChange: (next: EditFilter) => void; t: T }): React.ReactElement {
+    const id = useId();
     const count = (filter: EditFilter) => rows.filter((r) => inFilter(r, filter)).length;
+    const name = (filter: EditFilter) => (filter === "all" ? t("edits.filter.all") : filter === "released" ? t("edits.filter.released") : t(`state.${filter}` as "state.proposed"));
+    const word = (filter: EditFilter) => t("problem.item", { name: name(filter), count: count(filter) });
     return (
-        <ToggleGroup aria-label={t("edits.filter")} className="w-auto max-w-full flex-wrap gap-1.5" onValueChange={(next) => onChange((next[0] as EditFilter | undefined) ?? "all")} size="sm" value={[value]} variant="outline">
-            {EDIT_FILTERS.filter((filter) => (filter !== "otherApproved" && filter !== "outdated") || count(filter) > 0 || value === filter).map((filter) => (
-                <ToggleGroupItem key={filter} className="flex-none gap-1.5 px-3" value={filter}>
-                    {filter === "all" ? t("edits.filter.all") : filter === "released" ? t("edits.filter.released") : t(`state.${filter}` as "state.proposed")}
-                    <Badge className="font-mono tabular-nums" size="sm" variant="secondary">
-                        {f.number(count(filter))}
-                    </Badge>
-                </ToggleGroupItem>
-            ))}
-        </ToggleGroup>
+        <div className="flex w-full flex-col gap-1.5 sm:w-64">
+            <Label htmlFor={id}>{t("search.status")}</Label>
+            <Select value={value} onValueChange={(v: string | null) => onChange((v as EditFilter | null) ?? "all")}>
+                <SelectTrigger id={id} size="sm">
+                    <SelectValue>{() => word(value)}</SelectValue>
+                </SelectTrigger>
+                <SelectContent alignItemWithTrigger={false}>
+                    {EDIT_FILTERS.filter((filter) => (filter !== "otherApproved" && filter !== "outdated") || count(filter) > 0 || value === filter).map((filter) => (
+                        <SelectItem key={filter} value={filter}>
+                            {word(filter)}
+                        </SelectItem>
+                    ))}
+                </SelectContent>
+            </Select>
+        </div>
+    );
+}
+
+/** The Edits tab's View menu, as on the other tabs: Compare, and Everyone's edits for a translator. */
+function EditsView({ compare, onCompare, all, onAll, lead, t }: { compare: boolean; onCompare: (on: boolean) => void; all: boolean; onAll: (on: boolean) => void; lead: boolean; t: T }): React.ReactElement {
+    const on = [compare, lead && all].filter(Boolean).length;
+    return (
+        <Menu>
+            <MenuTrigger render={<Button variant="outline" size="sm" />}>
+                <Eye aria-hidden="true" />
+                {t("view.button")}
+                {on > 0 ? <span className="text-muted-foreground">· {on}</span> : null}
+            </MenuTrigger>
+            <MenuPopup align="start" className="w-80">
+                <ViewItem checked={compare} onChange={onCompare} label={t("toggle.diff")} hint={t("toggle.diffHint")} />
+                {lead ? <ViewItem checked={all} onChange={onAll} label={t("edits.all")} hint={t("edits.allHint")} /> : null}
+            </MenuPopup>
+        </Menu>
     );
 }
 
@@ -445,10 +472,8 @@ function BatchRow({ batch, rows, lead, open, onToggle, ticked, onTick, t }: { ba
 
 export function MyEditsTab(): React.ReactElement {
     const t: T = useT("translators");
-    const allId = useId();
     const me = useQuery(translatorsMeQueryOptions());
     const lead = me.data ? isLead(me.data) : false;
-    const diffId = useId();
     const [all, setAll] = useState(false);
     const [compare, setCompare] = useState(false);
     const [openBatches, setOpenBatches] = useState<ReadonlySet<number>>(new Set());
@@ -482,22 +507,11 @@ export function MyEditsTab(): React.ReactElement {
 
     return (
         <div className="flex flex-col gap-4">
-            <div className="flex flex-wrap items-center justify-between gap-3">
-                <div className="flex flex-wrap items-center gap-4">
-                    {lead ? (
-                        <label htmlFor={allId} className="flex items-center gap-3">
-                            <Switch id={allId} checked={all} onCheckedChange={setAll} />
-                            <span className="font-medium text-sm">{t("edits.all")}</span>
-                        </label>
-                    ) : null}
-                    <label htmlFor={diffId} className="flex items-center gap-3" title={t("toggle.diffHint")}>
-                        <Switch id={diffId} checked={compare} onCheckedChange={setCompare} />
-                        <span className="font-medium text-sm">{t("toggle.diff")}</span>
-                    </label>
-                    <ExportDialog forGame={exportsForGame(me.data)} releases={marksReleases(me.data)} t={t} />
-                </div>
+            <div className="flex flex-wrap items-end gap-4">
+                <StatusSelect rows={everyRow} value={filter} onChange={setFilter} t={t} />
+                <EditsView compare={compare} onCompare={setCompare} all={all} onAll={setAll} lead={lead} t={t} />
+                <ExportDialog forGame={exportsForGame(me.data)} releases={marksReleases(me.data)} t={t} />
             </div>
-            {everyRow.length > 0 ? <FilterChips rows={everyRow} value={filter} onChange={setFilter} t={t} /> : null}
             {rows.length === 0 ? (
                 <Empty>
                     <EmptyHeader>

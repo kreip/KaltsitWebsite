@@ -731,5 +731,6 @@
     "matching.confirm": "Утвердить {count}",
     "matching.scope": "Где",
     "matching.story": "Эта история",
-    "matching.chapter": "Вся глава"
+    "matching.chapter": "Вся глава",
+    "edits.allHint": "Предложения всех участников, а не только мои."
 }

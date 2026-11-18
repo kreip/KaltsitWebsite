@@ -374,9 +374,10 @@ Storage test against a throwaway database:
 
 ## The Edits list
 
-Above the list: chips by state with their counts — All, Proposed, Approved, Rejected, Released
-in a pack (`EditRow.releasedIn`: the version the approved text went out in), and Approved by
-another / Outdated when there are such — and **Compare**: "now" as its changes against "was".
+Above the list, as on the other tabs: the **Status** drop-down with the counts — All, Proposed,
+Approved, Rejected, Released in a pack (`EditRow.releasedIn`: the version the approved text went
+out in), and Approved by another / Outdated when there are such — and the **View** menu (the eye):
+**Compare** ("now" as its changes against "was") and, for a translator, **Everyone's edits**.
 
 Compare (here, in History, on the tables) marks only the letters of a word changed by a few
 («Доберман» → «Доберманн»: the «н»); the game's tags are left out of it («tags changed» when

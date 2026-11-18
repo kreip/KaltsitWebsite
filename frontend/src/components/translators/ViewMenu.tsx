@@ -39,7 +39,8 @@ export function viewOf(search: ITranslatorsSearch): IView {
     return { variants: !gameOnly && search.variants !== false, diff: !gameOnly && search.diff === true, cn: search.cn === true, service: search.service === true, gameOnly };
 }
 
-function Item({ checked, onChange, label, hint, disabled = false }: { checked: boolean; onChange: (checked: boolean) => void; label: string; hint: string; disabled?: boolean }): React.ReactElement {
+/** One switch of a View menu (also the Edits tab's). */
+export function ViewItem({ checked, onChange, label, hint, disabled = false }: { checked: boolean; onChange: (checked: boolean) => void; label: string; hint: string; disabled?: boolean }): React.ReactElement {
     return (
         <MenuCheckboxItem checked={checked} onCheckedChange={onChange} disabled={disabled} closeOnClick={false} variant="switch">
             <span className="flex flex-col gap-0.5 py-0.5">
@@ -65,15 +66,15 @@ export function ViewMenu({ search, onSearch, story = false }: { search: ITransla
                 {view.gameOnly ? <span className="text-muted-foreground">· {t("view.gameOnlyShort")}</span> : on > 0 ? <span className="text-muted-foreground">· {on}</span> : null}
             </MenuTrigger>
             <MenuPopup align="start" className="w-80">
-                <Item checked={view.gameOnly} disabled={guest} onChange={(c) => onSearch({ ...search, game: c || undefined })} label={t("view.gameOnly")} hint={guest ? t("view.gameOnlyGuest") : t("view.gameOnlyHint")} />
-                <Item checked={search.open === true} disabled={view.gameOnly} onChange={(c) => onSearch({ ...search, open: c || undefined })} label={t("view.openAll")} hint={t("view.openAllHint")} />
+                <ViewItem checked={view.gameOnly} disabled={guest} onChange={(c) => onSearch({ ...search, game: c || undefined })} label={t("view.gameOnly")} hint={guest ? t("view.gameOnlyGuest") : t("view.gameOnlyHint")} />
+                <ViewItem checked={search.open === true} disabled={view.gameOnly} onChange={(c) => onSearch({ ...search, open: c || undefined })} label={t("view.openAll")} hint={t("view.openAllHint")} />
                 <MenuSeparator />
-                <Item checked={view.variants} disabled={view.gameOnly} onChange={(c) => onSearch({ ...search, variants: c ? undefined : false })} label={t("toggle.variants")} hint={t("toggle.variantsHint")} />
-                <Item checked={view.diff} disabled={view.gameOnly} onChange={(c) => onSearch({ ...search, diff: c || undefined })} label={t("toggle.diff")} hint={t("toggle.diffHint")} />
+                <ViewItem checked={view.variants} disabled={view.gameOnly} onChange={(c) => onSearch({ ...search, variants: c ? undefined : false })} label={t("toggle.variants")} hint={t("toggle.variantsHint")} />
+                <ViewItem checked={view.diff} disabled={view.gameOnly} onChange={(c) => onSearch({ ...search, diff: c || undefined })} label={t("toggle.diff")} hint={t("toggle.diffHint")} />
                 {story ? (
                     <>
-                        <Item checked={view.cn} onChange={(c) => onSearch({ ...search, cn: c || undefined })} label={t("toggle.cn")} hint={t("toggle.cnHint")} />
-                        <Item checked={view.service} onChange={(c) => onSearch({ ...search, service: c || undefined })} label={t("toggle.service")} hint={t("toggle.serviceHint")} />
+                        <ViewItem checked={view.cn} onChange={(c) => onSearch({ ...search, cn: c || undefined })} label={t("toggle.cn")} hint={t("toggle.cnHint")} />
+                        <ViewItem checked={view.service} onChange={(c) => onSearch({ ...search, service: c || undefined })} label={t("toggle.service")} hint={t("toggle.serviceHint")} />
                     </>
                 ) : null}
             </MenuPopup>

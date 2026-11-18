@@ -503,8 +503,8 @@ export const messages = {
         description: "State of a proposal whose English is gone from the story since an import.",
     },
     "edits.all": {
-        text: "Everyone's",
-        description: "Switch for the lead in My edits: show every translator's proposals.",
+        text: "Everyone's edits",
+        description: "View menu of the Edits tab (translators): show every member's proposals, not only mine.",
     },
     "edits.load": {
         text: "Couldn't load the edits.",
@@ -2850,6 +2850,10 @@ export const messages = {
     "matching.chapter": {
         text: "The whole chapter",
         description: "Scope: every story of the chapter.",
+    },
+    "edits.allHint": {
+        text: "Every member's proposals, not only mine.",
+        description: "View menu of the Edits tab: the hint under Everyone's edits.",
     },
 } satisfies MessageMap;
 
