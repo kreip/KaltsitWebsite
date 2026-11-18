@@ -425,8 +425,26 @@ approved ("the text as in the game", "the variant by <author>") and marks a newe
 The **View** button next to the filters (Story, Search, Game sections) holds the display
 settings: the variants, compare, Chinese and the service rows (Story), **Only as in the game**
 (`game=1` in the address): the game's text and the English, nothing else, and **Open every
-line** (`open=1`). A translator's variant
-equal to the game's text is not shown.
+line** (`open=1`). A translator's or the machine's variant equal to the game's text is not shown —
+typography aside: spaces, «…» / «...», the kind of quotes and dashes (`LinesTable.tsx::sameText`,
+`edits::status::same_text`); a translator's variant equal to the machine's is one block, «Сова ·
+машинный перевод».
+
+## Lines with nothing to translate
+
+A text with no letter («.....», «...?», «—», a number; tags, `{…}` and `\n` aside) is not edited and
+counts as **checked by the system**: «проверено (системой)» beside it, approved in every progress
+and in the search's states, never waiting (`edits::status::editable`, the SQL function
+`translators.lettered` and the generated columns `texts.lettered`, `story_lines.lettered`,
+migration t023).
+
+## Approve the lines that match the game
+
+"Approve lines matching the game…" (a translator or an admin; Story: this story or the whole
+chapter, Game sections: the section) lists the entries where every translator's and machine
+variant at every place is the game's text (as above), with no live proposal and no approval, and
+approves them as in the game after a look at the list (`POST /api/translators/approvals/matching`,
+then the usual batch). A game section's texts have variants only where they stand in the story.
 
 ## Problems
 
