@@ -842,6 +842,118 @@ pub async fn approve_batch(
     Ok(Json(super::dto::ApprovalBatchResult { approved, skipped }))
 }
 
+/// The entries a translator may approve as in the game at once: in the
+/// stories (or a game section's texts that stand in the story), a line with a
+/// letter, the game's Russian, at least one variant (a translator's or the
+/// machine's) and every variant at every place of the entry equal to the game's
+/// text (typography aside, `status::same_text`); not approved, no live
+/// proposal. One per entry, at its first story line; approved with
+/// `/translators/approvals/batch` (variant `game`). Translators and admins.
+#[utoipa::path(
+    post,
+    path = "/translators/approvals/matching",
+    tag = "translators",
+    security(("bearer_auth" = [])),
+    request_body = super::dto::MatchingInput,
+    responses(
+        (status = 200, description = "The entries, in story order.", body = super::dto::MatchingLines),
+        (status = 400, response = crate::app::openapi::responses::BadRequest),
+        (status = 401, response = crate::app::openapi::responses::Unauthorized),
+        (status = 403, response = crate::app::openapi::responses::Forbidden),
+        (status = 500, response = crate::app::openapi::responses::InternalError)
+    )
+)]
+pub async fn matching_lines(
+    State(state): State<AppState>,
+    auth: MaybeAuthUser,
+    Json(input): Json<super::dto::MatchingInput>,
+) -> Result<Json<super::dto::MatchingLines>, ApiError> {
+    type Row = (
+        String,
+        i32,
+        i16,
+        i32,
+        String,
+        String,
+        Option<String>,
+        Option<String>,
+        Option<String>,
+    );
+    let me = require_member(&state, &auth).await?;
+    if !me.leads() {
+        return Err(ApiError::Forbidden);
+    }
+    if input.story_ids.len() > 2_000 {
+        return Err(ApiError::BadRequest("at most 2000 stories".into()));
+    }
+    // Every story line of the entries looked at (a section's: those that stand in the story).
+    let rows: Vec<Row> = sqlx::query_as(
+        "WITH keys AS (
+             SELECT DISTINCT edit_key FROM translators.story_lines
+             WHERE server = $1 AND story_id = ANY($2) AND lettered
+             UNION
+             SELECT DISTINCT edit_key FROM translators.text_places
+             WHERE server = $1 AND section = $3)
+         SELECT s.story_id, s.line, s.part, s.ord, s.edit_key, s.en, s.ru_game, s.sova, s.ai
+         FROM translators.story_lines s JOIN keys k ON k.edit_key = s.edit_key
+         WHERE s.server = $1 AND s.lettered
+           AND NOT EXISTS (SELECT 1 FROM translators.approvals a
+                           WHERE a.edit_key = s.edit_key AND a.outdated_at IS NULL)
+           AND NOT EXISTS (SELECT 1 FROM translators.proposals p
+                           WHERE p.edit_key = s.edit_key AND p.deleted_at IS NULL
+                             AND p.rejected_at IS NULL AND p.outdated_at IS NULL)
+         ORDER BY s.edit_key, s.story_id, s.ord",
+    )
+    .bind(crate::translators::SERVER)
+    .bind(&input.story_ids)
+    .bind(input.section.as_deref().unwrap_or(""))
+    .persistent(false)
+    .fetch_all(&state.db)
+    .await?;
+    let mut lines: Vec<super::dto::MatchingLine> = Vec::new();
+    let mut at = 0;
+    while at < rows.len() {
+        let key = &rows[at].4;
+        let end = rows[at..]
+            .iter()
+            .position(|r| &r.4 != key)
+            .map_or(rows.len(), |n| at + n);
+        let group = &rows[at..end];
+        at = end;
+        let mut variants = 0;
+        let all_equal = group.iter().all(|(_, _, _, _, _, _, ru, sova, ai)| {
+            let Some(ru) = ru else { return false };
+            [sova, ai].into_iter().flatten().all(|v| {
+                variants += 1;
+                status::same_text(v, ru)
+            })
+        });
+        if !all_equal || variants == 0 {
+            continue;
+        }
+        // The first place in the chosen stories, else the entry's first story line.
+        let first = group
+            .iter()
+            .find(|r| input.story_ids.contains(&r.0))
+            .unwrap_or(&group[0]);
+        lines.push(super::dto::MatchingLine {
+            place: EditPlace {
+                story_id: first.0.clone(),
+                line: first.1,
+                part: first.2,
+                edit_key: None,
+            },
+            ord: first.3,
+            en: first.5.clone(),
+            ru: first.6.clone().unwrap_or_default(),
+        });
+    }
+    lines.sort_by(|a, b| {
+        (a.place.story_id.as_str(), a.ord).cmp(&(b.place.story_id.as_str(), b.ord))
+    });
+    Ok(Json(super::dto::MatchingLines { lines }))
+}
+
 /// The longest reason of a rejection, in characters.
 const MAX_REASON: usize = 1_000;
 

@@ -69,6 +69,10 @@ const MIGRATIONS: &[(&str, &str)] = &[
         include_str!("migrations/t021_skill_levels.sql"),
     ),
     ("t022_batches", include_str!("migrations/t022_batches.sql")),
+    (
+        "t023_lettered",
+        include_str!("migrations/t023_lettered.sql"),
+    ),
 ];
 
 pub async fn migrate(pool: &PgPool) -> Result<(), sqlx::Error> {

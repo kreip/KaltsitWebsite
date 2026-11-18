@@ -547,3 +547,37 @@ pub struct ProposalDecisions {
     #[serde(default)]
     pub reason: Option<String>,
 }
+
+/// "Approve every line whose variants all equal the game's text": the stories
+/// (a chapter's, or one) or a game section to look in.
+#[derive(Debug, Deserialize, ToSchema)]
+#[serde(rename_all = "camelCase")]
+pub struct MatchingInput {
+    /// The stories (`story_id`s) to look in.
+    #[serde(default)]
+    pub story_ids: Vec<String>,
+    /// A game section instead (`operators`, `enemies`, `stages`, `items`, `archives`).
+    #[serde(default)]
+    pub section: Option<String>,
+}
+
+/// One entry whose variants all equal the game's text, at its first story line.
+#[derive(Debug, Serialize, TS, ToSchema)]
+#[serde(rename_all = "camelCase")]
+#[ts(export)]
+pub struct MatchingLine {
+    pub place: EditPlace,
+    /// The line's number in its story, from 0.
+    pub ord: i32,
+    pub en: String,
+    pub ru: String,
+}
+
+/// The entries "Approve every line whose variants equal the game's text" would
+/// approve (as in the game), one per entry.
+#[derive(Debug, Serialize, TS, ToSchema)]
+#[serde(rename_all = "camelCase")]
+#[ts(export)]
+pub struct MatchingLines {
+    pub lines: Vec<MatchingLine>,
+}

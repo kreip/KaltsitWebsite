@@ -181,9 +181,19 @@ function InlineVariant({ tone, label, text, nickname, marks, actions }: { tone: 
     );
 }
 
-/** The same text, spaces aside: a translator's variant equal to the game's text is not shown. */
-function sameText(a: string | null | undefined, b: string | null | undefined): boolean {
-    const squash = (x: string) => x.replaceAll("\\n", "\n").replace(/\s+/g, " ").trim();
+/**
+ * The same text, typography aside — spaces, «…» / «...», the kind of quotes and dashes: a variant equal to the
+ * game's text is not shown, and two equal variants are one block.
+ */
+export function sameText(a: string | null | undefined, b: string | null | undefined): boolean {
+    const squash = (x: string) =>
+        x
+            .replaceAll("\\n", "\n")
+            .replaceAll("…", "...")
+            .replace(/[«»“”„"]/g, '"')
+            .replace(/[—–‑-]/g, "-")
+            .replace(/\s+/g, " ")
+            .trim();
     return Boolean(a && b) && squash(a as string) === squash(b as string);
 }
 
@@ -191,6 +201,11 @@ function sameText(a: string | null | undefined, b: string | null | undefined): b
 export function translatorText(line: TranslatorLine, source: (typeof TRANSLATOR_SOURCES)[number]): string | null {
     const text = line[source];
     return text && !sameText(text, line.ruGame) ? text : null;
+}
+
+/** The machine's variant at a line, unless it is the game's text again. */
+export function aiText(line: TranslatorLine): string | null {
+    return line.ai && !sameText(line.ai, line.ruGame) ? line.ai : null;
 }
 
 /** A line's checks per variant and its recommended variant (checks.ts holds the rule). */
@@ -218,7 +233,7 @@ export function analyse(line: TranslatorLine, edits: KeyEdits | undefined, place
     };
     for (const p of proposalsAt(edits, place)) add(`proposal:${p.id}`, p.text, p.agreements.length);
     for (const source of TRANSLATOR_SOURCES) add(source, translatorText(line, source));
-    add("ai", line.ai);
+    add("ai", aiText(line));
     add("game", line.ruGame);
     if (edits?.approval) checks.set("approved", checkVariant(edits.approval.text, "approved", line, neighbours));
     const approvedHere = Boolean(edits?.approval) || proposalsAt(edits, place).some((p) => p.context && p.approvedAt !== null);
@@ -275,6 +290,11 @@ export function RuCell(props: IRuCellProps): React.ReactElement {
     );
 }
 
+/** A line with no letter («.....», «...?», «—», a number): nothing to translate, checked by the system. */
+function SystemChecked({ t }: { t: T }): React.ReactElement {
+    return <span className="ms-2 text-subtle-foreground text-xs">{t("system.checked")}</span>;
+}
+
 /** A folded row: the text it stands with (the approved one, else the game's) and what is wrong with it, nothing else. */
 function FoldedRuCell({ line, analysis, place, nickname, edits, find = null, t }: IRuCellProps): React.ReactElement {
     const settled = settledText(edits, place);
@@ -285,6 +305,7 @@ function FoldedRuCell({ line, analysis, place, nickname, edits, find = null, t }
             <div>
                 {text ? <StoryText text={text} nickname={nickname} quotes={quotesAt(edits, place)} find={settled ? null : find} /> : <span className="text-subtle-foreground">{t("ru.missing")}</span>}
                 {check ? <Marks check={check} recommended={false} skipGlossary t={t} /> : null}
+                {line.editable ? null : <SystemChecked t={t} />}
             </div>
             <Terms terms={line.terms} onlyMissing t={t} />
         </div>
@@ -322,6 +343,8 @@ function FullRuCell({ line, analysis, place, nickname, showVariants, showDiff, e
         );
     };
     const proposalCount = proposalsAt(edits, place).length;
+    // The machine's variant, unless it is the game's text again.
+    const ai = aiText(line);
     // Approved: only the approved text (the game's old one and the proposals are in the history).
     const settled = settledText(edits, place);
     const shown = useContext(ActionsShown);
@@ -364,6 +387,7 @@ function FullRuCell({ line, analysis, place, nickname, showVariants, showDiff, e
                         {shown ? null : actions}
                         {line.ruGame ? <StoryText text={line.ruGame} nickname={nickname} quotes={quotes} find={find} /> : <span className="text-subtle-foreground">{t("ru.missing")}</span>}
                         {marks("game", true)}
+                        {line.editable ? null : <SystemChecked t={t} />}
                         {line.ruGame && line.editable && (edits?.gameAgreements.length ?? 0) > 0 ? <AgreeButton place={place} variant="game" people={edits?.gameAgreements ?? []} me={me} t={t} /> : null}
                     </div>
                     {shown ? actions : null}
@@ -406,20 +430,21 @@ function FullRuCell({ line, analysis, place, nickname, showVariants, showDiff, e
             )}
             {showVariants && !settled ? (
                 <>
-                    {/* Each translator's variant under its author's name. */}
+                    {/* Each translator's variant under its author's name; one equal to the machine's names both. */}
                     {TRANSLATOR_SOURCES.map((source) => {
                         // The game's text again: nothing new to show.
                         const text = translatorText(line, source);
+                        const withAi = text !== null && sameText(text, ai);
                         return text ? (
                             <Fragment key={source}>
-                                <InlineVariant tone={TONE.translator} label={t("hints.translator", { name: translatorName(source, locale) })} text={text} nickname={nickname} marks={marks(source)} actions={variantActions(source, text)} />
+                                <InlineVariant tone={TONE.translator} label={withAi ? t("hints.translatorAndAi", { name: translatorName(source, locale) }) : t("hints.translator", { name: translatorName(source, locale) })} text={text} nickname={nickname} marks={marks(source)} actions={variantActions(source, text)} />
                                 <VariantNotes {...notes} variant={source} />
                             </Fragment>
                         ) : null;
                     })}
-                    {line.ai ? (
+                    {ai && !TRANSLATOR_SOURCES.some((source) => sameText(translatorText(line, source), ai)) ? (
                         <>
-                            <InlineVariant tone={TONE.ai} label={t("hints.ai")} text={line.ai} nickname={nickname} marks={marks("ai")} actions={variantActions("ai", line.ai)} />
+                            <InlineVariant tone={TONE.ai} label={t("hints.ai")} text={ai} nickname={nickname} marks={marks("ai")} actions={variantActions("ai", ai)} />
                             <VariantNotes {...notes} variant="ai" />
                         </>
                     ) : null}

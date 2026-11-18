@@ -40,8 +40,9 @@ import { charactersQueryOptions, progressQueryOptions, requestAccessFn, setStory
 import type { StoryRead } from "#/types/generated/StoryRead";
 import type { TranslatorsMe } from "#/types/generated/TranslatorsMe";
 import { AdminTab } from "./AdminTab";
+import { ApproveMatching } from "./ApproveMatching";
 import { GlossaryTab } from "./GlossaryTab";
-import { isAdmin, TONE, Toned, useEditMutation } from "./LineEdits";
+import { isAdmin, isLead, TONE, Toned, useEditMutation } from "./LineEdits";
 import { LinesTable } from "./LinesTable";
 import { MyEditsTab } from "./MyEditsTab";
 import { OpenAll } from "./openRows";
@@ -237,6 +238,7 @@ interface ISearchProps {
 
 function StoryTab({ search, onSearch }: ISearchProps): React.ReactElement {
     const t: T = useT("translators");
+    const me = useQuery(translatorsMeQueryOptions());
     const ids = { chapter: useId(), story: useId() };
     const index = useQuery(storyIndexQueryOptions("en"));
 
@@ -315,6 +317,10 @@ function StoryTab({ search, onSearch }: ISearchProps): React.ReactElement {
                     </div>
 
                     <ViewMenu search={search} onSearch={onSearch} story />
+
+                    {group && me.data && isLead(me.data) ? (
+                        <ApproveMatching scopes={[...(story ? [{ label: t("matching.story"), scope: { storyIds: [story.id], section: null } }] : []), { label: t("matching.chapter"), scope: { storyIds: group.stories.map((s) => s.id), section: null } }]} nickname={me.data.nickname ?? t("nickname.fallback")} t={t} />
+                    ) : null}
 
                     {story && group ? (
                         <Button variant="ghost" size="sm" render={<Link to="/translators/book" search={{ group: group.id, story: story.id }} />}>

@@ -32,6 +32,7 @@ import type { LevelsApplied } from "#/types/generated/LevelsApplied";
 import type { LineHistory } from "#/types/generated/LineHistory";
 import type { LinePick } from "#/types/generated/LinePick";
 import type { LoginResponse } from "#/types/generated/LoginResponse";
+import type { MatchingLines } from "#/types/generated/MatchingLines";
 import type { MemberRow } from "#/types/generated/MemberRow";
 import type { NameRu } from "#/types/generated/NameRu";
 import type { ObjectLines } from "#/types/generated/ObjectLines";
@@ -216,6 +217,14 @@ export const approveBatchFn = createServerFn({ method: "POST" })
     .handler(async ({ data }): Promise<ApprovalBatchResult> => {
         const res = await send("/translators/approvals/batch", "POST", { items: data.items.map(approvalBody) });
         return (await res.json()) as ApprovalBatchResult;
+    });
+
+/** The entries whose variants all equal the game's text, in the stories or a game section (a translator). */
+export const matchingLinesFn = createServerFn({ method: "POST" })
+    .inputValidator((d: { storyIds: string[]; section: string | null }) => d)
+    .handler(async ({ data }): Promise<MatchingLines> => {
+        const res = await send("/translators/approvals/matching", "POST", data);
+        return (await res.json()) as MatchingLines;
     });
 
 export type ExportMode = "approved" | "review";

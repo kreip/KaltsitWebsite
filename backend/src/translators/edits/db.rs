@@ -1195,9 +1195,9 @@ pub async fn set_read(
     Ok(())
 }
 
-/// Every story's progress over its lines that can be edited (a letter or a
-/// digit): approved (the entry's approval is current, the game's Russian
-/// checked included, or a one-place proposal approved here), waiting (a live
+/// Every story's progress over its lines: approved (the entry's approval is
+/// current, the game's Russian checked included, or a one-place proposal
+/// approved here; a line with no letter is checked by the system), waiting (a live
 /// proposal for every place or for this one, not approved, not outdated) and
 /// outdated (a decision left here for a previous English, not approved).
 pub async fn progress(pool: &PgPool) -> Result<Vec<StoryProgress>, sqlx::Error> {
@@ -1218,10 +1218,10 @@ pub async fn progress(pool: &PgPool) -> Result<Vec<StoryProgress>, sqlx::Error> 
              SELECT story_id, line, part FROM translators.approvals WHERE outdated_at IS NOT NULL)
          SELECT s.story_id,
                 COUNT(*)::int AS total,
-                COUNT(*) FILTER (WHERE a.edit_key IS NOT NULL OR q.story_id IS NOT NULL)::int AS approved,
-                COUNT(*) FILTER (WHERE a.edit_key IS NULL AND q.story_id IS NULL AND o.story_id IS NULL
+                COUNT(*) FILTER (WHERE a.edit_key IS NOT NULL OR q.story_id IS NOT NULL OR NOT s.lettered)::int AS approved,
+                COUNT(*) FILTER (WHERE s.lettered AND a.edit_key IS NULL AND q.story_id IS NULL AND o.story_id IS NULL
                                  AND (k.edit_key IS NOT NULL OR p.story_id IS NOT NULL))::int AS waiting,
-                COUNT(*) FILTER (WHERE a.edit_key IS NULL AND q.story_id IS NULL AND o.story_id IS NOT NULL)::int AS outdated
+                COUNT(*) FILTER (WHERE s.lettered AND a.edit_key IS NULL AND q.story_id IS NULL AND o.story_id IS NOT NULL)::int AS outdated
          FROM translators.story_lines s
          LEFT JOIN translators.approvals a ON a.edit_key = s.edit_key AND a.outdated_at IS NULL
          LEFT JOIN keyed k ON k.edit_key = s.edit_key
@@ -1229,7 +1229,7 @@ pub async fn progress(pool: &PgPool) -> Result<Vec<StoryProgress>, sqlx::Error> 
          LEFT JOIN placed_ok q ON q.story_id = s.story_id AND q.line = s.line AND q.part = s.part
          LEFT JOIN (SELECT DISTINCT story_id, line, part FROM stale) o
              ON o.story_id = s.story_id AND o.line = s.line AND o.part = s.part
-         WHERE s.server = $1 AND s.edit_key ~ '[[:alnum:]]'
+         WHERE s.server = $1
          GROUP BY s.story_id",
     )
     .bind(SERVER)

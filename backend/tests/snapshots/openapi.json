@@ -13398,6 +13398,54 @@
         ]
       }
     },
+    "/api/translators/approvals/matching": {
+      "post": {
+        "tags": [
+          "translators"
+        ],
+        "summary": "The entries a translator may approve as in the game at once: in the\nstories (or a game section's texts that stand in the story), a line with a\nletter, the game's Russian, at least one variant (a translator's or the\nmachine's) and every variant at every place of the entry equal to the game's\ntext (typography aside, `status::same_text`); not approved, no live\nproposal. One per entry, at its first story line; approved with\n`/translators/approvals/batch` (variant `game`). Translators and admins.",
+        "operationId": "matching_lines",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MatchingInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "The entries, in story order.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MatchingLines"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        },
+        "security": [
+          {
+            "bearer_auth": []
+          }
+        ]
+      }
+    },
     "/api/translators/characters": {
       "get": {
         "tags": [
@@ -29371,6 +29419,67 @@
           "title": {
             "type": "string",
             "description": "The notice's own headline."
+          }
+        }
+      },
+      "MatchingInput": {
+        "type": "object",
+        "description": "\"Approve every line whose variants all equal the game's text\": the stories\n(a chapter's, or one) or a game section to look in.",
+        "properties": {
+          "section": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "A game section instead (`operators`, `enemies`, `stages`, `items`, `archives`)."
+          },
+          "storyIds": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "The stories (`story_id`s) to look in."
+          }
+        }
+      },
+      "MatchingLine": {
+        "type": "object",
+        "description": "One entry whose variants all equal the game's text, at its first story line.",
+        "required": [
+          "place",
+          "ord",
+          "en",
+          "ru"
+        ],
+        "properties": {
+          "en": {
+            "type": "string"
+          },
+          "ord": {
+            "type": "integer",
+            "format": "int32",
+            "description": "The line's number in its story, from 0."
+          },
+          "place": {
+            "$ref": "#/components/schemas/EditPlace"
+          },
+          "ru": {
+            "type": "string"
+          }
+        }
+      },
+      "MatchingLines": {
+        "type": "object",
+        "description": "The entries \"Approve every line whose variants equal the game's text\" would\napprove (as in the game), one per entry.",
+        "required": [
+          "lines"
+        ],
+        "properties": {
+          "lines": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MatchingLine"
+            }
           }
         }
       },

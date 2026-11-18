@@ -1,6 +1,6 @@
 {
     "generatedBy": "bun run i18n:extract",
-    "generatedAt": "2026-11-18T14:42:01.633Z",
+    "generatedAt": "2026-11-18T14:53:51.429Z",
     "entries": [
         {
             "key": "admin.home.access.everyList",
@@ -56990,6 +56990,15 @@
             ]
         },
         {
+            "key": "translators.hints.translatorAndAi",
+            "namespace": "translators",
+            "source_text": "{name} · machine translation",
+            "description": "Label of a translator's variant that is the machine's too (the same text): one block for both.",
+            "placeholders": [
+                "name"
+            ]
+        },
+        {
             "key": "translators.history.current",
             "namespace": "translators",
             "source_text": "current",
@@ -57223,6 +57232,80 @@
             "source_text": "Show all",
             "description": "Small button in a table row whose text is long and folded to a few lines: unfolds the whole row.",
             "placeholders": []
+        },
+        {
+            "key": "translators.matching.button",
+            "namespace": "translators",
+            "source_text": "Approve lines matching the game…",
+            "description": "Button (translators): approve as in the game every line whose variants all equal the game's text.",
+            "placeholders": []
+        },
+        {
+            "key": "translators.matching.chapter",
+            "namespace": "translators",
+            "source_text": "The whole chapter",
+            "description": "Scope: every story of the chapter.",
+            "placeholders": []
+        },
+        {
+            "key": "translators.matching.confirm",
+            "namespace": "translators",
+            "source_text": "Approve {count}",
+            "description": "Dialog's button: approve the listed lines.",
+            "placeholders": [
+                "count"
+            ]
+        },
+        {
+            "key": "translators.matching.hint",
+            "namespace": "translators",
+            "source_text": "Lines where each translator's and the machine's variant is the game's text (typography aside) and nobody has proposed anything. They are approved as in the game, checked.",
+            "description": "Dialog text under the title.",
+            "placeholders": []
+        },
+        {
+            "key": "translators.matching.load",
+            "namespace": "translators",
+            "source_text": "Couldn't find the lines.",
+            "description": "Dialog: the list failed to load.",
+            "placeholders": []
+        },
+        {
+            "key": "translators.matching.none",
+            "namespace": "translators",
+            "source_text": "No such lines here.",
+            "description": "Dialog: nothing to approve.",
+            "placeholders": []
+        },
+        {
+            "key": "translators.matching.scope",
+            "namespace": "translators",
+            "source_text": "Where",
+            "description": "Accessible name of the scope choice (this story / the whole chapter).",
+            "placeholders": []
+        },
+        {
+            "key": "translators.matching.story",
+            "namespace": "translators",
+            "source_text": "This story",
+            "description": "Scope: the story open now.",
+            "placeholders": []
+        },
+        {
+            "key": "translators.matching.table",
+            "namespace": "translators",
+            "source_text": "Lines to approve as in the game",
+            "description": "Accessible name of the dialog's table.",
+            "placeholders": []
+        },
+        {
+            "key": "translators.matching.title",
+            "namespace": "translators",
+            "source_text": "{count, plural, one {# line} other {# lines}}: every variant is the game's text",
+            "description": "Title of the dialog: how many entries would be approved as in the game.",
+            "placeholders": [
+                "count"
+            ]
         },
         {
             "key": "translators.meta.description",
@@ -58933,6 +59016,13 @@
             "namespace": "translators",
             "source_text": "Suggest for the glossary",
             "description": "Title of the dialog that suggests a term for the team's glossary.",
+            "placeholders": []
+        },
+        {
+            "key": "translators.system.checked",
+            "namespace": "translators",
+            "source_text": "checked (by the system)",
+            "description": "Beside a line with no letter («.....», «—», a number): nothing to translate, it counts as checked.",
             "placeholders": []
         },
         {

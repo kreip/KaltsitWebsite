@@ -36,6 +36,7 @@ pub fn router() -> OpenApiRouter<AppState> {
         .routes(routes!(routes::story_progress))
         .routes(routes!(routes::set_approval))
         .routes(routes!(routes::approve_batch))
+        .routes(routes!(routes::matching_lines))
         .routes(routes!(routes::decide_proposals))
 }
 
@@ -100,8 +101,9 @@ pub async fn attach_at(
                     .iter()
                     .any(|p| p.context && p.approved_at.is_some() && same_place(&p.place, here))
         });
+        // A line with no letter is checked by the system.
         l.status = status::line_status(
-            approved_here,
+            approved_here || !l.editable,
             stale(here),
             e.map_or(0, |e| e.proposals.iter().filter(shows).count()),
         )

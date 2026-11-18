@@ -2803,6 +2803,54 @@ export const messages = {
         text: "What the line becomes",
         description: "Accessible name of the box where a check-by-hand line's new text is written in the replace dialog.",
     },
+    "hints.translatorAndAi": {
+        text: "{name} · machine translation",
+        description: "Label of a translator's variant that is the machine's too (the same text): one block for both.",
+    },
+    "system.checked": {
+        text: "checked (by the system)",
+        description: "Beside a line with no letter («.....», «—», a number): nothing to translate, it counts as checked.",
+    },
+    "matching.button": {
+        text: "Approve lines matching the game…",
+        description: "Button (translators): approve as in the game every line whose variants all equal the game's text.",
+    },
+    "matching.title": {
+        text: "{count, plural, one {# line} other {# lines}}: every variant is the game's text",
+        description: "Title of the dialog: how many entries would be approved as in the game.",
+    },
+    "matching.hint": {
+        text: "Lines where each translator's and the machine's variant is the game's text (typography aside) and nobody has proposed anything. They are approved as in the game, checked.",
+        description: "Dialog text under the title.",
+    },
+    "matching.none": {
+        text: "No such lines here.",
+        description: "Dialog: nothing to approve.",
+    },
+    "matching.load": {
+        text: "Couldn't find the lines.",
+        description: "Dialog: the list failed to load.",
+    },
+    "matching.table": {
+        text: "Lines to approve as in the game",
+        description: "Accessible name of the dialog's table.",
+    },
+    "matching.confirm": {
+        text: "Approve {count}",
+        description: "Dialog's button: approve the listed lines.",
+    },
+    "matching.scope": {
+        text: "Where",
+        description: "Accessible name of the scope choice (this story / the whole chapter).",
+    },
+    "matching.story": {
+        text: "This story",
+        description: "Scope: the story open now.",
+    },
+    "matching.chapter": {
+        text: "The whole chapter",
+        description: "Scope: every story of the chapter.",
+    },
 } satisfies MessageMap;
 
 export const { keys } = defineMessages({ namespace, messages });

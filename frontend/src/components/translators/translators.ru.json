@@ -719,5 +719,17 @@
     "guest.requested": "Заявка на рассмотрении",
     "view.gameOnlyGuest": "Только текст игры — пока нет доступа",
     "replace.pickByHand": "Создать предложение с вписанным текстом",
-    "replace.writeByHand": "Каким станет текст"
+    "replace.writeByHand": "Каким станет текст",
+    "hints.translatorAndAi": "{name} · машинный перевод",
+    "system.checked": "проверено (системой)",
+    "matching.button": "Утвердить совпадающие с игрой…",
+    "matching.title": "{count, plural, one {# строка} few {# строки} many {# строк} other {# строки}}: все варианты совпадают с текстом игры",
+    "matching.hint": "Строки, где вариант переводчика и машинный совпадают с текстом игры (с точностью до многоточий, кавычек, тире) и нет предложений. Они будут утверждены «как в игре — проверено».",
+    "matching.none": "Таких строк нет.",
+    "matching.load": "Не удалось найти строки.",
+    "matching.table": "Строки, которые будут утверждены как в игре",
+    "matching.confirm": "Утвердить {count}",
+    "matching.scope": "Где",
+    "matching.story": "Эта история",
+    "matching.chapter": "Вся глава"
 }

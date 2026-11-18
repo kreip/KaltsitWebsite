@@ -561,13 +561,13 @@ pub async fn section_stats(pool: &PgPool) -> Result<Vec<SectionStats>, sqlx::Err
     let story: SectionStats = sqlx::query_as(
         "SELECT 'story' AS section, COUNT(*)::int AS total,
              COUNT(*) FILTER (WHERE s.ru_game IS NOT NULL)::int AS ru,
-             COUNT(*) FILTER (WHERE a.edit_key IS NOT NULL)::int AS approved,
-             COUNT(*) FILTER (WHERE a.edit_key IS NULL AND EXISTS (
+             COUNT(*) FILTER (WHERE a.edit_key IS NOT NULL OR NOT s.lettered)::int AS approved,
+             COUNT(*) FILTER (WHERE s.lettered AND a.edit_key IS NULL AND EXISTS (
                  SELECT 1 FROM translators.proposals p WHERE p.edit_key = s.edit_key
                  AND p.deleted_at IS NULL AND p.rejected_at IS NULL AND p.outdated_at IS NULL))::int AS waiting
          FROM translators.story_lines s
          LEFT JOIN translators.approvals a ON a.edit_key = s.edit_key AND a.outdated_at IS NULL
-         WHERE s.server = $1 AND s.edit_key ~ '[[:alnum:]]'",
+         WHERE s.server = $1",
     )
     .bind(SERVER)
     .fetch_one(pool)
@@ -577,8 +577,8 @@ pub async fn section_stats(pool: &PgPool) -> Result<Vec<SectionStats>, sqlx::Err
         sqlx::query_as::<_, SectionStats>(
             "SELECT x.section, COUNT(*)::int AS total,
                  COUNT(*) FILTER (WHERE t.ru IS NOT NULL)::int AS ru,
-                 COUNT(*) FILTER (WHERE a.edit_key IS NOT NULL)::int AS approved,
-                 COUNT(*) FILTER (WHERE a.edit_key IS NULL AND EXISTS (
+                 COUNT(*) FILTER (WHERE a.edit_key IS NOT NULL OR NOT t.lettered)::int AS approved,
+                 COUNT(*) FILTER (WHERE t.lettered AND a.edit_key IS NULL AND EXISTS (
                      SELECT 1 FROM translators.proposals p WHERE p.edit_key = t.edit_key
                      AND p.deleted_at IS NULL AND p.rejected_at IS NULL AND p.outdated_at IS NULL))::int AS waiting
              FROM translators.texts t

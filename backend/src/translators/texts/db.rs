@@ -155,7 +155,8 @@ fn whole_words(q: &str) -> String {
     out
 }
 
-const APPROVED: &str = "EXISTS (SELECT 1 FROM translators.approvals a WHERE a.edit_key = t.edit_key AND a.outdated_at IS NULL)";
+/// Approved, or a text with no letter: checked by the system (t023).
+const APPROVED: &str = "(NOT t.lettered OR EXISTS (SELECT 1 FROM translators.approvals a WHERE a.edit_key = t.edit_key AND a.outdated_at IS NULL))";
 const PROPOSED: &str = "EXISTS (SELECT 1 FROM translators.proposals p WHERE p.edit_key = t.edit_key AND p.deleted_at IS NULL AND p.rejected_at IS NULL AND p.outdated_at IS NULL)";
 
 /// A live proposal noticeably longer than the game's Russian (the page's
@@ -312,7 +313,7 @@ pub async fn search(
     let mut page: QueryBuilder<Postgres> = QueryBuilder::new(format!(
         "SELECT t.*, CASE WHEN {APPROVED} THEN 'approved' WHEN {PROPOSED} THEN 'proposed' ELSE 'unchecked' END AS status
          FROM (SELECT t.id, t.edit_key, md5(t.edit_key) AS key_md5, t.en, t.ru, t.file, t.plugin_role,
-                      t.ru_plugin, t.sections, t.places, "
+                      t.ru_plugin, t.sections, t.places, t.lettered, "
     ));
     if folded.is_empty() {
         page.push("0");
@@ -536,9 +537,9 @@ struct ObjectRow {
     waiting: i32,
 }
 
-/// Every object of a section with its progress over its texts that can be
-/// edited (a letter or a digit), each English once: approved (the entry's
-/// approval is current) and waiting (a live proposal for every place, not approved).
+/// Every object of a section with its progress over its texts, each English
+/// once: approved (the entry's approval is current; a text with no letter is
+/// checked by the system) and waiting (a live proposal for every place, not approved).
 pub async fn objects(
     pool: &PgPool,
     server: &str,
@@ -572,10 +573,10 @@ pub async fn objects(
                 MIN(p.object_en) AS en,
                 {name_en} AS name_en,
                 {name_ru} AS name_ru,
-                COUNT(DISTINCT p.edit_key) FILTER (WHERE p.edit_key ~ '[[:alnum:]]')::int AS total,
-                COUNT(DISTINCT p.edit_key) FILTER (WHERE p.edit_key ~ '[[:alnum:]]'
-                    AND a.edit_key IS NOT NULL)::int AS approved,
-                COUNT(DISTINCT p.edit_key) FILTER (WHERE p.edit_key ~ '[[:alnum:]]'
+                COUNT(DISTINCT p.edit_key)::int AS total,
+                COUNT(DISTINCT p.edit_key) FILTER (WHERE a.edit_key IS NOT NULL
+                    OR NOT translators.lettered(p.edit_key))::int AS approved,
+                COUNT(DISTINCT p.edit_key) FILTER (WHERE translators.lettered(p.edit_key)
                     AND a.edit_key IS NULL AND k.edit_key IS NOT NULL)::int AS waiting
          FROM translators.text_places p
          {names}

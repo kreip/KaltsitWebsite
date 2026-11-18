@@ -29,8 +29,9 @@ import type { TypedT } from "#/lib/i18n/messages";
 import { objectLinesQueryOptions, objectsQueryOptions, textSummaryQueryOptions, translatorsMeQueryOptions } from "#/lib/translators/api";
 import { cn } from "#/lib/utils";
 import type { TranslatorsMe } from "#/types/generated/TranslatorsMe";
+import { ApproveMatching } from "./ApproveMatching";
 import type { ProblemKind, RecommendRule } from "./checks";
-import { type EditorState, StatusDot } from "./LineEdits";
+import { type EditorState, isLead, StatusDot } from "./LineEdits";
 import { analyse, filterWord, missingTermsEn, PROSE, problemOptions, RuCell } from "./LinesTable";
 import { Folded, isLong, useUnfolded } from "./LongText";
 import { NextUnchecked, TextCounts } from "./Overview";
@@ -388,6 +389,7 @@ function Cards({ section, search, onSearch, lead, t }: ICardsProps): React.React
                         </Button>
                     </div>
                     <ViewMenu search={search} onSearch={onSearch} />
+                    {me.data && isLead(me.data) ? <ApproveMatching scopes={[{ label: section, scope: { storyIds: [], section } }]} nickname={me.data.nickname ?? t("nickname.fallback")} t={t} /> : null}
                 </div>
             )}
             {item && me.data ? (

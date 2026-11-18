@@ -68,10 +68,52 @@ pub fn proposal_state(outdated: bool, approved: Option<Option<i64>>, id: i64) ->
     }
 }
 
-/// A line with no letter and no digit (dots, dashes, an ellipsis) is not
-/// edited: there is nothing to translate.
+/// A line with no letter (dots, dashes, an ellipsis, a number; tags and
+/// substitutions `{…}` aside) is not edited: there is nothing to translate.
+/// It counts as checked by the system (`translators.lettered` in SQL, the
+/// same rule).
 pub fn editable(edit_key: &str) -> bool {
-    plain(edit_key).chars().any(char::is_alphanumeric)
+    let text = plain(edit_key);
+    let mut depth = 0u32;
+    text.chars().any(|c| match c {
+        '{' => {
+            depth += 1;
+            false
+        }
+        '}' => {
+            depth = depth.saturating_sub(1);
+            false
+        }
+        c => depth == 0 && c.is_alphabetic(),
+    })
+}
+
+/// The same text, typography aside — spaces, «…» / «...», the kind of quotes
+/// and dashes (the page's `sameText`): a variant equal to the game's text.
+pub fn same_text(a: &str, b: &str) -> bool {
+    fn squash(x: &str) -> String {
+        let x = x.replace("\\n", "\n").replace('…', "...");
+        let mut out = String::with_capacity(x.len());
+        let mut space = false;
+        for c in x.trim().chars() {
+            let c = match c {
+                '«' | '»' | '“' | '”' | '„' => '"',
+                '—' | '–' | '‑' => '-',
+                c => c,
+            };
+            if c.is_whitespace() {
+                space = true;
+                continue;
+            }
+            if space && !out.is_empty() {
+                out.push(' ');
+            }
+            space = false;
+            out.push(c);
+        }
+        out
+    }
+    squash(a) == squash(b)
 }
 
 /// A proposal's text as stored: line breaks as LF, trimmed. `None` when
@@ -118,7 +160,18 @@ mod tests {
         assert!(!editable("—!?"));
         assert!(!editable("<i>...</i>"));
         assert!(editable("Hm."));
-        assert!(editable("3"));
+        // A number, a substitution: nothing to translate either.
+        assert!(!editable("3"));
+        assert!(!editable("{0}%"));
+        assert!(!editable("...?"));
+        assert!(editable("{0} left"));
+    }
+
+    #[test]
+    fn typography_aside_texts_are_the_same() {
+        assert!(same_text("Доктор...?", "Доктор…?"));
+        assert!(same_text("«Да» — сказал он.", "\"Да\" - сказал  он."));
+        assert!(!same_text("Доктор?", "Доктор…?"));
     }
 
     #[test]
