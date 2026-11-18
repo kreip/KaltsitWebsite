@@ -127,8 +127,8 @@ function SuggestDialog({ selected, onClose, t }: { selected: ISelected; onClose:
 export interface ISelectionMenuProps {
     /** Open the Search tab on a text. */
     onFind: (text: string) => void;
-    /** Open the Glossary tab filtered by a text. */
-    onGlossary: (text: string) => void;
+    /** Open the Glossary tab filtered by a text; without it (a reader outside the team) only "Find everywhere". */
+    onGlossary?: (text: string) => void;
 }
 
 export function SelectionMenu({ onFind, onGlossary }: ISelectionMenuProps): React.ReactElement | null {
@@ -173,14 +173,18 @@ export function SelectionMenu({ onFind, onGlossary }: ISelectionMenuProps): Reac
                         <Search aria-hidden="true" />
                         {t("selection.find")}
                     </Button>
-                    <Button variant="ghost" size="xs" onClick={act((s) => onGlossary(s.text))}>
-                        <BookA aria-hidden="true" />
-                        {t("selection.glossary")}
-                    </Button>
-                    <Button variant="ghost" size="xs" onClick={act(setSuggesting)}>
-                        <BookPlus aria-hidden="true" />
-                        {t("selection.suggest")}
-                    </Button>
+                    {onGlossary ? (
+                        <>
+                            <Button variant="ghost" size="xs" onClick={act((s) => onGlossary(s.text))}>
+                                <BookA aria-hidden="true" />
+                                {t("selection.glossary")}
+                            </Button>
+                            <Button variant="ghost" size="xs" onClick={act(setSuggesting)}>
+                                <BookPlus aria-hidden="true" />
+                                {t("selection.suggest")}
+                            </Button>
+                        </>
+                    ) : null}
                 </div>
             ) : null}
             {suggesting ? <SuggestDialog selected={suggesting} onClose={() => setSuggesting(null)} t={t} /> : null}

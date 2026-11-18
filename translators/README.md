@@ -84,7 +84,19 @@ makes the first admin; everything else is the Admin tab.
 
 ## Members and roles
 
-Only members (`translators.members`) see the section. One role per member:
+**The first admin** (once, after the first deploy; the user must have signed in to the site once):
+`./translators/role.sh <uid> admin`. Everything else — requests, roles, removing members — is the
+**Admin** tab.
+
+Every signed-in user of the site sees «Русификатор» in the menu. One who is not a member
+(`translators.members`) reads the section **read only**, as "Only as in the game" always on: the
+Story, Search and Game sections tabs with the game's text, the English and the Chinese. The backend
+leaves the rest out of what it sends them (`routes::require_reader`, `routes::for_guest`): the
+translators' and the machine's variants, the proposals, approvals, remarks, notes, history, Sova's
+footnotes and glossary sheet; the Glossary, Edits and Admin tabs are not shown. Above the tabs
+"Request access" (once sent: "Request under review", disabled). Signed out: "No access".
+
+One role per member:
 
 - `user` — sees the section, proposes, agrees, remarks;
 - `translator` — also approves and rejects proposals, exports the approved lines for the game;
@@ -92,7 +104,7 @@ Only members (`translators.members`) see the section. One role per member:
   **Admin** tab: requests for access, the members with their roles, the statistics, "Run
   import" (with its step and the last run's summary) and "Refresh site texts".
 
-A signed-in user of the site who is not a member sees "Request access"; an admin accepts the
+An admin accepts the
 request with a role (or declines it) on the Admin tab, changes a member's role or removes a
 member there (never their own: the section keeps an admin). From the command line (the user
 must have signed in to the site once; the command replaces the role):

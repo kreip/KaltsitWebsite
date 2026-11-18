@@ -2496,12 +2496,12 @@ export const messages = {
         description: "Accessible name of the ? next to a line's action icons.",
     },
     "help.approve": {
-        text: "Approve — this text goes to the game (on the game's text: keep it as it is). Translators only.",
-        description: "Help line: the approve button.",
+        text: "Approve — this text goes to the game (on the game's text: keep it as it is).",
+        description: "Help line: the approve button (shown to translators and admins only).",
     },
     "help.reject": {
-        text: "Reject a proposal; the author sees the reason. Translators only.",
-        description: "Help line: the reject button.",
+        text: "Reject a proposal; the author sees the reason.",
+        description: "Help line: the reject button (shown to translators and admins only).",
     },
     "help.propose": {
         text: "Propose your translation (from the game's text or from this variant).",
@@ -2778,6 +2778,22 @@ export const messages = {
     "at.speakers": {
         text: "Speakers",
         description: "Where a text stands: a speaker's name in the story («Story › Speakers › chapter › scene»).",
+    },
+    "guest.title": {
+        text: "Read only",
+        description: "Banner above the section for a signed-in user outside the team: they read the game's texts only.",
+    },
+    "guest.description": {
+        text: "You see the game's text, the English and the Chinese. To propose translations, request access.",
+        description: "Banner text for a signed-in user outside the team.",
+    },
+    "guest.requested": {
+        text: "Request under review",
+        description: "Banner button (disabled) once the user's request for access waits for an admin.",
+    },
+    "view.gameOnlyGuest": {
+        text: "Only the game's text until you have access",
+        description: "View menu: why Only as in the game cannot be switched off for a user outside the team.",
     },
 } satisfies MessageMap;
 

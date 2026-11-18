@@ -30,7 +30,7 @@ import { Textarea } from "#/components/ui/textarea";
 import { toastManager } from "#/components/ui/toast";
 import { useFormatters, useLocale } from "#/lib/i18n";
 import type { TypedT } from "#/lib/i18n/messages";
-import { type AgreeVariant, applyLevelsFn, createCommentFn, createProposalFn, decideProposalsFn, deleteCommentFn, deleteProposalFn, EDIT_QUERY_ROOTS, type ProposalDecision, type ProposalSource, placesQueryOptions, resolveCommentFn, setAgreementFn, setApprovalFn } from "#/lib/translators/api";
+import { type AgreeVariant, applyLevelsFn, createCommentFn, createProposalFn, decideProposalsFn, deleteCommentFn, deleteProposalFn, EDIT_QUERY_ROOTS, type ProposalDecision, type ProposalSource, placesQueryOptions, resolveCommentFn, setAgreementFn, setApprovalFn, translatorsMeQueryOptions } from "#/lib/translators/api";
 import { cn } from "#/lib/utils";
 import type { EditComment } from "#/types/generated/EditComment";
 import type { EditPerson } from "#/types/generated/EditPerson";
@@ -448,9 +448,16 @@ export function IconAction({ icon, label, onClick, onPointerDown, onKeyDown }: {
 
 /** "?": what each icon of the actions means, on hover. */
 export function ActionsHelp({ t }: { t: T }): React.ReactElement {
+    // Only the actions the caller's role has: Approve and Reject are a translator's.
+    const me = useQuery(translatorsMeQueryOptions());
+    const lead = me.data ? isLead(me.data) : false;
     const items: [React.ReactNode, string][] = [
-        [<Check key="a" className="size-3.5" aria-hidden="true" />, t("help.approve")],
-        [<X key="r" className="size-3.5" aria-hidden="true" />, t("help.reject")],
+        ...(lead
+            ? ([
+                  [<Check key="a" className="size-3.5" aria-hidden="true" />, t("help.approve")],
+                  [<X key="r" className="size-3.5" aria-hidden="true" />, t("help.reject")],
+              ] as [React.ReactNode, string][])
+            : []),
         [<PenLine key="p" className="size-3.5" aria-hidden="true" />, t("help.propose")],
         [<MessageSquare key="m" className="size-3.5" aria-hidden="true" />, t("help.remark")],
         [<NotebookPen key="n" className="size-3.5" aria-hidden="true" />, t("help.note")],

@@ -1,14 +1,12 @@
 /**
- * Whether the signed-in user is a member of the translators' section
- * (`translators.members`). The header shows the section's menu item only
- * then; a visitor who is signed out never asks the backend.
+ * Whether the header shows the translators' section («Русификатор»): to every
+ * signed-in user. A member works there; anyone else reads the game's texts
+ * and may request access (the page tells them apart through `/translators/me`).
+ * The name is kept from when the item was for members only.
  */
-import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "#/hooks/use-auth";
-import { translatorsMeQueryOptions } from "./api";
 
 export function useTranslatorsMember(): boolean {
     const { user } = useAuth();
-    const me = useQuery({ ...translatorsMeQueryOptions(), enabled: Boolean(user) });
-    return Boolean(user && me.data?.member);
+    return Boolean(user);
 }

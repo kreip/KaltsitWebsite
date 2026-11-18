@@ -15,7 +15,7 @@ use crate::translators::SERVER;
 use crate::translators::dto::TranslatorLine;
 use crate::translators::edits::dto::EditPlace;
 use crate::translators::edits::{self, status};
-use crate::translators::routes::require_member;
+use crate::translators::routes::{for_guest, require_member, require_reader};
 
 const SECTIONS: &[&str] = &[
     "story",
@@ -98,7 +98,7 @@ fn check_card(section: &str) -> Result<(), ApiError> {
 /// The objects of a game section — operators, enemies, stages, items, and
 /// the operators once more for their archives — with their names in the
 /// game's Russian and how much of each is checked.
-/// Members only.
+/// Any signed-in reader.
 #[utoipa::path(
     get,
     path = "/translators/objects",
@@ -118,7 +118,7 @@ pub async fn objects(
     auth: MaybeAuthUser,
     Query(query): Query<ObjectsQuery>,
 ) -> Result<Json<Vec<GameObject>>, ApiError> {
-    require_member(&state, &auth).await?;
+    require_reader(&state, &auth).await?;
     check_card(&query.section)?;
     Ok(Json(db::objects(&state.db, SERVER, &query.section).await?))
 }
@@ -127,7 +127,8 @@ pub async fn objects(
 /// shows them (an operator: name, class, trait, talents, skills, modules,
 /// base skills, outfits; its archives: the file's parts, the operator
 /// records, the modules' and outfits' stories, the voice lines). Each is edited as the text itself: one
-/// translation wherever the English stands. Members only.
+/// translation wherever the English stands. Members, and the game's texts
+/// only for a signed-in user outside the team.
 #[utoipa::path(
     get,
     path = "/translators/objects/lines",
@@ -148,7 +149,7 @@ pub async fn object_lines(
     auth: MaybeAuthUser,
     Query(query): Query<ObjectLinesQuery>,
 ) -> Result<Json<ObjectLines>, ApiError> {
-    require_member(&state, &auth).await?;
+    let member = require_reader(&state, &auth).await?;
     check_card(&query.section)?;
     let texts = db::object_texts(&state.db, SERVER, &query.section, &query.object).await?;
     if texts.is_empty() {
@@ -169,6 +170,13 @@ pub async fn object_lines(
     fill_level_counts(&state, &places, &mut lines).await?;
     let edits = edits::attach_at(&state.db, &places, &mut lines, |_| false).await?;
     crate::translators::routes::mark_glossary(&state, &mut lines, &places, &edits).await?;
+    // A reader outside the team: the game's texts only.
+    let edits = if member.is_some() {
+        edits
+    } else {
+        for_guest(&mut lines);
+        Vec::new()
+    };
     let rows = texts
         .into_iter()
         .zip(places)
@@ -241,7 +249,8 @@ fn text_line(hit: &TextHit) -> TranslatorLine {
 /// enemies, items, stages), then the same search, each found text as a line of the
 /// story's table — at its first story line (with Sova's and the AI's
 /// variants there), else as the text itself, whose edit holds everywhere —
-/// with the edits of their entries. Members only.
+/// with the edits of their entries. Members, and the game's texts only for a
+/// signed-in user outside the team.
 #[utoipa::path(
     get,
     path = "/translators/search",
@@ -261,7 +270,7 @@ pub async fn search_lines(
     auth: MaybeAuthUser,
     Query(query): Query<TextQuery>,
 ) -> Result<Json<SearchLines>, ApiError> {
-    require_member(&state, &auth).await?;
+    let member = require_reader(&state, &auth).await?;
     check(&query)?;
     let started = std::time::Instant::now();
     let (total, hits) = db::search(&state.db, SERVER, &query).await?;
@@ -296,6 +305,13 @@ pub async fn search_lines(
     fill_level_counts(&state, &places, &mut lines).await?;
     let edits = edits::attach_at(&state.db, &places, &mut lines, |_| false).await?;
     crate::translators::routes::mark_glossary(&state, &mut lines, &places, &edits).await?;
+    // A reader outside the team: the game's texts only.
+    let edits = if member.is_some() {
+        edits
+    } else {
+        for_guest(&mut lines);
+        Vec::new()
+    };
     // The objects named by the query stand above the first page.
     let objects = if query.offset.unwrap_or(0) == 0 {
         let section = query.section.as_deref().filter(|s| !s.is_empty());
@@ -322,7 +338,7 @@ pub async fn search_lines(
 /// The markup tags of the game's texts: the style spans with their colour in
 /// the game, the terms with the name and the explanation the game shows (in
 /// English and in the pack's Russian), each with how many texts use it; the
-/// most used first. Members only (and the internal service key).
+/// most used first. Any signed-in reader (and the internal service key).
 #[utoipa::path(
     get,
     path = "/translators/tags",
@@ -340,14 +356,14 @@ pub async fn game_tags(
     auth: MaybeAuthUser,
 ) -> Result<Json<Vec<super::tags::GameTag>>, ApiError> {
     if !auth.0.as_ref().is_some_and(|u| u.user_id == "service") {
-        require_member(&state, &auth).await?;
+        require_reader(&state, &auth).await?;
     }
     Ok(Json(db::tags(&state.db, SERVER).await?))
 }
 
 /// The overview above the search and the Game sections: how many texts the
 /// filters leave, with Russian, approved, and each problem's count (texts
-/// not approved) under the query and the section. Members only.
+/// not approved) under the query and the section. Any signed-in reader.
 #[utoipa::path(
     get,
     path = "/translators/texts/summary",
@@ -367,7 +383,7 @@ pub async fn text_summary(
     auth: MaybeAuthUser,
     Query(query): Query<TextQuery>,
 ) -> Result<Json<super::dto::TextSummary>, ApiError> {
-    require_member(&state, &auth).await?;
+    require_reader(&state, &auth).await?;
     check(&query)?;
     Ok(Json(db::summary(&state.db, SERVER, &query).await?))
 }

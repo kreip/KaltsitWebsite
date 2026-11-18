@@ -21,7 +21,7 @@ import { toHtml } from "#/lib/story/book/html";
 import { resolveNickname, useStorySettings } from "#/lib/story/settings";
 import type { StoryScript } from "#/types/generated/StoryScript";
 import { SectionLocale } from "./SectionLocale";
-import { MembersOnly } from "./TranslatorsPage";
+import { ReadersOnly } from "./TranslatorsPage";
 import type { messages } from "./translators.messages";
 
 const SERVER = "en";
@@ -78,7 +78,7 @@ function Loaded({ groupId, storyId }: { groupId: string; storyId: string }): Rea
 function SectionBook({ group, story }: { group?: string; story?: string }): React.ReactElement {
     const t: TypedT<typeof messages> = useT("translators");
     return (
-        <MembersOnly>
+        <ReadersOnly>
             {story ? (
                 <Loaded groupId={group ?? ""} storyId={story} />
             ) : (
@@ -88,7 +88,7 @@ function SectionBook({ group, story }: { group?: string; story?: string }): Reac
                     </Button>
                 </div>
             )}
-        </MembersOnly>
+        </ReadersOnly>
     );
 }
 

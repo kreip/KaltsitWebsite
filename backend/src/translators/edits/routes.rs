@@ -17,7 +17,7 @@ use super::status::{self, CONFIRM_PLACES};
 use crate::app::error::ApiError;
 use crate::app::extractors::auth::MaybeAuthUser;
 use crate::app::state::AppState;
-use crate::translators::routes::require_member;
+use crate::translators::routes::{require_member, require_reader};
 
 /// The id of what was created.
 #[derive(Debug, Serialize, TS, ToSchema)]
@@ -604,7 +604,7 @@ pub async fn edits(
 }
 
 /// Who each story sprite is, by who talks right after it comes on stage
-/// (rebuilt by the import), for the Service rows. Members only.
+/// (rebuilt by the import), for the Service rows. Any signed-in reader.
 #[utoipa::path(
     get,
     path = "/translators/characters",
@@ -621,12 +621,12 @@ pub async fn characters(
     State(state): State<AppState>,
     auth: MaybeAuthUser,
 ) -> Result<Json<Vec<super::dto::CharName>>, ApiError> {
-    require_member(&state, &auth).await?;
+    require_reader(&state, &auth).await?;
     Ok(Json(db::char_names(&state.db).await?))
 }
 
 /// The story library's chapter and story names with the Russian the game
-/// shows (ArknightsRU dictionaries), for the pickers. Members only.
+/// shows (ArknightsRU dictionaries), for the pickers. Any signed-in reader.
 #[utoipa::path(
     get,
     path = "/translators/names",
@@ -643,7 +643,7 @@ pub async fn names(
     State(state): State<AppState>,
     auth: MaybeAuthUser,
 ) -> Result<Json<Vec<super::dto::NameRu>>, ApiError> {
-    require_member(&state, &auth).await?;
+    require_reader(&state, &auth).await?;
     Ok(Json(db::names_ru(&state.db).await?))
 }
 
@@ -674,7 +674,7 @@ pub async fn set_story_read(
 }
 
 /// Every story's progress: lines that can be edited, approved, waiting for a
-/// decision, outdated. Members only.
+/// decision, outdated. Any signed-in reader.
 #[utoipa::path(
     get,
     path = "/translators/progress",
@@ -691,7 +691,7 @@ pub async fn story_progress(
     State(state): State<AppState>,
     auth: MaybeAuthUser,
 ) -> Result<Json<Vec<super::dto::StoryProgress>>, ApiError> {
-    require_member(&state, &auth).await?;
+    require_reader(&state, &auth).await?;
     Ok(Json(db::progress(&state.db).await?))
 }
 

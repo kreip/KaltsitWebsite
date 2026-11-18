@@ -13403,7 +13403,7 @@
         "tags": [
           "translators"
         ],
-        "summary": "Who each story sprite is, by who talks right after it comes on stage\n(rebuilt by the import), for the Service rows. Members only.",
+        "summary": "Who each story sprite is, by who talks right after it comes on stage\n(rebuilt by the import), for the Service rows. Any signed-in reader.",
         "operationId": "characters",
         "responses": {
           "200": {
@@ -14369,7 +14369,7 @@
         "tags": [
           "translators"
         ],
-        "summary": "The story library's chapter and story names with the Russian the game\nshows (ArknightsRU dictionaries), for the pickers. Members only.",
+        "summary": "The story library's chapter and story names with the Russian the game\nshows (ArknightsRU dictionaries), for the pickers. Any signed-in reader.",
         "operationId": "names",
         "responses": {
           "200": {
@@ -14407,7 +14407,7 @@
         "tags": [
           "translators"
         ],
-        "summary": "The objects of a game section — operators, enemies, stages, items, and\nthe operators once more for their archives — with their names in the\ngame's Russian and how much of each is checked.\nMembers only.",
+        "summary": "The objects of a game section — operators, enemies, stages, items, and\nthe operators once more for their archives — with their names in the\ngame's Russian and how much of each is checked.\nAny signed-in reader.",
         "operationId": "objects",
         "parameters": [
           {
@@ -14459,7 +14459,7 @@
         "tags": [
           "translators"
         ],
-        "summary": "One object's texts as lines of the story's table, in the order the game\nshows them (an operator: name, class, trait, talents, skills, modules,\nbase skills, outfits; its archives: the file's parts, the operator\nrecords, the modules' and outfits' stories, the voice lines). Each is edited as the text itself: one\ntranslation wherever the English stands. Members only.",
+        "summary": "One object's texts as lines of the story's table, in the order the game\nshows them (an operator: name, class, trait, talents, skills, modules,\nbase skills, outfits; its archives: the file's parts, the operator\nrecords, the modules' and outfits' stories, the voice lines). Each is edited as the text itself: one\ntranslation wherever the English stands. Members, and the game's texts\nonly for a signed-in user outside the team.",
         "operationId": "object_lines",
         "parameters": [
           {
@@ -14596,7 +14596,7 @@
         "tags": [
           "translators"
         ],
-        "summary": "Every story's progress: lines that can be edited, approved, waiting for a\ndecision, outdated. Members only.",
+        "summary": "Every story's progress: lines that can be edited, approved, waiting for a\ndecision, outdated. Any signed-in reader.",
         "operationId": "story_progress",
         "responses": {
           "200": {
@@ -15071,7 +15071,7 @@
         "tags": [
           "translators"
         ],
-        "summary": "The search screen: the objects whose name answers the query (operators,\nenemies, items, stages), then the same search, each found text as a line of the\nstory's table — at its first story line (with Sova's and the AI's\nvariants there), else as the text itself, whose edit holds everywhere —\nwith the edits of their entries. Members only.",
+        "summary": "The search screen: the objects whose name answers the query (operators,\nenemies, items, stages), then the same search, each found text as a line of the\nstory's table — at its first story line (with Sova's and the AI's\nvariants there), else as the text itself, whose edit holds everywhere —\nwith the edits of their entries. Members, and the game's texts only for a\nsigned-in user outside the team.",
         "operationId": "search_lines",
         "parameters": [
           {
@@ -15207,7 +15207,7 @@
         "tags": [
           "translators"
         ],
-        "summary": "One story's lines: English, the Russian the game shows now, Chinese,\nSova's and the AI's texts, and the glossary terms in each line. Members only.",
+        "summary": "One story's lines: English, the Russian the game shows now, Chinese,\nSova's and the AI's texts, and the glossary terms in each line. Members\nget everything; a signed-in user outside the team the game's texts only.",
         "operationId": "story_lines",
         "parameters": [
           {
@@ -15305,7 +15305,7 @@
         "tags": [
           "translators"
         ],
-        "summary": "The markup tags of the game's texts: the style spans with their colour in\nthe game, the terms with the name and the explanation the game shows (in\nEnglish and in the pack's Russian), each with how many texts use it; the\nmost used first. Members only (and the internal service key).",
+        "summary": "The markup tags of the game's texts: the style spans with their colour in\nthe game, the terms with the name and the explanation the game shows (in\nEnglish and in the pack's Russian), each with how many texts use it; the\nmost used first. Any signed-in reader (and the internal service key).",
         "operationId": "game_tags",
         "responses": {
           "200": {
@@ -15438,7 +15438,7 @@
         "tags": [
           "translators"
         ],
-        "summary": "The overview above the search and the Game sections: how many texts the\nfilters leave, with Russian, approved, and each problem's count (texts\nnot approved) under the query and the section. Members only.",
+        "summary": "The overview above the search and the Game sections: how many texts the\nfilters leave, with Russian, approved, and each problem's count (texts\nnot approved) under the query and the section. Any signed-in reader.",
         "operationId": "text_summary",
         "parameters": [
           {

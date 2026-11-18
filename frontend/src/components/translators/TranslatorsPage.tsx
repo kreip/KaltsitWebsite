@@ -14,9 +14,10 @@
  */
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
-import { BookCheck, BookOpen, NotebookPen } from "lucide-react";
+import { BookCheck, BookOpen, Eye, NotebookPen } from "lucide-react";
 import type React from "react";
-import { useId, useMemo } from "react";
+import { useContext, useId, useMemo } from "react";
+import { Alert, AlertAction, AlertDescription, AlertTitle } from "#/components/ui/alert";
 import { Button } from "#/components/ui/button";
 import { Collapsible, CollapsiblePanel, CollapsibleTrigger } from "#/components/ui/collapsible";
 import { Combobox, ComboboxEmpty, ComboboxInput, ComboboxItem, ComboboxList, ComboboxPopup } from "#/components/ui/combobox";
@@ -53,7 +54,7 @@ import { entryLabel, groupLabel, useRename } from "./storyNames";
 import type { messages } from "./translators.messages";
 import { translatorName } from "./translatorVariants";
 import { useScrollToRow } from "./useScrollToRow";
-import { GameOnly, ViewMenu, viewOf } from "./ViewMenu";
+import { GameOnly, Guest, ViewMenu, viewOf } from "./ViewMenu";
 import { WordReplaceHost } from "./WordReplace";
 
 type T = TypedT<typeof messages>;
@@ -222,7 +223,7 @@ function Lines({ storyId, title, showCn, showService, showVariants, showDiff, t 
     return (
         <div className="flex flex-col gap-2">
             <p className="text-subtle-foreground text-xs">{t("table.summary", { count: lines.length, ru: withRu })}</p>
-            <StoryStatus storyId={storyId} reads={reads} me={me.data} t={t} />
+            {me.data.member ? <StoryStatus storyId={storyId} reads={reads} me={me.data} t={t} /> : null}
             <TranslatorNotes notes={sovaNotes} t={t} />
             <LinesTable storyId={storyId} lines={lines} edits={edits} outdated={outdated} me={me.data} label={t("table.label", { story: title })} showCn={showCn} showVariants={showVariants} showDiff={showDiff} commands={showService ? (script.data?.commands ?? null) : null} nameOf={nameOf} nickname={nickname} />
         </div>
@@ -381,6 +382,43 @@ export function MembersOnly({ children }: { children: React.ReactNode }): React.
     return <>{children}</>;
 }
 
+/**
+ * Renders `children` for any signed-in reader: a member, or a user outside the team, who reads the game's texts
+ * only (`Guest`, "Only as in the game" always on; the backend leaves the rest out). Signed out: "No access".
+ */
+export function ReadersOnly({ children }: { children: React.ReactNode }): React.ReactElement {
+    const t: T = useT("translators");
+    const me = useQuery(translatorsMeQueryOptions());
+    if (me.isError) return <LoadFailed message={t("load.access")} onRetry={() => me.refetch()} />;
+    if (!me.data) return <Skeleton className="h-64 w-full rounded-2xl" />;
+    if (!me.data.member && !me.data.signedIn) return <NoAccess me={me.data} />;
+    return <Guest.Provider value={!me.data.member}>{children}</Guest.Provider>;
+}
+
+/** Above the section for a reader outside the team: read only, and "Request access" (or that the request waits). */
+function GuestBanner({ me }: { me: TranslatorsMe }): React.ReactElement {
+    const t: T = useT("translators");
+    const queryClient = useQueryClient();
+    const ask = useMutation({
+        mutationFn: () => requestAccessFn({ data: { note: "" } }),
+        onSuccess: () => queryClient.invalidateQueries({ queryKey: translatorsMeQueryOptions().queryKey }),
+        onError: () => toastManager.add({ title: t("access.requestFailed"), type: "error" }),
+    });
+    return (
+        <Alert variant="info">
+            <Eye aria-hidden="true" />
+            <AlertTitle>{t("guest.title")}</AlertTitle>
+            <AlertDescription>{me.accessRequested ? t("access.requested") : t("guest.description")}</AlertDescription>
+            <AlertAction>
+                <Button size="sm" onClick={() => ask.mutate()} disabled={me.accessRequested || ask.isPending}>
+                    {ask.isPending ? <Spinner /> : null}
+                    {me.accessRequested ? t("guest.requested") : t("access.request")}
+                </Button>
+            </AlertAction>
+        </Alert>
+    );
+}
+
 export function TranslatorsPage(props: ISearchProps): React.ReactElement {
     return (
         <SectionLocale>
@@ -394,20 +432,28 @@ function Page({ search, onSearch }: ISearchProps): React.ReactElement {
     return (
         <div className="page-shell flex flex-col gap-6">
             <PageHeader title={t("page.title")} />
-            <MembersOnly>
+            <ReadersOnly>
                 <MemberTabs search={search} onSearch={onSearch} />
-            </MembersOnly>
+            </ReadersOnly>
         </div>
     );
 }
 
-function MemberTabs({ search, onSearch }: ISearchProps): React.ReactElement {
+/** The tabs a reader outside the team sees: the game's texts. */
+const GUEST_TABS: readonly TranslatorsTab[] = ["story", "search", "sections"];
+
+function MemberTabs({ search: asked, onSearch }: ISearchProps): React.ReactElement {
     const t: T = useT("translators");
     const me = useQuery(translatorsMeQueryOptions());
+    const guest = useContext(Guest);
+    // A reader outside the team: "Only as in the game" always.
+    const search = guest ? { ...asked, game: true } : asked;
     const admin = me.data ? isAdmin(me.data) : false;
-    const tab: TranslatorsTab = search.tab === "admin" && !admin ? "story" : (search.tab ?? "story");
+    const wanted = search.tab ?? "story";
+    const tab: TranslatorsTab = (wanted === "admin" && !admin) || (guest && !GUEST_TABS.includes(wanted)) ? "story" : wanted;
     return (
         <>
+            {guest && me.data ? <GuestBanner me={me.data} /> : null}
             <GameOnly.Provider value={search.game === true}>
                 <OpenAll.Provider value={search.open === true}>
                     <WordReplaceHost>
@@ -416,8 +462,8 @@ function MemberTabs({ search, onSearch }: ISearchProps): React.ReactElement {
                                 <TabsTab value="story">{t("tabs.story")}</TabsTab>
                                 <TabsTab value="search">{t("tabs.search")}</TabsTab>
                                 <TabsTab value="sections">{t("tabs.sections")}</TabsTab>
-                                <TabsTab value="glossary">{t("tabs.glossary")}</TabsTab>
-                                <TabsTab value="edits">{t("tabs.edits")}</TabsTab>
+                                {guest ? null : <TabsTab value="glossary">{t("tabs.glossary")}</TabsTab>}
+                                {guest ? null : <TabsTab value="edits">{t("tabs.edits")}</TabsTab>}
                                 {admin ? <TabsTab value="admin">{t("tabs.admin")}</TabsTab> : null}
                             </TabsList>
                             <TabsPanel value="story" className="flex flex-col gap-6 pt-4">
@@ -429,12 +475,16 @@ function MemberTabs({ search, onSearch }: ISearchProps): React.ReactElement {
                             <TabsPanel value="sections" className="flex flex-col gap-6 pt-4">
                                 <SectionsTab search={search} onSearch={onSearch} />
                             </TabsPanel>
-                            <TabsPanel value="glossary" className="flex flex-col gap-6 pt-4">
-                                <GlossaryTab query={search.gq ?? ""} onQuery={(gq) => onSearch({ ...search, gq: gq || undefined })} />
-                            </TabsPanel>
-                            <TabsPanel value="edits" className="flex flex-col gap-6 pt-4">
-                                <MyEditsTab />
-                            </TabsPanel>
+                            {guest ? null : (
+                                <>
+                                    <TabsPanel value="glossary" className="flex flex-col gap-6 pt-4">
+                                        <GlossaryTab query={search.gq ?? ""} onQuery={(gq) => onSearch({ ...search, gq: gq || undefined })} />
+                                    </TabsPanel>
+                                    <TabsPanel value="edits" className="flex flex-col gap-6 pt-4">
+                                        <MyEditsTab />
+                                    </TabsPanel>
+                                </>
+                            )}
                             {admin && me.data ? (
                                 <TabsPanel value="admin" className="flex flex-col gap-6 pt-4">
                                     <AdminTab me={me.data} />
@@ -445,7 +495,7 @@ function MemberTabs({ search, onSearch }: ISearchProps): React.ReactElement {
                 </OpenAll.Provider>
             </GameOnly.Provider>
             {/* A word selected in any table: find it everywhere, in the glossary, or suggest it for the glossary. The other tabs keep their place in the address. */}
-            <SelectionMenu onFind={(q) => onSearch({ ...search, tab: "search", q, whole: undefined, section: undefined, status: undefined })} onGlossary={(gq) => onSearch({ ...search, tab: "glossary", gq })} />
+            <SelectionMenu onFind={(q) => onSearch({ ...search, tab: "search", q, whole: undefined, section: undefined, status: undefined })} onGlossary={guest ? undefined : (gq) => onSearch({ ...search, tab: "glossary", gq })} />
         </>
     );
 }

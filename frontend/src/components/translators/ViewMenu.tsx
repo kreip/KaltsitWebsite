@@ -8,7 +8,7 @@
  */
 import { Eye } from "lucide-react";
 import type React from "react";
-import { createContext } from "react";
+import { createContext, useContext } from "react";
 import { Button } from "#/components/ui/button";
 import { Menu, MenuCheckboxItem, MenuPopup, MenuSeparator, MenuTrigger } from "#/components/ui/menu";
 import { useT } from "#/lib/i18n";
@@ -31,6 +31,9 @@ export interface IView {
 /** "Only as in the game" for every table under it (RuCell reads it). */
 export const GameOnly = createContext(false);
 
+/** A signed-in reader outside the team: the game's texts only, "Only as in the game" always on. */
+export const Guest = createContext(false);
+
 export function viewOf(search: ITranslatorsSearch): IView {
     const gameOnly = search.game === true;
     return { variants: !gameOnly && search.variants !== false, diff: !gameOnly && search.diff === true, cn: search.cn === true, service: search.service === true, gameOnly };
@@ -50,6 +53,7 @@ function Item({ checked, onChange, label, hint, disabled = false }: { checked: b
 /** The View menu; `story` adds Chinese and the service rows. */
 export function ViewMenu({ search, onSearch, story = false }: { search: ITranslatorsSearch; onSearch: (next: ITranslatorsSearch) => void; story?: boolean }): React.ReactElement {
     const t: T = useT("translators");
+    const guest = useContext(Guest);
     const view = viewOf(search);
     // Settings away from their default, counted on the button.
     const on = [search.variants === false, view.diff, view.cn, view.service, search.open === true].filter(Boolean).length;
@@ -61,7 +65,7 @@ export function ViewMenu({ search, onSearch, story = false }: { search: ITransla
                 {view.gameOnly ? <span className="text-muted-foreground">· {t("view.gameOnlyShort")}</span> : on > 0 ? <span className="text-muted-foreground">· {on}</span> : null}
             </MenuTrigger>
             <MenuPopup align="start" className="w-80">
-                <Item checked={view.gameOnly} onChange={(c) => onSearch({ ...search, game: c || undefined })} label={t("view.gameOnly")} hint={t("view.gameOnlyHint")} />
+                <Item checked={view.gameOnly} disabled={guest} onChange={(c) => onSearch({ ...search, game: c || undefined })} label={t("view.gameOnly")} hint={guest ? t("view.gameOnlyGuest") : t("view.gameOnlyHint")} />
                 <Item checked={search.open === true} disabled={view.gameOnly} onChange={(c) => onSearch({ ...search, open: c || undefined })} label={t("view.openAll")} hint={t("view.openAllHint")} />
                 <MenuSeparator />
                 <Item checked={view.variants} disabled={view.gameOnly} onChange={(c) => onSearch({ ...search, variants: c ? undefined : false })} label={t("toggle.variants")} hint={t("toggle.variantsHint")} />

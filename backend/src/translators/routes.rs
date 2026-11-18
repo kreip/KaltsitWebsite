@@ -154,6 +154,34 @@ pub async fn set_recommend_rule(
     Ok(StatusCode::NO_CONTENT)
 }
 
+/// A signed-in reader of the section: `Some` for a member, `None` for a
+/// signed-in user outside the team, who reads the game's texts only (the
+/// English, the game's Russian, the Chinese: [`for_guest`]); 401 when signed out.
+pub async fn require_reader(
+    state: &AppState,
+    auth: &MaybeAuthUser,
+) -> Result<Option<Member>, ApiError> {
+    if auth.0.is_none() {
+        return Err(ApiError::Unauthorized);
+    }
+    member_of(state, auth).await
+}
+
+/// What a reader outside the team never gets of a line: the translators' and
+/// the machine's variants, the terms of Sova's sheet, the game's earlier text
+/// and the glossary marks of anything but the game's text. (The edits,
+/// comments and history are left out by the caller.)
+pub fn for_guest(lines: &mut [super::dto::TranslatorLine]) {
+    for l in lines {
+        l.sova = None;
+        l.ai = None;
+        l.ru_game_before = None;
+        l.ru_game_changed_at = None;
+        l.terms.retain(|t| !t.from_sova);
+        l.variant_glossary.retain(|v| v.variant == "game");
+    }
+}
+
 /// The caller as a section member, or 403 (401 when signed out). The
 /// section's data is for members only.
 pub async fn require_member(state: &AppState, auth: &MaybeAuthUser) -> Result<Member, ApiError> {
@@ -164,7 +192,8 @@ pub async fn require_member(state: &AppState, auth: &MaybeAuthUser) -> Result<Me
 }
 
 /// One story's lines: English, the Russian the game shows now, Chinese,
-/// Sova's and the AI's texts, and the glossary terms in each line. Members only.
+/// Sova's and the AI's texts, and the glossary terms in each line. Members
+/// get everything; a signed-in user outside the team the game's texts only.
 #[utoipa::path(
     get,
     path = "/translators/stories/{story_id}/lines",
@@ -184,7 +213,7 @@ pub async fn story_lines(
     auth: MaybeAuthUser,
     Path(story_id): Path<String>,
 ) -> Result<Json<TranslatorStoryLines>, ApiError> {
-    require_member(&state, &auth).await?;
+    let member = require_reader(&state, &auth).await?;
     let mut lines = db::story_lines(&state.db, SERVER, &story_id, true).await?;
     let (edits, outdated) = edits::attach(&state.db, &story_id, &mut lines).await?;
     let places: Vec<edits::dto::EditPlace> = lines
@@ -197,11 +226,24 @@ pub async fn story_lines(
         })
         .collect();
     mark_glossary(&state, &mut lines, &places, &edits).await?;
-    let sova_notes = edits::db::sova_notes(&state.db, &story_id).await?;
-    let reads = edits::db::story_reads(&state.db, &story_id).await?;
     let imported_at = db::last_import(&state.db, SERVER)
         .await?
         .map(|t| t.timestamp());
+    if member.is_none() {
+        for_guest(&mut lines);
+        return Ok(Json(TranslatorStoryLines {
+            story_id,
+            imported_at,
+            hints: false,
+            lines,
+            edits: Vec::new(),
+            outdated: Vec::new(),
+            sova_notes: Vec::new(),
+            reads: Vec::new(),
+        }));
+    }
+    let sova_notes = edits::db::sova_notes(&state.db, &story_id).await?;
+    let reads = edits::db::story_reads(&state.db, &story_id).await?;
     Ok(Json(TranslatorStoryLines {
         story_id,
         imported_at,
