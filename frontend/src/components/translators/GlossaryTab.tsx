@@ -17,7 +17,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import { Check, ExternalLink, List, RefreshCw, Replace, Trash2, Undo2, X } from "lucide-react";
 import type React from "react";
-import { Fragment, useEffect, useId, useMemo, useRef, useState } from "react";
+import { useEffect, useId, useMemo, useRef, useState } from "react";
 import { SearchField } from "#/components/SearchField";
 import { Alert, AlertDescription } from "#/components/ui/alert";
 import { Badge } from "#/components/ui/badge";
@@ -130,16 +130,26 @@ function Notes({ term }: { term: GlossaryTerm }): React.ReactElement {
 /** A variant as the game writes it; for a term of several words the whole phrase, the words that are not the glossary's marked. */
 function VariantWords({ v }: { v: GameVariant }): React.ReactElement {
     if (v.wrong.length === 0) return <span className={v.glossary ? "font-medium" : undefined}>{v.ru}</span>;
-    // The words' positions are what tells them apart (a name may repeat a word), so they key the list.
-    const words = v.ru.split(" ").map((w, i) => ({ w, i }));
+    // The text as the game writes it («Фристон-3»): its words counted in order (`wrong` names them), what stands
+    // between them kept. The positions in the text tell the pieces apart, so they key the list.
+    const pieces: { text: string; word: number | null; at: number }[] = [];
+    let word = 0;
+    let at = 0;
+    for (const piece of v.ru.split(/([\p{L}\p{N}]+)/u)) {
+        if (piece) pieces.push({ text: piece, word: /^[\p{L}\p{N}]/u.test(piece) ? word++ : null, at });
+        at += piece.length;
+    }
     return (
         <span>
-            {words.map(({ w, i }) => (
-                <Fragment key={i}>
-                    {i > 0 ? " " : null}
-                    {v.wrong.includes(i) ? <mark className="rounded-sm bg-warning/20 text-foreground">{w}</mark> : <span>{w}</span>}
-                </Fragment>
-            ))}
+            {pieces.map((p) =>
+                p.word !== null && v.wrong.includes(p.word) ? (
+                    <mark key={p.at} className="rounded-sm bg-warning/20 text-foreground">
+                        {p.text}
+                    </mark>
+                ) : (
+                    <span key={p.at}>{p.text}</span>
+                ),
+            )}
         </span>
     );
 }

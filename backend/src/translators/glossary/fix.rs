@@ -42,13 +42,9 @@ impl Hit {
         self.words.iter().all(|w| w.ok)
     }
 
-    /// The words as written, one space between them.
+    /// The words as the text writes them, with what stands between them («Фристон-3»).
     pub fn spelling(&self, text: &str) -> String {
-        self.words
-            .iter()
-            .map(|w| &text[w.start..w.end])
-            .collect::<Vec<_>>()
-            .join(" ")
+        text[self.start()..self.end()].to_owned()
     }
 
     /// The words' stems, one space between them: the same variant in every ending.
@@ -456,10 +452,24 @@ pub fn form_words(form: &str) -> Vec<&str> {
         .collect()
 }
 
+/// A glossary form that never changes with the case: no Cyrillic letter in it
+/// (Latin, digits: «Friston-3», «W»), or every word of it keeps one form
+/// (`matcher::indeclinable`, a number). The game's words are then replaced by
+/// it as it is, whatever their case.
+pub fn invariable(form: &str) -> bool {
+    let cyrillic = |c: char| matches!(c, 'а'..='я' | 'А'..='Я' | 'ё' | 'Ё');
+    !form.chars().any(cyrillic)
+        || form_folded(form)
+            .iter()
+            .all(|w| w.chars().all(|c| c.is_ascii_digit()) || super::matcher::indeclinable(w))
+}
+
 /// For each line's `(text, verified)`: None when the line does not write the
 /// term as the variant `stem` (or has no text, or is verified by an approval);
 /// Some(None) when it does but the case is not sure; Some(Some(text)) with
-/// the glossary's form put in.
+/// the glossary's form put in. A form that never changes (`invariable`)
+/// replaces the found words whole, as it is: only that run, never a lone part
+/// of it elsewhere in the line.
 pub fn plan(
     term: &super::parse::Term,
     stem_key: &str,
@@ -476,16 +486,30 @@ pub fn plan(
                 if hit.key(text) != stem_key || hit.all_ok() {
                     return None;
                 }
-                fix_hit(text, &hit, &form_words(form))
+                if invariable(form) {
+                    Some(format!(
+                        "{}{}{}",
+                        &text[..hit.start()],
+                        form,
+                        &text[hit.end()..]
+                    ))
+                } else {
+                    fix_hit(text, &hit, &form_words(form))
+                }
             } else {
                 let (start, end) = root_word(text, stem_key)?;
-                let form = forms.first().and_then(|f| form_words(f).first().copied())?;
+                let whole = forms.first()?;
+                let form = form_words(whole).first().copied()?;
                 // The word is the glossary's already (another ending): nothing to do.
                 if is_form_word(&fold(&text[start..end]), &fold(form)) {
                     return None;
                 }
-                fix_word(&text[start..end], form)
-                    .map(|w| format!("{}{}{}", &text[..start], w, &text[end..]))
+                if invariable(whole) {
+                    Some(format!("{}{}{}", &text[..start], whole, &text[end..]))
+                } else {
+                    fix_word(&text[start..end], form)
+                        .map(|w| format!("{}{}{}", &text[..start], w, &text[end..]))
+                }
             };
             Some(result.filter(|r| r != text))
         })
@@ -700,6 +724,34 @@ mod tests {
             ),
             // Another word altogether (the month): both left to a person.
             vec![Some(None), Some(None)]
+        );
+    }
+
+    #[test]
+    fn a_form_that_never_declines_replaces_the_run_whole() {
+        let friston = super::super::parse::Term {
+            key: "Friston-3".into(),
+            ru: "Friston-3".into(),
+            ..Default::default()
+        };
+        assert!(invariable("Friston-3"));
+        assert!(invariable("Сато"));
+        assert!(!invariable("Фристон"));
+        assert_eq!(
+            plan(
+                &friston,
+                "фристон 3",
+                &[
+                    (Some("Это Фристон-3, мой друг."), false),
+                    (Some("У Фристона-3 сны."), false),
+                    (Some("Фристон видел сны."), false),
+                ]
+            ),
+            vec![
+                Some(Some("Это Friston-3, мой друг.".into())),
+                Some(Some("У Friston-3 сны.".into())),
+                None,
+            ]
         );
     }
 

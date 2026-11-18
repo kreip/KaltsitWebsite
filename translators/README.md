@@ -215,6 +215,11 @@ same root only with an ending, a participle's «н» or an adjective's suffix af
 In the replace dialog a "check by hand" line has a box for its new text: typing ticks it, and its
 proposal gets the text as written (`LinePick.text`).
 
+A glossary form that never changes with the case — Latin or digits («Friston-3»), or words that keep one form —
+replaces the found run whole, as it is (`fix::invariable`): «Фристон-3» → «Friston-3», «У Фристона-3» →
+«У Friston-3»; a lone part elsewhere («Фристон видел сны») is left. A phrase variant is shown as the game writes
+it, its punctuation kept («Фристон-3», not «Фристон 3»).
+
 A failed download is kept as a code (`offline`, `forbidden`, `changed:…`) and worded on the
 page.
 
