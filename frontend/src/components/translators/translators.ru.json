@@ -645,7 +645,7 @@
     "glossary.fix.summary": "{sure, plural, one {# строка готова} few {# строки готовы} many {# строк готовы} other {# строки готовы}}; проверить вручную: {unsure}",
     "glossary.fix.table": "Строки для замены",
     "glossary.fix.col.result": "Станет",
-    "glossary.fix.byHand": "проверить вручную",
+    "glossary.fix.byHand": "проверить вручную: впишите ниже, каким станет",
     "glossary.fix.approved": "утверждено",
     "glossary.fix.apply": "Создать {count, plural, one {# предложение} few {# предложения} many {# предложений} other {# предложения}}",
     "glossary.fix.done": "{count, plural, one {Создано # предложение} few {Создано # предложения} many {Создано # предложений} other {Создано # предложения}}",
@@ -717,5 +717,7 @@
     "guest.title": "Только чтение",
     "guest.description": "Вы видите текст игры, английский и китайский. Чтобы предлагать перевод, запросите доступ.",
     "guest.requested": "Заявка на рассмотрении",
-    "view.gameOnlyGuest": "Только текст игры — пока нет доступа"
+    "view.gameOnlyGuest": "Только текст игры — пока нет доступа",
+    "replace.pickByHand": "Создать предложение с вписанным текстом",
+    "replace.writeByHand": "Каким станет текст"
 }

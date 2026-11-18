@@ -895,8 +895,8 @@ export const messages = {
         description: "Column of the replace dialog: the text with the glossary's form put in.",
     },
     "glossary.fix.byHand": {
-        text: "check by hand",
-        description: "In the replace dialog: the case of this line cannot be worked out for sure, no proposal is written.",
+        text: "check by hand: write what it becomes below",
+        description: "Replace dialog: the case is not sure for this line; the box under it takes the new text (typing ticks the line).",
     },
     "glossary.fix.approved": {
         text: "approved",
@@ -2794,6 +2794,14 @@ export const messages = {
     "view.gameOnlyGuest": {
         text: "Only the game's text until you have access",
         description: "View menu: why Only as in the game cannot be switched off for a user outside the team.",
+    },
+    "replace.pickByHand": {
+        text: "Write the proposal with the text written here",
+        description: "Accessible name of the tick box of a check-by-hand line in the replace dialog (ticked by typing).",
+    },
+    "replace.writeByHand": {
+        text: "What the line becomes",
+        description: "Accessible name of the box where a check-by-hand line's new text is written in the replace dialog.",
     },
 } satisfies MessageMap;
 

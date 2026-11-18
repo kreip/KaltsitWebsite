@@ -18,7 +18,13 @@ use super::super::glossary::matcher::{Finder, term_found};
 use super::plugin_styles;
 
 /// The problem codes, as the search's status filter names them.
-pub const PROBLEMS: &[&str] = &["glossary", "brokenTag", "nickname", "noHighlight", "newlines"];
+pub const PROBLEMS: &[&str] = &[
+    "glossary",
+    "brokenTag",
+    "nickname",
+    "noHighlight",
+    "newlines",
+];
 
 /// The markup scanner of `markup.ts`: 1 game opener · 2 universal closer ·
 /// 3 paragraph · 4 inline opener · 5 inline closer · 6 colour / size opener ·
@@ -375,7 +381,10 @@ fn drop_nickname(s: &str) -> String {
     while let Some(at) = rest.find('{') {
         let (before, from) = rest.split_at(at);
         out.push_str(before);
-        if from.get(..TOKEN.len()).is_some_and(|t| t.eq_ignore_ascii_case(TOKEN)) {
+        if from
+            .get(..TOKEN.len())
+            .is_some_and(|t| t.eq_ignore_ascii_case(TOKEN))
+        {
             out.push_str("Doctor");
             rest = &from[TOKEN.len()..];
         } else {

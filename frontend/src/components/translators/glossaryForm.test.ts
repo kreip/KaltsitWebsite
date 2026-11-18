@@ -10,6 +10,7 @@ describe("glossary forms as the backend checks them", () => {
         expect(hasForm("Из заражённых.", "Заражённый")).toBe(true);
         expect(hasForm("Мы вернулись на Родос Айленд.", "Родос Айленд")).toBe(true);
         expect(hasForm("Айленд Родос", "Родос Айленд")).toBe(false);
+        expect(hasForm("Члены Воссоединения.", "Воссоединение")).toBe(true);
     });
 
     it("never takes another word for the form", () => {

@@ -84,10 +84,7 @@ pub fn stem_match(word: &str, stem: &str) -> bool {
 /// the word's case forms (`paradigm`).
 pub fn has_form(text: &str, form: &str) -> bool {
     let cleaned = form.replace(['"', '«', '»', '„', '“', '”'], " ");
-    let forms: Vec<String> = words(&cleaned)
-        .into_iter()
-        .filter(|w| w != "ооо")
-        .collect();
+    let forms: Vec<String> = words(&cleaned).into_iter().filter(|w| w != "ооо").collect();
     if forms.is_empty() {
         return false;
     }
@@ -126,7 +123,16 @@ const CASES_A_HUSHING: Cases = [
 /// A man's name or a noun in a consonant; the accusative as a person's (= genitive).
 const CASES_CONSONANT: Cases = [&[""], &["а"], &["у"], &["а"], &["ом"], &["е"]];
 const CASES_CONSONANT_HUSHING: Cases = [&[""], &["а"], &["у"], &["а"], &["ем", "ом"], &["е"]];
-const CASES_YI: Cases = [&["ый"], &["ого"], &["ому"], &["ого", "ый"], &["ым"], &["ом"]];
+/// A noun in `-ние` / `-тие` (Воссоединение: Воссоединения, Воссоединению, Воссоединением, Воссоединении).
+const CASES_IE: Cases = [&["ие"], &["ия"], &["ию"], &["ие"], &["ием"], &["ии"]];
+const CASES_YI: Cases = [
+    &["ый"],
+    &["ого"],
+    &["ому"],
+    &["ого", "ый"],
+    &["ым"],
+    &["ом"],
+];
 const CASES_OE: Cases = [&["ое"], &["ого"], &["ому"], &["ое"], &["ым"], &["ом"]];
 const CASES_AYA: Cases = [&["ая"], &["ой"], &["ой"], &["ую"], &["ой", "ою"], &["ой"]];
 const CASES_AYA_HUSHING: Cases = [
@@ -173,7 +179,8 @@ impl Paradigm {
 /// rules. Names and nouns in `-ия` (Амия: Амии, Амию, Амией), `-а`
 /// (Маргарита: Маргариты, Маргарите, Маргариту, Маргаритой), `-я` (Зоя: Зои,
 /// Зое, Зою, Зоей), a consonant (Рэндолл: Рэндолла, Рэндоллу, Рэндоллом,
-/// Рэндолле); adjectives in `-ый`, `-ое`, `-ая`. None for any other word
+/// Рэндолле), `-ние` / `-тие` (Воссоединение: Воссоединения, Воссоединении);
+/// adjectives in `-ый`, `-ое`, `-ая`. None for any other word
 /// (`-ь` may not decline at all — Чэнь; `-о`, `-и`, `-ий`…).
 pub fn paradigm(word: &str) -> Option<Paradigm> {
     let chars: Vec<char> = word.chars().collect();
@@ -198,6 +205,8 @@ pub fn paradigm(word: &str) -> Option<Paradigm> {
             "ое" => return make(2, &CASES_OE),
             "ая" if hushing(at(2)) => return make(2, &CASES_AYA_HUSHING),
             "ая" => return make(2, &CASES_AYA),
+            // A noun in -ние / -тие; not an adjective's plural («морские»).
+            "ие" if n >= 5 && "нт".contains(at(2)) => return make(2, &CASES_IE),
             _ => {}
         }
     }
@@ -221,7 +230,11 @@ pub fn inflects(word: &str, form: &str) -> bool {
 /// A word that keeps one form in every case: no case rules, and it ends in a
 /// vowel other than `а` / `я` (`-о`, `-е`, `-и`, `-у`, `-ю`, `-э`, `-ы`).
 pub fn indeclinable(word: &str) -> bool {
-    paradigm(word).is_none() && word.chars().next_back().is_some_and(|c| "оеиуюэы".contains(c))
+    paradigm(word).is_none()
+        && word
+            .chars()
+            .next_back()
+            .is_some_and(|c| "оеиуюэы".contains(c))
 }
 
 /// Whether `text` holds any of a term's Russian forms (variants split by ` / `,
@@ -239,6 +252,103 @@ pub struct Finder {
     exact_terms: Vec<Vec<usize>>,
     folded: Option<AhoCorasick>,
     folded_terms: Vec<Vec<usize>>,
+    /// Per term: a class's name (the classes' sheet), a common noun of the
+    /// game — inside another name («Royal Guard») it is not the class.
+    common: Vec<bool>,
+}
+
+/// The glossary's sheet of the operators' classes.
+const CLASSES_SHEET: &str = "Классы";
+
+/// Words that open a sentence with a capital without naming anything: a
+/// class after one of them is still the class («The Guard…»).
+const OPENERS: &[&str] = &[
+    "The", "A", "An", "This", "That", "These", "Those", "Our", "Your", "My", "His", "Her", "Their",
+    "Its", "Every", "Each", "No", "Any", "Some", "All", "One", "Another", "Other", "Then", "And",
+    "But", "Or", "So", "If", "When", "While", "As", "At", "In", "On", "Of", "For", "To", "From",
+    "With", "By", "Like", "Not", "Only", "Even", "Just", "Yes", "Hey", "Oh", "Ah", "Dear", "I",
+    "We", "You", "They", "He", "She", "It", "Is", "Are", "Was", "Were", "Be", "Being", "What",
+    "Which", "Who", "Where", "Why", "How", "Our", "Two", "Three", "Many", "More", "Most",
+    "Several", "Both", "New", "Old", "Best", "Good",
+];
+
+/// Lower-case words after a verb at the start of a sentence: «Guard this
+/// place», «Silence them» are orders, not the term.
+const OBJECTS: &[&str] = &[
+    "the",
+    "this",
+    "that",
+    "these",
+    "those",
+    "your",
+    "my",
+    "our",
+    "his",
+    "her",
+    "their",
+    "its",
+    "it",
+    "him",
+    "them",
+    "us",
+    "me",
+    "you",
+    "yourself",
+    "yourselves",
+    "against",
+    "with",
+    "here",
+    "every",
+    "each",
+    "all",
+    "a",
+    "an",
+];
+
+/// The word right before `start`, separated by spaces only (a run of letters,
+/// digits and apostrophes); None after anything else.
+fn word_before(text: &str, start: usize) -> Option<&str> {
+    let head = &text[..start];
+    let trimmed = head.trim_end_matches(' ');
+    if trimmed.len() == head.len() {
+        return None;
+    }
+    let from = trimmed
+        .char_indices()
+        .rev()
+        .take_while(|(_, c)| c.is_alphanumeric() || *c == '\'' || *c == '’')
+        .last()
+        .map(|(i, _)| i)?;
+    Some(&trimmed[from..])
+}
+
+/// A capitalised word before a class's name makes them one name («Royal
+/// Guard», «Redsteel Guard», «Yulin Guard»), unless it only opens the
+/// sentence («The Guard») or is a possessive («Amiya's Guard»).
+fn inside_name(text: &str, start: usize) -> bool {
+    word_before(text, start).is_some_and(|w| {
+        w.chars().next().is_some_and(char::is_uppercase)
+            && !w.ends_with("'s")
+            && !w.ends_with("’s")
+            && !OPENERS.contains(&w)
+    })
+}
+
+/// The key opens a sentence and a pronoun or a determiner follows it: an
+/// order («Guard this place.», «Silence them!»).
+fn is_order(text: &str, start: usize, end: usize) -> bool {
+    let head = text[..start].trim_end();
+    let opens = head.is_empty()
+        || head.ends_with(['.', '!', '?', '…', '"', '“', '(', '—', ':', '\n'])
+        || head.ends_with("<p=1>");
+    if !opens {
+        return false;
+    }
+    let Some(rest) = text[end..].strip_prefix(' ') else {
+        return false;
+    };
+    let next: String = rest.chars().take_while(|c| c.is_alphabetic()).collect();
+    OBJECTS.contains(&next.as_str())
 }
 
 /// One term key found in a text: the byte range and the terms (rows) it names.
@@ -279,15 +389,23 @@ impl Finder {
         }
         let (exact, exact_terms) = build(exact.into_iter().collect(), false);
         let (folded, folded_terms) = build(folded.into_iter().collect(), true);
+        let common = terms
+            .iter()
+            .map(|t| t.sheet.starts_with(CLASSES_SHEET) && !t.from_sova)
+            .collect();
         Self {
             exact,
             exact_terms,
             folded,
             folded_terms,
+            common,
         }
     }
 
-    /// Every term key in `text` on word boundaries; overlaps go to the longer key.
+    /// Every term key in `text` on word boundaries; overlaps go to the longer
+    /// key. A word that is part of a longer name is not the term: a class's
+    /// name after a capitalised word («Royal Guard»), and a one-word key that
+    /// opens an order («Guard this place»).
     pub fn find(&self, text: &str) -> Vec<Found> {
         let mut all = Vec::new();
         for (ac, terms) in [
@@ -299,6 +417,14 @@ impl Finder {
                 let before = text[..m.start()].chars().next_back();
                 let after = text[m.end()..].chars().next();
                 if is_word_char(before) || is_word_char(after) {
+                    continue;
+                }
+                let one_word = !text[m.start()..m.end()].contains(' ');
+                let names = &terms[m.pattern().as_usize()];
+                if one_word
+                    && (is_order(text, m.start(), m.end())
+                        || (names.iter().all(|&t| self.common[t]) && inside_name(text, m.start())))
+                {
                     continue;
                 }
                 all.push(Found {
@@ -359,7 +485,13 @@ mod tests {
 
     #[test]
     fn simple_case_forms_count() {
-        for text in ["У Зои царапина.", "Скажи Зое.", "Вижу Зою.", "С Зоей.", "Зоя тут."] {
+        for text in [
+            "У Зои царапина.",
+            "Скажи Зое.",
+            "Вижу Зою.",
+            "С Зоей.",
+            "Зоя тут.",
+        ] {
             assert!(has_form(text, "Зоя"), "{text}");
         }
         assert!(!has_form("У Зоуи царапина.", "Зоя"));
@@ -373,6 +505,9 @@ mod tests {
         assert_eq!(paradigm("чэнь"), None);
         assert!(inflects("фармацевтической", "фармацевтическая"));
         assert!(!inflects("фармацевтическаой", "фармацевтическая"));
+        assert!(has_form("Члены Воссоединения.", "Воссоединение"));
+        assert!(has_form("О Воссоединении.", "Воссоединение"));
+        assert_eq!(paradigm("морские"), None);
     }
 
     #[test]
@@ -404,5 +539,34 @@ mod tests {
             .collect();
         assert_eq!(keys, ["Rhodes Island", "originium"]);
         assert!(f.find("Guardian").is_empty());
+    }
+
+    #[test]
+    fn a_class_inside_a_longer_name_is_not_the_class() {
+        let mut guard = term("Guard", "Страж", true);
+        guard.sheet = "Классы и подклассы".into();
+        let mut chen = term("Ch'en", "Чэнь", true);
+        chen.sheet = "Игровые персонажи".into();
+        let terms = vec![guard, chen];
+        let f = Finder::new(&terms);
+        for text in [
+            "A missing member of the Emperor's Royal Guard.",
+            "The Redsteel Guard.",
+            "Who sent the Yulin Guard away?",
+            "Guard this place.",
+            "Guard your position well.",
+        ] {
+            assert!(f.find(text).is_empty(), "{text}");
+        }
+        for text in [
+            "The Guard have sealed it off.",
+            "A Guard operator.",
+            "Amiya's Guard skills.",
+            "Ask the Guard, Doctor.",
+        ] {
+            assert_eq!(f.find(text).len(), 1, "{text}");
+        }
+        // A name after a title is still the name.
+        assert_eq!(f.find("Captain Ch'en is here.").len(), 1);
     }
 }

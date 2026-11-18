@@ -4,7 +4,7 @@
  * `paradigm`), for the warning under the proposal box while one types.
  * Word by word in a row: the word is the form's stem with an ending (or an
  * adjective's suffix and ending: «урсусский»), or one of its singular case
- * forms by simple rules (Зоя: Зои, Зое, Зою, Зоей). «Доберманн» is not
+ * forms by simple rules (Зоя: Зои, Зое, Зою, Зоей; Воссоединение: Воссоединения). «Доберманн» is not
  * «Доберман». `ё` = `е`, any case, quotes and «ООО» ignored.
  */
 import type { LineTerm } from "#/types/generated/LineTerm";
@@ -48,6 +48,8 @@ function paradigm(word: string): [string, readonly string[]] | null {
         if (end2 === "ый") return [word.slice(0, -2), ["ый", "ого", "ому", "ым", "ом"]];
         if (end2 === "ое") return [word.slice(0, -2), ["ое", "ого", "ому", "ым", "ом"]];
         if (end2 === "ая") return [word.slice(0, -2), HUSHING.includes(word[n - 3]) ? ["ая", "ей", "ой", "ую", "ею"] : ["ая", "ой", "ую", "ою"]];
+        // A noun in -ние / -тие (Воссоединение: Воссоединения, Воссоединении); not an adjective's plural.
+        if (end2 === "ие" && n >= 5 && "нт".includes(word[n - 3])) return [word.slice(0, -2), ["ие", "ия", "ию", "ием", "ии"]];
     }
     if (last === "я") return [word.slice(0, -1), before === "и" ? ["я", "и", "ю", "ей", "ею"] : ["я", "и", "е", "ю", "ей", "ею"]];
     if (last === "а") return [word.slice(0, -1), HUSHING.includes(before) ? ["а", "и", "е", "у", "ей", "ею", "ой", "ою"] : "гкх".includes(before) ? ["а", "и", "е", "у", "ой", "ою"] : ["а", "ы", "е", "у", "ой", "ою"]];

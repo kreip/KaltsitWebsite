@@ -238,7 +238,8 @@ pub struct GlossaryFixInput {
     /// Write the proposals (else only list what would be written).
     #[serde(default)]
     pub apply: bool,
-    /// With `apply`: only these lines (the ticked ones); absent — every sure line.
+    /// With `apply`: only these lines (the ticked ones; a "check by hand"
+    /// line with the text written for it); absent — every sure line.
     #[serde(default)]
     pub picked: Option<Vec<LinePick>>,
     /// The game's variant as shown ("Зои Перрис"): names the replacement in the Edits list.
@@ -253,6 +254,26 @@ pub struct GlossaryFixInput {
 pub struct LinePick {
     pub story_id: String,
     pub ord: i32,
+    /// A "check by hand" line: the text written for it in the dialog (the
+    /// proposal gets it as it is). Absent for a line replaced by the rules.
+    #[serde(default)]
+    #[ts(optional)]
+    pub text: Option<String>,
+}
+
+impl LinePick {
+    /// The text written by hand for this line among `picked`, if one was.
+    pub fn written<'a>(
+        picked: Option<&'a [LinePick]>,
+        story_id: &str,
+        ord: i32,
+    ) -> Option<&'a str> {
+        picked?
+            .iter()
+            .find(|l| l.story_id == story_id && l.ord == ord)
+            .and_then(|l| l.text.as_deref())
+            .filter(|t| !t.trim().is_empty())
+    }
 }
 
 /// "Replace the word in other lines": a proposal changed one word
@@ -268,7 +289,8 @@ pub struct WordReplaceInput {
     /// Write the proposals (else only list what would be written).
     #[serde(default)]
     pub apply: bool,
-    /// With `apply`: only these lines (the ticked ones).
+    /// With `apply`: only these lines (the ticked ones; a "check by hand"
+    /// line with the text written for it).
     #[serde(default)]
     pub picked: Option<Vec<LinePick>>,
     /// The entry the proposal was made for: left out.

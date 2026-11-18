@@ -26812,7 +26812,7 @@
             "items": {
               "$ref": "#/components/schemas/LinePick"
             },
-            "description": "With `apply`: only these lines (the ticked ones); absent — every sure line."
+            "description": "With `apply`: only these lines (the ticked ones; a \"check by hand\"\nline with the text written for it); absent — every sure line."
           },
           "stem": {
             "type": "string",
@@ -28808,6 +28808,13 @@
           },
           "storyId": {
             "type": "string"
+          },
+          "text": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "A \"check by hand\" line: the text written for it in the dialog (the\nproposal gets it as it is). Absent for a line replaced by the rules."
           }
         }
       },
@@ -42440,7 +42447,7 @@
             "items": {
               "$ref": "#/components/schemas/LinePick"
             },
-            "description": "With `apply`: only these lines (the ticked ones)."
+            "description": "With `apply`: only these lines (the ticked ones; a \"check by hand\"\nline with the text written for it)."
           },
           "skip": {
             "type": [

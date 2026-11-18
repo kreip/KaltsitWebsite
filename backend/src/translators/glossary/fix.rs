@@ -142,14 +142,30 @@ pub fn best_window(text: &str, forms: &[String]) -> Option<Hit> {
     best.map(|(_, _, h)| h)
 }
 
-/// The first word of `text` whose stem is `root` or starts with it (the
-/// variant rule of the "As in the game" column: a root of four letters or
-/// more covers the longer stems of the same word).
+/// What a longer stem of the same word may add to a root: a participle's
+/// doubled «н» («заражен» → «заражённых»), an adjective's suffix.
+const ROOT_EXTRA: &[&str] = &["н", "овск", "евск", "инск", "ск", "ов", "ев", "ин"];
+
+/// Whether `st` (a stem) is the word of `root`: the root itself, or (a root
+/// of four letters or more) the root with a participle's or an adjective's
+/// suffix. Any other letters make another word: «гварди» (гвардия) is not
+/// «гвард» (Гвард: Гварда, Гварду, Гвардом).
+pub fn same_root(st: &str, root: &str) -> bool {
+    st == root
+        || (root.chars().count() >= 4
+            && st.strip_prefix(root).is_some_and(|rest| {
+                ROOT_EXTRA.contains(&rest)
+                    // A noun in -ние / -тие: «воссоединен» (-ие) and «воссоединени» (-ия, -ию, -ии).
+                    || (rest == "и" && root.ends_with(['н', 'т']))
+            }))
+}
+
+/// The first word of `text` whose stem is the word of `root` (`same_root`;
+/// the variant rule of the "As in the game" column).
 pub fn root_word(text: &str, root: &str) -> Option<(usize, usize)> {
-    word_spans(text).into_iter().find(|&(s, e)| {
-        let st = stem(&fold(&text[s..e]));
-        st == root || (root.chars().count() >= 4 && st.starts_with(root))
-    })
+    word_spans(text)
+        .into_iter()
+        .find(|&(s, e)| same_root(&stem(&fold(&text[s..e])), root))
 }
 
 /// `word` with the case of `like`: capitalised when `like` is, all capitals when `like` is.
@@ -230,7 +246,8 @@ pub fn fix_word(word: &str, form: &str) -> Option<String> {
             }
             // The game word in the nominative: the form itself, whatever its spelling.
             let sure = base == form_stem
-                || (same_word(base, &form_stem) && (end_alike(base, &form_stem) || e == nominative));
+                || (same_word(base, &form_stem)
+                    && (end_alike(base, &form_stem) || e == nominative));
             if sure {
                 return Some(with_case(&format!("{kept}{e}"), word));
             }
@@ -500,17 +517,35 @@ mod tests {
 
     #[test]
     fn a_word_is_replaced_in_its_case() {
-        assert_eq!(carry_case("Бибеку", "Бибек", "Байбик").as_deref(), Some("Байбику"));
-        assert_eq!(carry_case("Бибеком", "Бибек", "Байбик").as_deref(), Some("Байбиком"));
-        assert_eq!(carry_case("БИБЕК", "Бибек", "Байбик").as_deref(), Some("БАЙБИК"));
+        assert_eq!(
+            carry_case("Бибеку", "Бибек", "Байбик").as_deref(),
+            Some("Байбику")
+        );
+        assert_eq!(
+            carry_case("Бибеком", "Бибек", "Байбик").as_deref(),
+            Some("Байбиком")
+        );
+        assert_eq!(
+            carry_case("БИБЕК", "Бибек", "Байбик").as_deref(),
+            Some("БАЙБИК")
+        );
         // Genitive, dative or prepositional: the target tells them apart, a person decides.
         assert_eq!(carry_case("Амии", "Амия", "Маргарита"), None);
-        assert_eq!(carry_case("Амию", "Амия", "Маргарита").as_deref(), Some("Маргариту"));
+        assert_eq!(
+            carry_case("Амию", "Амия", "Маргарита").as_deref(),
+            Some("Маргариту")
+        );
         assert_eq!(carry_case("Зое", "Зоя", "Майя").as_deref(), Some("Майе"));
         // A target without case rules: only the nominative, or one that never declines.
         assert_eq!(carry_case("Бибека", "Бибек", "Чэнь"), None);
-        assert_eq!(carry_case("Бибек", "Бибек", "Чэнь").as_deref(), Some("Чэнь"));
-        assert_eq!(carry_case("Бибека", "Бибек", "Сато").as_deref(), Some("Сато"));
+        assert_eq!(
+            carry_case("Бибек", "Бибек", "Чэнь").as_deref(),
+            Some("Чэнь")
+        );
+        assert_eq!(
+            carry_case("Бибека", "Бибек", "Сато").as_deref(),
+            Some("Сато")
+        );
         assert_eq!(
             replace_word("Скажи Бибеку, что Бибек прав.", "Бибек", "Байбик"),
             Some(Some("Скажи Байбику, что Байбик прав.".into()))
@@ -578,9 +613,18 @@ mod tests {
         assert_eq!(fix_word("Зои", "Зоуи"), None);
         // A form with case rules: the ending carried over, never the nominative.
         assert_eq!(fix_word("Зоэи", "Зоя"), None);
-        assert_eq!(fix_word("Маргорите", "Маргарита").as_deref(), Some("Маргарите"));
-        assert_eq!(fix_word("Маргоритой", "Маргарита").as_deref(), Some("Маргаритой"));
-        assert_eq!(fix_word("Маргорита", "Маргарита").as_deref(), Some("Маргарита"));
+        assert_eq!(
+            fix_word("Маргорите", "Маргарита").as_deref(),
+            Some("Маргарите")
+        );
+        assert_eq!(
+            fix_word("Маргоритой", "Маргарита").as_deref(),
+            Some("Маргаритой")
+        );
+        assert_eq!(
+            fix_word("Маргорита", "Маргарита").as_deref(),
+            Some("Маргарита")
+        );
         assert_eq!(fix_word("Амийей", "Амия"), None);
         assert_eq!(fix_word("Бибеку", "Байбик"), None);
         assert_eq!(fix_word("Байбека", "Байбик").as_deref(), Some("Байбика"));
@@ -593,7 +637,10 @@ mod tests {
             ru: "Зоя".into(),
             ..Default::default()
         };
-        assert_eq!(plan(&zoe, "зои", &[(Some("У Зои царапина."), false)]), vec![None]);
+        assert_eq!(
+            plan(&zoe, "зои", &[(Some("У Зои царапина."), false)]),
+            vec![None]
+        );
     }
 
     #[test]
@@ -660,5 +707,12 @@ mod tests {
     fn a_word_is_found_by_its_root() {
         assert_eq!(root_word("Из заражённых.", "заражен"), Some((5, 25)));
         assert_eq!(root_word("Это апреля.", "эйприл"), None);
+        // Another word that starts the same: гвардия is not Гвард.
+        assert_eq!(root_word("Член Императорской гвардии.", "гвард"), None);
+        assert_eq!(root_word("Королевская гвардия.", "гвард"), None);
+        assert!(root_word("У мистера Гварда.", "гвард").is_some());
+        assert!(root_word("Весь Гвард ушёл.", "гвард").is_some());
+        assert!(root_word("Гвардов тут нет.", "гвард").is_some());
+        assert!(root_word("Члены Воссоединения.", "воссоединен").is_some());
     }
 }

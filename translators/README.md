@@ -190,7 +190,8 @@ per entry for the ticked lines only. Only the term's word changes, the rest of t
 as written.
 
 **Case forms** (`glossary/matcher.rs::paradigm`): simple rules give a word's singular cases —
-names and nouns in `-ия` (Амия: Амии, Амию, Амией), `-а` (Маргарита: Маргариты, Маргарите…),
+names and nouns in `-ия` (Амия: Амии, Амию, Амией), nouns in `-ние` / `-тие` (Воссоединение:
+Воссоединения, Воссоединении), `-а` (Маргарита: Маргариты, Маргарите…),
 `-я` (Зоя: Зои, Зое, Зою, Зоей), a consonant (Рэндолл: Рэндолла, Рэндоллу, Рэндоллом,
 Рэндолле), adjectives in `-ый`, `-ое`, `-ая`. A line holding one of them holds the glossary's
 form (no "form not found"). The replacement puts the glossary's stem with the game word's
@@ -202,6 +203,17 @@ the glossary's words known while a plan is worked out).
 A stem matches only with an ending after it (or an adjective's suffix and ending: «урсусский» for
 «Урсус»; `matcher::stem_match`): «Доберманн» is not «Доберман». A word in `-ь` (Чэнь), `-о`, `-и`… has no rules: only the
 glossary form's own ending counts, and a word that never declines is put in as it is.
+**A term inside a longer name** (`matcher::Finder::find`): a class's name (the classes' sheet)
+after a capitalised word is part of that name — «Royal Guard», «Redsteel Guard», «Yulin Guard»
+are not the class Guard (a sentence's opener «The Guard», a possessive «Amiya's Guard» are); a
+one-word key that opens an order («Guard this place», «Silence them») is not the term. A longer
+term of the glossary wins over a shorter one as before. In the Russian a variant is a word of the
+same root only with an ending, a participle's «н» or an adjective's suffix after it
+(`fix::same_root`): «гвардии» is not «Гвард».
+
+In the replace dialog a "check by hand" line has a box for its new text: typing ticks it, and its
+proposal gets the text as written (`LinePick.text`).
+
 A failed download is kept as a code (`offline`, `forbidden`, `changed:…`) and worded on the
 page.
 

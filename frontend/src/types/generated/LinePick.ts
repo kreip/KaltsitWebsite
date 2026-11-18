@@ -3,4 +3,9 @@
 /**
  * One line of a replacement list, as `GlossaryFixLine` names it.
  */
-export type LinePick = { storyId: string; ord: number };
+export type LinePick = { storyId: string, ord: number, 
+/**
+ * A "check by hand" line: the text written for it in the dialog (the
+ * proposal gets it as it is). Absent for a line replaced by the rules.
+ */
+text?: string, };

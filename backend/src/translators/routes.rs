@@ -7,7 +7,7 @@ use uuid::Uuid;
 
 use super::dto::{
     Glossary, GlossaryFix, GlossaryFixInput, GlossaryFixLine, GlossaryLine, GlossaryLines,
-    GlossaryLinesQuery, GlossaryTerm, LineTerm, MissingTerm, RecommendRuleInput,
+    GlossaryLinesQuery, GlossaryTerm, LinePick, LineTerm, MissingTerm, RecommendRuleInput,
     TranslatorStoryLines, TranslatorsMe, VariantGlossary, WordGlossaryTerm, WordReplace,
     WordReplaceInput,
 };
@@ -639,14 +639,18 @@ pub async fn fix_glossary_variant(
             p.iter()
                 .any(|l| l.story_id == row.story_id && l.ord == row.ord)
         });
+        // A "check by hand" line: the text written for it in the dialog.
+        let written = LinePick::written(input.picked.as_deref(), &row.story_id, row.ord)
+            .filter(|w| fix.is_none() && *w != text);
         if fix.is_none() {
             unsure += 1;
-        } else if let Some(result) = fix
+        }
+        if let Some(result) = fix.clone().or_else(|| written.map(str::to_owned))
             && picked
         {
             per_key
                 .entry(row.edit_key.as_str())
-                .or_insert((row, result.clone()));
+                .or_insert((row, result));
         }
         lines.push(GlossaryFixLine {
             story_id: row.story_id.clone(),
@@ -672,8 +676,10 @@ pub async fn fix_glossary_variant(
                 edit_key: None,
             };
             ids.push(
-                edits::db::upsert_proposal(&state.db, key, &place, &text, "own", false, None, me.id)
-                    .await?,
+                edits::db::upsert_proposal(
+                    &state.db, key, &place, &text, "own", false, None, me.id,
+                )
+                .await?,
             );
             created += 1;
         }
@@ -810,7 +816,10 @@ pub async fn replace_word(
     for (row, text, result) in &found {
         let (id, key, md5, en, _, approved, places, _) = row;
         let at = first.get(key.as_str());
-        let (story_id, ord) = at.map_or((edits::dto::TEXT_PLACE, i32::try_from(*id).unwrap_or(0)), |&(s, _, _, o)| (s, o));
+        let (story_id, ord) = at.map_or(
+            (edits::dto::TEXT_PLACE, i32::try_from(*id).unwrap_or(0)),
+            |&(s, _, _, o)| (s, o),
+        );
         if result.is_none() {
             unsure += 1;
         }
@@ -823,13 +832,18 @@ pub async fn replace_word(
             approved: approved.is_some(),
             places: (*places).max(1),
         });
-        let picked = input.picked.as_ref().is_none_or(|p| {
-            p.iter().any(|l| l.story_id == story_id && l.ord == ord)
-        });
-        let (true, true, Some(result)) = (input.apply, picked, result) else {
+        let picked = input
+            .picked
+            .as_ref()
+            .is_none_or(|p| p.iter().any(|l| l.story_id == story_id && l.ord == ord));
+        // A "check by hand" line: the text written for it in the dialog.
+        let written = LinePick::written(input.picked.as_deref(), story_id, ord)
+            .filter(|w| result.is_none() && *w != text.as_str())
+            .map(str::to_owned);
+        let (true, true, Some(result)) = (input.apply, picked, result.clone().or(written)) else {
             continue;
         };
-        let Some(clean) = edits::status::clean_text(result) else {
+        let Some(clean) = edits::status::clean_text(&result) else {
             continue;
         };
         let place = match at {
@@ -859,7 +873,9 @@ pub async fn replace_word(
         .filter(|t| {
             let words = glossary::fix::form_folded(&t.ru);
             words.iter().any(|w| glossary::fix::is_word_of(w, &folded))
-                && !words.iter().any(|w| glossary::fix::is_word_of(w, &to_folded))
+                && !words
+                    .iter()
+                    .any(|w| glossary::fix::is_word_of(w, &to_folded))
         })
         .map(|t| WordGlossaryTerm {
             en: t.key.clone(),

@@ -1,9 +1,9 @@
 /**
  * The replace dialog's body: the lines a word stands in, what each would
  * become (in the same case), a tick box at each sure line (ticked at first)
- * and the button that writes the proposals for the ticked ones only. "Check
- * by hand" lines have no box: their case is not sure, nothing is written for
- * them. Shared by "Replace with the glossary's form" (GlossaryTab.tsx) and
+ * and the button that writes the proposals for the ticked ones only. A "check
+ * by hand" line (its case is not sure) has a box to write what it becomes
+ * right here: typing ticks it, and its proposal gets that text. Shared by "Replace with the glossary's form" (GlossaryTab.tsx) and
  * "Replace the word in other lines" after a proposal (LineEdits.tsx).
  */
 import { Link } from "@tanstack/react-router";
@@ -17,6 +17,7 @@ import { LoadFailed } from "#/components/ui/load-failed";
 import { Skeleton } from "#/components/ui/skeleton";
 import { Spinner } from "#/components/ui/spinner";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "#/components/ui/table";
+import { Textarea } from "#/components/ui/textarea";
 import type { TypedT } from "#/lib/i18n/messages";
 import type { GlossaryFix } from "#/types/generated/GlossaryFix";
 import type { GlossaryFixLine } from "#/types/generated/GlossaryFixLine";
@@ -63,7 +64,7 @@ export interface IReplaceDialogProps {
     isError: boolean;
     onRetry: () => void;
     pending: boolean;
-    /** Write the proposals for the ticked lines. */
+    /** Write the proposals for the ticked lines (a "check by hand" one with the text written for it). */
     onApply: (picked: LinePick[]) => void;
     nickname: string;
     t: T;
@@ -72,10 +73,29 @@ export interface IReplaceDialogProps {
 export function ReplaceDialogBody({ title, description, note, data, isError, onRetry, pending, onApply, nickname, t }: IReplaceDialogProps): React.ReactElement {
     // The lines unticked by hand: every sure line starts ticked.
     const [off, setOff] = useState<ReadonlySet<string>>(new Set());
+    // "Check by hand" lines: what was written for each, and which are ticked (typing ticks).
+    const [written, setWritten] = useState<ReadonlyMap<string, string>>(new Map());
+    const [byHand, setByHand] = useState<ReadonlySet<string>>(new Set());
     const sure = data?.lines.filter((l) => l.result !== null) ?? [];
     const picked = sure.filter((l) => !off.has(lineId(l)));
+    const changed = (l: GlossaryFixLine) => {
+        const w = written.get(lineId(l));
+        return w !== undefined && w.trim() !== "" && w !== l.text;
+    };
+    const manual = (data?.lines ?? []).filter((l) => l.result === null && byHand.has(lineId(l)) && changed(l));
     // One proposal per entry: lines of the same English in a story are one.
-    const entries = new Set(picked.map((l) => `${l.storyId}:${l.en}`)).size;
+    const entries = new Set([...picked, ...manual].map((l) => `${l.storyId}:${l.en}`)).size;
+    const write = (l: GlossaryFixLine, text: string) => {
+        setWritten((prev) => new Map(prev).set(lineId(l), text));
+        setByHand((prev) => new Set(prev).add(lineId(l)));
+    };
+    const tickByHand = (l: GlossaryFixLine, on: boolean) =>
+        setByHand((prev) => {
+            const next = new Set(prev);
+            if (on) next.add(lineId(l));
+            else next.delete(lineId(l));
+            return next;
+        });
     const toggle = (l: GlossaryFixLine, on: boolean) =>
         setOff((prev) => {
             const next = new Set(prev);
@@ -128,7 +148,13 @@ export function ReplaceDialogBody({ title, description, note, data, isError, onR
                                 <TableBody>
                                     {data.lines.map((l) => (
                                         <TableRow key={lineId(l)}>
-                                            <TableCell className={PROSE}>{l.result !== null ? <Checkbox checked={!off.has(lineId(l))} onCheckedChange={(v) => toggle(l, v === true)} aria-label={t("replace.pick")} /> : null}</TableCell>
+                                            <TableCell className={PROSE}>
+                                                {l.result !== null ? (
+                                                    <Checkbox checked={!off.has(lineId(l))} onCheckedChange={(v) => toggle(l, v === true)} aria-label={t("replace.pick")} />
+                                                ) : (
+                                                    <Checkbox checked={byHand.has(lineId(l)) && changed(l)} disabled={!changed(l)} onCheckedChange={(v) => tickByHand(l, v === true)} aria-label={t("replace.pickByHand")} />
+                                                )}
+                                            </TableCell>
                                             <TableCell className={PROSE}>
                                                 <Where line={l} t={t} />
                                                 {l.places > 1 ? <span className="text-subtle-foreground"> · {t("where.places", { count: l.places })}</span> : null}
@@ -137,7 +163,16 @@ export function ReplaceDialogBody({ title, description, note, data, isError, onR
                                             <TableCell className={PROSE}>
                                                 <StoryText text={l.text} nickname={nickname} />
                                             </TableCell>
-                                            <TableCell className={PROSE}>{l.result !== null ? <TextDiff before={l.text} after={l.result} labels={diffLabels(t)} /> : <span className="text-warning-foreground">{t("glossary.fix.byHand")}</span>}</TableCell>
+                                            <TableCell className={PROSE}>
+                                                {l.result !== null ? (
+                                                    <TextDiff before={l.text} after={l.result} labels={diffLabels(t)} />
+                                                ) : (
+                                                    <div className="flex flex-col gap-1">
+                                                        <span className="text-warning-foreground">{t("glossary.fix.byHand")}</span>
+                                                        <Textarea size="sm" value={written.get(lineId(l)) ?? l.text} onChange={(e) => write(l, e.target.value)} aria-label={t("replace.writeByHand")} />
+                                                    </div>
+                                                )}
+                                            </TableCell>
                                             <TableCell className={`${PROSE} text-muted-foreground`}>
                                                 <StoryText text={l.en} nickname={nickname} />
                                             </TableCell>
@@ -150,7 +185,7 @@ export function ReplaceDialogBody({ title, description, note, data, isError, onR
                 )}
             </DialogPanel>
             <DialogFooter>
-                <Button onClick={() => onApply(picked.map((l) => ({ storyId: l.storyId, ord: l.ord })))} disabled={pending || entries === 0}>
+                <Button onClick={() => onApply([...picked.map((l) => ({ storyId: l.storyId, ord: l.ord })), ...manual.map((l) => ({ storyId: l.storyId, ord: l.ord, text: written.get(lineId(l)) ?? "" }))])} disabled={pending || entries === 0}>
                     {pending ? <Spinner /> : <Replace aria-hidden="true" />}
                     {t("glossary.fix.apply", { count: entries })}
                 </Button>

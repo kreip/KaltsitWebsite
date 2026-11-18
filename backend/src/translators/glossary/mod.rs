@@ -515,9 +515,10 @@ fn word_variants(
     n: f64,
 ) -> Vec<GameVariant> {
     use std::collections::{HashMap, HashSet};
-    // Stems in the term's lines; a stem that starts with a shorter one of
-    // four letters or more is the same word with another ending
-    // ("заражённых" -> "заражен"), counted under the shorter one.
+    // Stems in the term's lines; a stem that is a shorter one of four letters
+    // or more with a participle's or an adjective's suffix is the same word
+    // ("заражённых" -> "заражен"), counted under the shorter one; any other
+    // letters make another word («гвардия» is not «Гвард»: `fix::same_root`).
     let mut all_stems: Vec<String> = texts
         .iter()
         .flat_map(|ru| ru_stems(ru).into_iter().map(|(st, _)| st))
@@ -528,10 +529,7 @@ fn word_variants(
     let mut canonical: HashMap<String, String> = HashMap::new();
     let mut roots: Vec<String> = Vec::new();
     for st in &all_stems {
-        let root = roots
-            .iter()
-            .find(|r| r.chars().count() >= 4 && st.starts_with(r.as_str()))
-            .cloned();
+        let root = roots.iter().find(|r| fix::same_root(st, r)).cloned();
         match root {
             Some(r) => {
                 canonical.insert(st.clone(), r);
