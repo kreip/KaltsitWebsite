@@ -67,7 +67,7 @@ and counted. The admin panel's value of a section key wins over the shipped file
 differs from the English source.
 
 `site-ru.json` holds the whole site's interface (8,200 keys, ~0.75 MB), the game's terms as the
-pack and the glossary write them (классы, АТК / ЗАЩ / СОПР / ХП, ОВ, рассудок, орундум, чистый
+pack and the glossary write them (классы, АТК / ЗАЩ / СОП / ХП, ОН, СКОР, ОВ, рассудок, орундум, чистый
 орундум…); the site is called «Мьюлсис» in Russian. Only the changelog's release notes
 (`changelog.note.*`, the developers' history) stay English. The file goes in with the backend
 binary and is written to the database with one SQL statement at start, so the 2 MB limit of
