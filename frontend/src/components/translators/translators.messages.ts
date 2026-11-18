@@ -2903,6 +2903,14 @@ export const messages = {
         text: "Couldn't load the words.",
         description: "Admin › Tags: the list failed to load.",
     },
+    "draft.restored": {
+        text: "Draft restored",
+        description: "Above the proposal box: the text typed earlier was kept in this browser and put back.",
+    },
+    "draft.reset": {
+        text: "Reset",
+        description: "Link beside «Draft restored»: drop the draft and start from the original text again.",
+    },
 } satisfies MessageMap;
 
 export const { keys } = defineMessages({ namespace, messages });

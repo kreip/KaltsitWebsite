@@ -236,6 +236,11 @@ Proposals made by either replacement are one **batch** (`translators.proposal_ba
 translator; unfolded, its places are the usual rows (one is taken out by rejecting it, or by its
 author deleting it).
 
+**A draft is never lost** (`drafts.ts`): what one types in the proposal box is kept in this browser at every
+change (`localStorage`, per place). Leaving or reloading the page, then opening the row again opens the editor
+with the text and «Восстановлен черновик · Сбросить»; "Save" or "Cancel" deletes it. "Show the places" under
+the box unfolds the table of places in the row, its links opening a new tab.
+
 While one types a proposal, the box warns of a glossary term of the English whose form the text
 lacks (`glossaryForm.ts`, the page's copy of the backend's rule).
 

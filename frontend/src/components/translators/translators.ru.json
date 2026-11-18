@@ -744,5 +744,7 @@
     "admin.tags.copy": "Скопировать список для Kolooo",
     "admin.tags.copied": "Скопировано: {count, plural, one {# строка} few {# строки} many {# строк} other {# строки}}",
     "admin.tags.copyFailed": "Не удалось скопировать: браузер не разрешил.",
-    "admin.tags.load": "Не удалось загрузить слова."
+    "admin.tags.load": "Не удалось загрузить слова.",
+    "draft.restored": "Восстановлен черновик",
+    "draft.reset": "Сбросить"
 }

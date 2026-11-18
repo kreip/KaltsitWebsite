@@ -42,6 +42,7 @@ import type { OutdatedEdit } from "#/types/generated/OutdatedEdit";
 import type { Proposal } from "#/types/generated/Proposal";
 import type { TranslatorLine } from "#/types/generated/TranslatorLine";
 import type { TranslatorsMe } from "#/types/generated/TranslatorsMe";
+import { dropDraft, readDraft, writeDraft } from "./drafts";
 import { missingTerms } from "./glossaryForm";
 import { Hint } from "./Hint";
 import { tagDiff, tagPairs, tokensIn } from "./markup";
@@ -836,7 +837,7 @@ export function PlacesList({ place, nickname, compact = false, t }: { place: Edi
  * there) | now (`after`: the proposal) | English | Chinese (when any place
  * has it). Story places link to their line; game data places to their card.
  */
-export function PlacesPreview({ place, after, nickname, t }: { place: EditPlace; after: string | null; nickname: string; t: T }): React.ReactElement {
+export function PlacesPreview({ place, after, nickname, newTab = false, t }: { place: EditPlace; after: string | null; nickname: string /** Links open a new tab (under an editor: the draft stays). */; newTab?: boolean; t: T }): React.ReactElement {
     const query = useQuery(placesQueryOptions(place));
     const nameOf = useStoryNames();
     if (query.isError) return <LoadFailed layout="inline" message={t("places.load")} onRetry={() => query.refetch()} />;
@@ -868,9 +869,9 @@ export function PlacesPreview({ place, after, nickname, t }: { place: EditPlace;
                                     <TableCell className="py-1.5 align-top text-subtle-foreground tabular-nums">{i + 1}</TableCell>
                                     <TableCell className={prose}>
                                         {!story ? (
-                                            <GamePlace section={p.section} objectId={p.objectId} objectEn={p.objectEn} field={p.field} idx={p.idx} t={t} />
+                                            <GamePlace section={p.section} objectId={p.objectId} objectEn={p.objectEn} field={p.field} idx={p.idx} newTab={newTab} t={t} />
                                         ) : n ? (
-                                            <Link to="/translators" search={{ group: n.groupId, story: p.storyId }} hash={`n-${p.ord + 1}`} className="underline-offset-4 hover:underline">
+                                            <Link to="/translators" search={{ group: n.groupId, story: p.storyId }} hash={`n-${p.ord + 1}`} className="underline-offset-4 hover:underline" {...(newTab ? { target: "_blank", rel: "noreferrer" } : {})}>
                                                 {t("places.item", { group: n.group, story: n.story, n: p.ord + 1 })}
                                             </Link>
                                         ) : (
@@ -998,8 +999,8 @@ export function SaveDialog({ open, onOpenChange, place, places, allowContext, he
     );
 }
 
-/** "Also in N other places" under the editor, with the list on demand. */
-function PlacesNote({ line, place, nickname, t }: { line: TranslatorLine; place: EditPlace; nickname: string; t: T }): React.ReactElement | null {
+/** "Also in N other places" under the editor, with the table of places on demand, in the row (its links open a new tab: the draft stays). */
+function PlacesNote({ line, place, text, nickname, t }: { line: TranslatorLine; place: EditPlace; text: string; nickname: string; t: T }): React.ReactElement | null {
     if (line.places < 2) return null;
     return (
         <Collapsible>
@@ -1008,7 +1009,7 @@ function PlacesNote({ line, place, nickname, t }: { line: TranslatorLine; place:
                 <CollapsibleTrigger render={<Button variant="link" size="xs" className="h-auto px-0 text-xs" />}>{t("places.show")}</CollapsibleTrigger>
             </span>
             <CollapsiblePanel className="pt-1">
-                <PlacesList place={place} nickname={nickname} t={t} />
+                <PlacesPreview place={place} after={cleanText(text)} nickname={nickname} newTab t={t} />
             </CollapsiblePanel>
         </Collapsible>
     );
@@ -1093,9 +1094,34 @@ export function ProposalEditor({ line, place, initial, source, context, here = n
     const id = useId();
     const hintId = useId();
     const locale = useLocale();
-    const [text, setText] = useState(initial);
+    // A draft left here (the page reloaded, left): its text instead of the initial one.
+    const [draft] = useState(() => {
+        const d = readDraft(place);
+        return d && d.text !== initial ? d : null;
+    });
+    const [restored, setRestored] = useState(draft !== null);
+    const [start, setStart] = useState(draft?.text ?? initial);
+    // The box is filled once: a reset mounts it anew.
+    const [boxKey, setBoxKey] = useState(0);
+    const [text, setText] = useState(start);
     const [asking, setAsking] = useState(false);
     const tools = useEditorTools(line.en, t);
+    const change = (next: string) => {
+        setText(next);
+        if (next === initial) dropDraft(place);
+        else writeDraft(place, { text: next, base: initial, source, context, here });
+    };
+    const reset = () => {
+        dropDraft(place);
+        setRestored(false);
+        setStart(initial);
+        setText(initial);
+        setBoxKey((k) => k + 1);
+    };
+    const close = () => {
+        dropDraft(place);
+        onClose();
+    };
     const save = useEditMutation((c: { context: boolean; confirmMany: boolean }) => createProposalFn({ data: { place, text, source, context: c.context, here, confirmMany: c.confirmMany } }), t("edit.failedSave"));
     const clean = cleanText(text);
     const sameAsGame = line.ruGame !== null && clean === cleanText(line.ruGame);
@@ -1105,6 +1131,7 @@ export function ProposalEditor({ line, place, initial, source, context, here = n
     const offer = useContext(WordReplaceOffer);
     const done = {
         onSuccess: () => {
+            dropDraft(place);
             onClose();
             // One word changed for another (Бибек → Байбик): offer it in the other lines.
             const swap = wordSwap(initial, text);
@@ -1122,7 +1149,16 @@ export function ProposalEditor({ line, place, initial, source, context, here = n
             <label htmlFor={id} className="text-subtle-foreground text-xs">
                 {editorLabel(source, t, locale)}
             </label>
-            <TokenEditor id={id} initial={initial} nickname={nickname} palette={tools.palette} tags={tools.tags} lookup={tools.lookup} onChange={setText} onSubmit={submit} onCancel={onClose} labels={tools.labels} describedBy={hintId} />
+            {restored ? (
+                <span className="flex flex-wrap items-center gap-1 text-info-foreground text-xs">
+                    {t("draft.restored")}
+                    <span aria-hidden="true">·</span>
+                    <Button variant="link" size="xs" className="h-auto px-0 text-xs" onClick={reset}>
+                        {t("draft.reset")}
+                    </Button>
+                </span>
+            ) : null}
+            <TokenEditor key={boxKey} id={id} initial={start} nickname={nickname} palette={tools.palette} tags={tools.tags} lookup={tools.lookup} onChange={change} onSubmit={submit} onCancel={close} labels={tools.labels} describedBy={hintId} />
             <TagsWarning en={line.en} text={text} words={tools.words} t={t} />
             <GlossaryWarning text={text} terms={line.terms} t={t} />
             <span id={hintId} className="text-subtle-foreground text-xs">
@@ -1131,13 +1167,13 @@ export function ProposalEditor({ line, place, initial, source, context, here = n
             {line.ruGameMatch === "lines" || line.en.includes("\n") ? <span className="text-subtle-foreground text-xs">{t("editor.wholeEntry")}</span> : null}
             {sameAsGame ? <span className="text-subtle-foreground text-xs">{t("editor.sameAsGame")}</span> : null}
             {line.levelTexts > 0 && !context ? <span className="text-subtle-foreground text-xs">{t("levels.hint", { count: line.levelTexts })}</span> : null}
-            {context ? <span className="text-subtle-foreground text-xs">{here ? t("editor.onlyHere") : t("editor.contextOnly")}</span> : <PlacesNote line={line} place={place} nickname={nickname} t={t} />}
+            {context ? <span className="text-subtle-foreground text-xs">{here ? t("editor.onlyHere") : t("editor.contextOnly")}</span> : <PlacesNote line={line} place={place} text={text} nickname={nickname} t={t} />}
             <div className="flex flex-wrap items-center gap-2">
                 <Button size="sm" onClick={submit} disabled={!canSave}>
                     {save.isPending ? <Spinner /> : null}
                     {t("editor.save")}
                 </Button>
-                <Button size="sm" variant="ghost" onClick={onClose}>
+                <Button size="sm" variant="ghost" onClick={close}>
                     {t("editor.cancel")}
                 </Button>
                 <span className="text-subtle-foreground text-xs">{t("editor.keys")}</span>

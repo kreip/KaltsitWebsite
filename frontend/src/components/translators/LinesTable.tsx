@@ -12,7 +12,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useRouterState } from "@tanstack/react-router";
 import { Check, PenLine, X } from "lucide-react";
 import type React from "react";
-import { Fragment, useCallback, useContext, useId, useMemo, useState } from "react";
+import { Fragment, useCallback, useContext, useEffect, useId, useMemo, useState } from "react";
 import { Badge } from "#/components/ui/badge";
 import { InfoHint } from "#/components/ui/info-hint";
 import { Label } from "#/components/ui/label";
@@ -33,6 +33,7 @@ import type { TranslatorLine } from "#/types/generated/TranslatorLine";
 import type { TranslatorsMe } from "#/types/generated/TranslatorsMe";
 import { BulkApprove, type IBulkLine } from "./BulkApprove";
 import { type Address, checkVariant, hasError, type ICandidate, type IVariantCheck, lineProblems, neighbourAddress, PROBLEM_KINDS, type ProblemKind, problemCount, type RecommendRule, recommend } from "./checks";
+import { readDraft } from "./drafts";
 import { Hint } from "./Hint";
 import {
     ActionRow,
@@ -346,6 +347,14 @@ function FullRuCell({ line, analysis, place, nickname, showVariants, showDiff, e
             />
         );
     };
+    // An opened row with a draft left in this browser opens its editor again (drafts.ts).
+    const opened = useContext(ActionsShown);
+    // biome-ignore lint/correctness/useExhaustiveDependencies: once, as the row opens
+    useEffect(() => {
+        if (!opened || editor !== null || !line.editable) return;
+        const d = readDraft(place);
+        if (d) onEditor({ kind: "proposal", text: d.base, source: d.source, context: d.context, here: d.here });
+    }, []);
     const proposalCount = proposalsAt(edits, place).length;
     // The machine's variant, unless it is the game's text again.
     const ai = aiText(line);
