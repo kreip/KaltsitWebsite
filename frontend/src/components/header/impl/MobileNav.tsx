@@ -13,7 +13,7 @@ import { GithubIcon } from "#/components/ui/github-icon";
 import { Spinner } from "#/components/ui/spinner";
 import { useAuth } from "#/hooks/use-auth";
 import { useTheme } from "#/hooks/use-theme";
-import { REPO_URL } from "#/lib/constants";
+import { REPO_URL, SHOW_DONATE } from "#/lib/constants";
 import { useI18n, useT } from "#/lib/i18n";
 import type { TypedT } from "#/lib/i18n/messages";
 import { cn, getAvatarSkinId } from "#/lib/utils";
@@ -124,11 +124,13 @@ export function MobileNav({ items, forceVisible = false }: IMobileNavProps) {
                                     </a>
                                 }
                             />
-                            <DrawerMenuItem render={<DrawerClose nativeButton={false} render={<Link to="/donate" />} />}>
-                                {t("mobileNav.donate")}
-                                <Heart className="mr-2 h-4 w-4" />
-                                <ExternalLinkIcon className="ml-auto h-3 w-3 opacity-50" />
-                            </DrawerMenuItem>
+                            {SHOW_DONATE ? (
+                                <DrawerMenuItem render={<DrawerClose nativeButton={false} render={<Link to="/donate" />} />}>
+                                    {t("mobileNav.donate")}
+                                    <Heart className="mr-2 h-4 w-4" />
+                                    <ExternalLinkIcon className="ml-auto h-3 w-3 opacity-50" />
+                                </DrawerMenuItem>
+                            ) : null}
                         </DrawerMenuGroup>
 
                         {/* Below `sm` this is the only path: the header drops its

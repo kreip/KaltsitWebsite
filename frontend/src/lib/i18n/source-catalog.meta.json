@@ -1,6 +1,6 @@
 {
     "generatedBy": "bun run i18n:extract",
-    "generatedAt": "2026-11-18T15:26:59.098Z",
+    "generatedAt": "2026-11-18T15:36:49.756Z",
     "entries": [
         {
             "key": "admin.home.access.everyList",
@@ -9248,6 +9248,13 @@
             "placeholders": []
         },
         {
+            "key": "common.footer.credits",
+            "namespace": "common",
+            "source_text": "Credits and licences",
+            "description": "Footer link to the credits page: who made the site and its fonts, with the licences (the font credit lives there).",
+            "placeholders": []
+        },
+        {
             "key": "common.footer.disclaimer",
             "namespace": "common",
             "source_text": "Not affiliated with Hypergryph or Yostar. Game data and assets are property of their respective owners.",
@@ -9272,7 +9279,7 @@
             "key": "common.footer.fontCredit",
             "namespace": "common",
             "source_text": "Terra script fonts: Sarkaz by lhclbt ({endfield}, {ccLicence}, unmodified); Sami and Aegir from {samigirian} by Siphercase ({oflLicence}, modified). Reader typeface {openDyslexic} by Abbie Gonzalez ({odLicence}, unmodified).",
-            "description": "One-line font attribution in the footer. `{endfield}`, `{samigirian}` and `{openDyslexic}` are links carrying the repository and typeface names Endfield_Font, Samigirian and OpenDyslexic; `{ccLicence}`, `{oflLicence}` and `{odLicence}` are links carrying the licence names. `Sarkaz`, `Sami`, `Aegir`, `lhclbt`, `Siphercase` and `Abbie Gonzalez` are names and stay as-is.",
+            "description": "One-line font attribution on the credits page (/credits; it was in the footer). `{endfield}`, `{samigirian}` and `{openDyslexic}` are links carrying the repository and typeface names Endfield_Font, Samigirian and OpenDyslexic; `{ccLicence}`, `{oflLicence}` and `{odLicence}` are links carrying the licence names. `Sarkaz`, `Sami`, `Aegir`, `lhclbt`, `Siphercase` and `Abbie Gonzalez` are names and stay as-is.",
             "placeholders": [
                 "ccLicence",
                 "endfield",
@@ -17185,6 +17192,44 @@
             "placeholders": []
         },
         {
+            "key": "legal.credits.fonts.heading",
+            "namespace": "legal",
+            "source_text": "Fonts",
+            "description": "Section heading on the credits page: the fonts and their licences.",
+            "placeholders": []
+        },
+        {
+            "key": "legal.credits.heading",
+            "namespace": "legal",
+            "source_text": "Credits and licences",
+            "description": "Heading of the credits page.",
+            "placeholders": []
+        },
+        {
+            "key": "legal.credits.lead",
+            "namespace": "legal",
+            "source_text": "Who made this site and the fonts it uses, and under which licences.",
+            "description": "Line under the heading of the credits page.",
+            "placeholders": []
+        },
+        {
+            "key": "legal.credits.site.body",
+            "namespace": "legal",
+            "source_text": "Muelsyse is a fork of {original} by Eltik ({repo}). The Russian translation and the «Русификатор» section are by the ArknightsRU team.",
+            "description": "Credits page: the site's origin. `{original}` is the original site's name (Myrtle), `{repo}` a link to its source code; Eltik and ArknightsRU are names and stay as-is.",
+            "placeholders": [
+                "original",
+                "repo"
+            ]
+        },
+        {
+            "key": "legal.credits.site.heading",
+            "namespace": "legal",
+            "source_text": "The site",
+            "description": "Section heading on the credits page: the site's origin.",
+            "placeholders": []
+        },
+        {
             "key": "legal.privacy.changes.heading",
             "namespace": "legal",
             "source_text": "Changes to This Policy",
@@ -18829,6 +18874,20 @@
             "namespace": "meta",
             "source_text": "Changelog",
             "description": "Document title of the changelog.",
+            "placeholders": []
+        },
+        {
+            "key": "meta.credits.description",
+            "namespace": "meta",
+            "source_text": "Who made Muelsyse and the fonts it uses, and under which licences.",
+            "description": "Meta description of the credits page.",
+            "placeholders": []
+        },
+        {
+            "key": "meta.credits.title",
+            "namespace": "meta",
+            "source_text": "Credits and licences",
+            "description": "Document title of the credits page: who made the site and its fonts, with their licences.",
             "placeholders": []
         },
         {

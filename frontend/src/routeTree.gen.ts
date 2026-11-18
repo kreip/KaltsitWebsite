@@ -14,6 +14,7 @@ import { Route as AuthedRouteImport } from './routes/_authed'
 import { Route as AnnouncementsRouteImport } from './routes/announcements'
 import { Route as ArchivesRouteImport } from './routes/archives'
 import { Route as ChangelogRouteImport } from './routes/changelog'
+import { Route as CreditsRouteImport } from './routes/credits'
 import { Route as DiscordRouteImport } from './routes/discord'
 import { Route as DonateRouteImport } from './routes/donate'
 import { Route as DyntestRouteImport } from './routes/dyntest'
@@ -99,6 +100,11 @@ const ArchivesRoute = ArchivesRouteImport.update({
 const ChangelogRoute = ChangelogRouteImport.update({
   id: '/changelog',
   path: '/changelog',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CreditsRoute = CreditsRouteImport.update({
+  id: '/credits',
+  path: '/credits',
   getParentRoute: () => rootRouteImport,
 } as any)
 const DiscordRoute = DiscordRouteImport.update({
@@ -419,6 +425,7 @@ export interface FileRoutesByFullPath {
   '/announcements': typeof AnnouncementsRoute
   '/archives': typeof ArchivesRoute
   '/changelog': typeof ChangelogRoute
+  '/credits': typeof CreditsRoute
   '/discord': typeof DiscordRoute
   '/donate': typeof DonateRoute
   '/dyntest': typeof DyntestRoute
@@ -487,6 +494,7 @@ export interface FileRoutesByTo {
   '/announcements': typeof AnnouncementsRoute
   '/archives': typeof ArchivesRoute
   '/changelog': typeof ChangelogRoute
+  '/credits': typeof CreditsRoute
   '/discord': typeof DiscordRoute
   '/donate': typeof DonateRoute
   '/dyntest': typeof DyntestRoute
@@ -556,6 +564,7 @@ export interface FileRoutesById {
   '/announcements': typeof AnnouncementsRoute
   '/archives': typeof ArchivesRoute
   '/changelog': typeof ChangelogRoute
+  '/credits': typeof CreditsRoute
   '/discord': typeof DiscordRoute
   '/donate': typeof DonateRoute
   '/dyntest': typeof DyntestRoute
@@ -626,6 +635,7 @@ export interface FileRouteTypes {
     | '/announcements'
     | '/archives'
     | '/changelog'
+    | '/credits'
     | '/discord'
     | '/donate'
     | '/dyntest'
@@ -694,6 +704,7 @@ export interface FileRouteTypes {
     | '/announcements'
     | '/archives'
     | '/changelog'
+    | '/credits'
     | '/discord'
     | '/donate'
     | '/dyntest'
@@ -762,6 +773,7 @@ export interface FileRouteTypes {
     | '/announcements'
     | '/archives'
     | '/changelog'
+    | '/credits'
     | '/discord'
     | '/donate'
     | '/dyntest'
@@ -832,6 +844,7 @@ export interface RootRouteChildren {
   AnnouncementsRoute: typeof AnnouncementsRoute
   ArchivesRoute: typeof ArchivesRoute
   ChangelogRoute: typeof ChangelogRoute
+  CreditsRoute: typeof CreditsRoute
   DiscordRoute: typeof DiscordRoute
   DonateRoute: typeof DonateRoute
   DyntestRoute: typeof DyntestRoute
@@ -915,6 +928,13 @@ declare module '@tanstack/react-router' {
       path: '/changelog'
       fullPath: '/changelog'
       preLoaderRoute: typeof ChangelogRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/credits': {
+      id: '/credits'
+      path: '/credits'
+      fullPath: '/credits'
+      preLoaderRoute: typeof CreditsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/discord': {
@@ -1411,6 +1431,7 @@ const rootRouteChildren: RootRouteChildren = {
   AnnouncementsRoute: AnnouncementsRoute,
   ArchivesRoute: ArchivesRoute,
   ChangelogRoute: ChangelogRoute,
+  CreditsRoute: CreditsRoute,
   DiscordRoute: DiscordRoute,
   DonateRoute: DonateRoute,
   DyntestRoute: DyntestRoute,

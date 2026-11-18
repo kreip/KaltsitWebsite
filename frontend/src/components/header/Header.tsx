@@ -9,6 +9,7 @@ import { Separator } from "#/components/ui/separator";
 import { useAuth } from "#/hooks/use-auth";
 import { useIsMac } from "#/hooks/use-is-mac";
 import { useCommand } from "#/lib/command-context";
+import { SHOW_DONATE } from "#/lib/constants";
 import { useT } from "#/lib/i18n";
 import type { TypedT } from "#/lib/i18n/messages";
 import { getToolsByCategory, modKey } from "#/lib/registry/tools";
@@ -167,17 +168,19 @@ export default function Header() {
                             visitors find both inside UserMenu instead. */}
                             {user === null ? (
                                 <>
-                                    <Button
-                                        variant="ghost"
-                                        size="icon"
-                                        className="hidden sm:inline-flex"
-                                        render={
-                                            <Link to="/donate" aria-label={t("header.support")}>
-                                                <Heart className="h-4 w-4" aria-hidden="true" />
-                                                <span className="sr-only">{t("header.support")}</span>
-                                            </Link>
-                                        }
-                                    />
+                                    {SHOW_DONATE ? (
+                                        <Button
+                                            variant="ghost"
+                                            size="icon"
+                                            className="hidden sm:inline-flex"
+                                            render={
+                                                <Link to="/donate" aria-label={t("header.support")}>
+                                                    <Heart className="h-4 w-4" aria-hidden="true" />
+                                                    <span className="sr-only">{t("header.support")}</span>
+                                                </Link>
+                                            }
+                                        />
+                                    ) : null}
                                     <Button
                                         variant="ghost"
                                         size="icon"

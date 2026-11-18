@@ -38,6 +38,7 @@ export const SITEMAP_PATHS = [
     "/user/search",
     "/privacy",
     "/terms",
+    "/credits",
 ] as const satisfies readonly (keyof FileRoutesByFullPath)[];
 
 const escapeXml = (s: string) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");

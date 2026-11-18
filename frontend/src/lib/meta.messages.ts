@@ -269,6 +269,14 @@ export const messages = {
         text: "What Muelsyse stores about you, who can see it, and how to delete it.",
         description: "Meta description of the privacy policy.",
     },
+    "credits.title": {
+        text: "Credits and licences",
+        description: "Document title of the credits page: who made the site and its fonts, with their licences.",
+    },
+    "credits.description": {
+        text: "Who made Muelsyse and the fonts it uses, and under which licences.",
+        description: "Meta description of the credits page.",
+    },
     "terms.title": {
         text: "Terms of Service",
         description: "Document title of the terms of service.",

@@ -27,6 +27,10 @@ export const messages = {
         text: "Discord",
         description: "Footer link to the community chat. 'Discord' is a product name and stays as-is.",
     },
+    "footer.credits": {
+        text: "Credits and licences",
+        description: "Footer link to the credits page: who made the site and its fonts, with the licences (the font credit lives there).",
+    },
     "footer.donate": {
         text: "Donate",
         description: "Footer link to the donation page. A verb.",
@@ -38,7 +42,7 @@ export const messages = {
     "footer.fontCredit": {
         text: "Terra script fonts: Sarkaz by lhclbt ({endfield}, {ccLicence}, unmodified); Sami and Aegir from {samigirian} by Siphercase ({oflLicence}, modified). Reader typeface {openDyslexic} by Abbie Gonzalez ({odLicence}, unmodified).",
         description:
-            "One-line font attribution in the footer. `{endfield}`, `{samigirian}` and `{openDyslexic}` are links carrying the repository and typeface names Endfield_Font, Samigirian and OpenDyslexic; `{ccLicence}`, `{oflLicence}` and `{odLicence}` are links carrying the licence names. `Sarkaz`, `Sami`, `Aegir`, `lhclbt`, `Siphercase` and `Abbie Gonzalez` are names and stay as-is.",
+            "One-line font attribution on the credits page (/credits; it was in the footer). `{endfield}`, `{samigirian}` and `{openDyslexic}` are links carrying the repository and typeface names Endfield_Font, Samigirian and OpenDyslexic; `{ccLicence}`, `{oflLicence}` and `{odLicence}` are links carrying the licence names. `Sarkaz`, `Sami`, `Aegir`, `lhclbt`, `Siphercase` and `Abbie Gonzalez` are names and stay as-is.",
     },
     "footer.builtOn": {
         text: "built on TanStack Start · COSS UI",
