@@ -2099,8 +2099,8 @@ export const messages = {
         description: "Part of the tags warning under the editor: tags of the English the translation lacks.",
     },
     "editor.tagsExtra": {
-        text: "Extra: {tags}.",
-        description: "Part of the tags warning under the editor: tags the English does not have.",
+        text: "Tags the original lacks: {tags}.",
+        description: "Warning under the editor (warning colour): tags the English does not have.",
     },
     "proposal.onlyHere": {
         text: "only here — needs the pack maintainer's decision",
@@ -2922,6 +2922,18 @@ export const messages = {
     "at.field.nameByCode.item": {
         text: "Item's name · plugin entry",
         description: "Where a text stands: an item's name written by its code in the pack's 13_names.txt, read by the plugin.",
+    },
+    "editor.tokensLost": {
+        text: "Substitutions lost: {tokens}.",
+        description: "Warning under the editor (warning colour): substitutions of the English ({0}, {atk_scale:0%}) the text lacks — the game would show the text without the number.",
+    },
+    "editor.tokensAdded": {
+        text: "Substitutions the original lacks: {tokens}.",
+        description: "Warning under the editor (warning colour): substitutions the English does not have.",
+    },
+    "editor.tagBroken": {
+        text: "A tag is broken: left open, or half a tag.",
+        description: "Warning under the editor (warning colour): a tag not closed or broken.",
     },
 } satisfies MessageMap;
 

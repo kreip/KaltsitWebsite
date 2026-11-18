@@ -189,7 +189,7 @@ function Where({ row, nickname, t }: { row: EditRow; nickname: string; t: T }): 
 }
 
 /** A proposal's texts, newest first, each compared by words with the one before it (the first with the game's Russian). */
-function Versions({ id, ruGame, t }: { id: number; ruGame: string | null; t: T }): React.ReactElement {
+function Versions({ id, ruGame, nickname, t }: { id: number; ruGame: string | null; nickname: string; t: T }): React.ReactElement {
     const f = useFormatters();
     const locale = useLocale();
     const query = useQuery(proposalVersionsQueryOptions(id));
@@ -208,7 +208,7 @@ function Versions({ id, ruGame, t }: { id: number; ruGame: string | null; t: T }
                             {v.source !== "own" ? ` · ${fromWords(v.source, t, locale)}` : ""}
                             {i === 0 ? ` · ${t("history.current")}` : ""}
                         </span>
-                        {before === null ? <span className="whitespace-pre-line">{v.text}</span> : <TextDiff before={before} after={v.text} labels={labels} />}
+                        {before === null ? <StoryText text={v.text} nickname={nickname} /> : <TextDiff before={before} after={v.text} labels={labels} nickname={nickname} />}
                     </li>
                 );
             })}
@@ -292,7 +292,7 @@ function Row({ row, me, all, nickname, lead, selected, onSelect, compare, t }: I
             <TableCell className={PROSE}>
                 <div className="flex flex-col gap-1">
                     {all ? <span className="text-subtle-foreground text-xs">{mine ? t("proposal.mine") : p.author.name}</span> : null}
-                    {rewriting ? <Rewrite row={row} nickname={nickname} onClose={() => setRewriting(false)} t={t} /> : compare && row.ruGame ? <TextDiff before={row.ruGame} after={p.text} labels={diffLabels(t)} /> : <StoryText text={p.text} nickname={nickname} />}
+                    {rewriting ? <Rewrite row={row} nickname={nickname} onClose={() => setRewriting(false)} t={t} /> : compare && row.ruGame ? <TextDiff before={row.ruGame} after={p.text} labels={diffLabels(t)} nickname={nickname} /> : <StoryText text={p.text} nickname={nickname} />}
                     {p.here ? (
                         <span>
                             <Badge variant="warning" size="sm">
@@ -327,7 +327,7 @@ function Row({ row, me, all, nickname, lead, selected, onSelect, compare, t }: I
                             </CollapsibleTrigger>
                         </div>
                         <CollapsiblePanel className="pt-1">
-                            <Versions id={p.id} ruGame={row.ruGame} t={t} />
+                            <Versions id={p.id} ruGame={row.ruGame} nickname={nickname} t={t} />
                         </CollapsiblePanel>
                     </Collapsible>
                 </div>

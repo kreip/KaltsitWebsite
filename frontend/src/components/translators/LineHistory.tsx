@@ -90,7 +90,7 @@ function HistoryList({ place, nickname, t }: { place: EditPlace; nickname: strin
                                 {e.kind === "reject" && e.text ? (
                                     <span className="text-muted-foreground">{t("decide.reasonShown", { reason: e.text })}</span>
                                 ) : e.text === null || e.kind === "reopen" ? null : e.before !== null ? (
-                                    <TextDiff before={e.before} after={e.text} labels={labels} />
+                                    <TextDiff before={e.before} after={e.text} labels={labels} nickname={nickname} />
                                 ) : (
                                     <StoryText text={e.text} nickname={nickname} />
                                 )}

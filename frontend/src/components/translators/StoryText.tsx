@@ -2,7 +2,8 @@
  * A text of the game in the translators' section, shown the way the game
  * shows it, never with its tags spelled out: a game style in its ink, a term
  * underlined with the game's explanation on hover, italics, bold, colour, a
- * story's paragraphs; `{@nickname}` as a chip with the signed-in member's
+ * story's paragraphs; a substitution (`{atk_scale:0%}`) as a chip, as in the
+ * editor; `{@nickname}` as a chip with the signed-in member's
  * nickname (the saved text keeps the token as it is). The fragments quoted
  * by comments and what the search found are highlighted.
  */
@@ -33,6 +34,15 @@ export function NicknameChip({ nickname }: { nickname: string }): React.ReactEle
     return (
         <Badge variant="tint" size="sm" className="mx-0.5 align-baseline" data-token="{@nickname}">
             {nickname}
+        </Badge>
+    );
+}
+
+/** A substitution (`{atk_scale:0%}`, `{0}`) as the editor shows it: a chip, never letters among the words. */
+export function TokenChip({ raw }: { raw: string }): React.ReactElement {
+    return (
+        <Badge variant="tint" size="sm" className="mx-0.5 align-baseline" data-token={raw}>
+            {raw}
         </Badge>
     );
 }
@@ -115,8 +125,8 @@ function renderNodes(nodes: readonly MarkNode[], r: IRender, prefix: string): Re
     return nodes.map((n, i) => {
         const key = `${prefix}${i}`;
         if (n.kind === "text") return <span key={key}>{renderRun(n.value, r.nickname, r.quotes, key, r.find)}</span>;
-        // A substitution the game fills in (a number of a skill's level): as written.
-        if (n.kind === "token") return <span key={key}>{n.raw}</span>;
+        // A substitution the game fills in (a number of a skill's level): a chip, as in the editor.
+        if (n.kind === "token") return <TokenChip key={key} raw={n.raw} />;
         const children = renderNodes(n.children, r, `${key}.`);
         if (n.type === "paragraph")
             return (

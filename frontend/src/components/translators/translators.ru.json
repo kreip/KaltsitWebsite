@@ -514,7 +514,7 @@
     "editor.wrapHint": "Выделите слово и нажмите тег.",
     "editor.tagsDiffer": "Теги не как в оригинале.",
     "editor.tagsMissing": "Не хватает: {tags}.",
-    "editor.tagsExtra": "Лишние: {tags}.",
+    "editor.tagsExtra": "Лишние теги, которых нет в оригинале: {tags}.",
     "proposal.onlyHere": "только здесь — нужно решение Kolooo",
     "save.onlyHere": "Нужен отдельный перевод",
     "save.onlyHereHint": "В игре у этого английского текста один перевод на все места. Отдельный перевод здесь — запрос к Kolooo: в словари он не идёт, а попадает в файл only_here.tsv выгрузки.",
@@ -749,5 +749,8 @@
     "draft.reset": "Сбросить",
     "at.field.nameByCode.operator": "Имя оперативника · запись плагина",
     "at.field.nameByCode.enemy": "Имя врага · запись плагина",
-    "at.field.nameByCode.item": "Название предмета · запись плагина"
+    "at.field.nameByCode.item": "Название предмета · запись плагина",
+    "editor.tokensLost": "Потеряны подстановки: {tokens}.",
+    "editor.tokensAdded": "Лишние подстановки, которых нет в оригинале: {tokens}.",
+    "editor.tagBroken": "Сломан тег: не закрыт или осталась половинка."
 }

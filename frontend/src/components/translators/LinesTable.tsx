@@ -408,7 +408,7 @@ function FullRuCell({ line, analysis, place, nickname, showVariants, showDiff, e
             )}
             {showDiff && line.ruGame && line.ruGameBefore && line.ruGameChangedAt !== null ? (
                 <Toned tone={TONE.remark} label={t("diff.gameChanged", { date: f.date(line.ruGameChangedAt * 1000, { dateStyle: "medium" }) })}>
-                    <TextDiff before={line.ruGameBefore} after={line.ruGame} labels={diffLabels(t)} />
+                    <TextDiff before={line.ruGameBefore} after={line.ruGame} labels={diffLabels(t)} nickname={nickname} />
                 </Toned>
             ) : null}
             <VariantNotes {...notes} variant="game" />

@@ -165,7 +165,7 @@ export function ReplaceDialogBody({ title, description, note, data, isError, onR
                                             </TableCell>
                                             <TableCell className={PROSE}>
                                                 {l.result !== null ? (
-                                                    <TextDiff before={l.text} after={l.result} labels={diffLabels(t)} />
+                                                    <TextDiff before={l.text} after={l.result} labels={diffLabels(t)} nickname={nickname} />
                                                 ) : (
                                                     <div className="flex flex-col gap-1">
                                                         <span className="text-warning-foreground">{t("glossary.fix.byHand")}</span>

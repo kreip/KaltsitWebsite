@@ -255,11 +255,14 @@ the game's colour or the term's name and explanation, in the pack's Russian too
 (`translators.tags`, `GET /api/translators/tags`).
 
 A table never shows a tag spelled out: a style in its ink, a term as plain text (the
-game shows it so) with the game's explanation on hover. In the editor a substitution is a chip (removed whole, inserted
+game shows it so) with the game's explanation on hover, a substitution (`{atk_scale:0%}`) as a chip as in the
+editor — the game's Russian, the English, the proposals, the Edits list and the replace dialogs alike; a
+comparison (`TextDiff.tsx`) keeps the tags' colours too (a dropped text's tags change nothing). In the editor a substitution is a chip (removed whole, inserted
 with its button) and a tag a span typed into; the buttons under the box are the
 substitutions and tags of the line's English: a tag's button wraps the selection, and with
-the cursor inside a span "Remove the tag" drops both halves at once. A warning names the
-original's tags a translation lacks or adds; the same test marks every variant.
+the cursor inside a span "Remove the tag" drops both halves at once. Under the box, the
+original's colour tags a translation lacks are said in gray (cosmetic: the text is whole); a tag the original
+lacks, a broken tag, a substitution lost or added in the warning colour. The same test marks every variant.
 
 "No highlight" (`markup.ts::lostHighlights`, `texts/problems.rs::lost_highlights`) is **not an error**:
 the text is whole, and the RichTextFix plugin colours words back by its own rules (Kolooo's word rules,

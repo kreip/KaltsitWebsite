@@ -45,7 +45,7 @@ import type { TranslatorsMe } from "#/types/generated/TranslatorsMe";
 import { dropDraft, readDraft, writeDraft } from "./drafts";
 import { missingTerms } from "./glossaryForm";
 import { Hint } from "./Hint";
-import { tagDiff, tagPairs, tokensIn } from "./markup";
+import { tagDiff, tagHealth, tagPairs, tokensIn } from "./markup";
 import { GamePlace } from "./PlaceWords";
 import { StoryText } from "./StoryText";
 import { useStoryNames } from "./storyNames";
@@ -581,7 +581,7 @@ export function ApprovedVariant({ edits, place, me, nickname, marks, compareWith
                 </>
             }
         >
-            {compareWith && a.variant !== "game" ? <TextDiff before={compareWith} after={a.text} labels={diffLabels(t)} /> : <StoryText text={a.text} nickname={nickname} />}
+            {compareWith && a.variant !== "game" ? <TextDiff before={compareWith} after={a.text} labels={diffLabels(t)} nickname={nickname} /> : <StoryText text={a.text} nickname={nickname} />}
         </Toned>
     );
 }
@@ -687,7 +687,7 @@ export function Proposals({ edits, place, me, nickname, onEdit, marks, compare =
                                 </>
                             }
                         >
-                            {before ? <TextDiff before={before} after={p.text} labels={diffLabels(t)} /> : <StoryText text={p.text} nickname={nickname} />}
+                            {before ? <TextDiff before={before} after={p.text} labels={diffLabels(t)} nickname={nickname} /> : <StoryText text={p.text} nickname={nickname} />}
                         </Toned>
                         <VariantNotes edits={edits} place={place} me={me} variant="proposal" proposalId={p.id} t={t} />
                     </div>
@@ -880,7 +880,7 @@ export function PlacesPreview({ place, after, nickname, newTab = false, t }: { p
                                         {here ? <span className="text-subtle-foreground"> · {t("places.here")}</span> : null}
                                     </TableCell>
                                     <TableCell className={prose}>{p.ruGame ? <StoryText text={p.ruGame} nickname={nickname} /> : <span className="text-subtle-foreground">{t("ru.missing")}</span>}</TableCell>
-                                    {after !== null ? <TableCell className={prose}>{p.ruGame ? <TextDiff before={p.ruGame} after={after} labels={diffLabels(t)} /> : <StoryText text={after} nickname={nickname} />}</TableCell> : null}
+                                    {after !== null ? <TableCell className={prose}>{p.ruGame ? <TextDiff before={p.ruGame} after={after} labels={diffLabels(t)} nickname={nickname} /> : <StoryText text={after} nickname={nickname} />}</TableCell> : null}
                                     <TableCell className={prose}>{p.en ? <StoryText text={p.en} nickname={nickname} /> : null}</TableCell>
                                     {cn ? <TableCell className={`${prose} whitespace-pre-line`}>{p.cn ?? ""}</TableCell> : null}
                                 </TableRow>
@@ -1050,15 +1050,31 @@ export function useEditorTools(en: string, t: T): { palette: string[]; tags: ITa
 }
 
 /** "The tags are not the original's", under an editor: what is missing and what is extra, in words. Nothing when they agree. */
+/**
+ * Under the editor: the original's colour tags the text lacks are cosmetic (the text is whole) — said in gray; a
+ * broken tag, a tag the original lacks or a substitution lost or added — in the warning colour.
+ */
 export function TagsWarning({ en, text, words, t }: { en: string; text: string; words: (name: string) => string; t: T }): React.ReactElement | null {
     const diff = tagDiff(en, text);
-    if (diff.missing.length + diff.extra.length === 0) return null;
+    const broken = tagHealth(en, text).broken;
+    const enTokens = tokensIn(en);
+    const ruTokens = tokensIn(text);
+    const lost = enTokens.filter((x) => !ruTokens.includes(x));
+    const added = ruTokens.filter((x) => !enTokens.includes(x));
+    const brokenTag = broken && diff.extra.length === 0 && lost.length === 0 && added.length === 0;
+    if (diff.missing.length + diff.extra.length + lost.length + added.length === 0 && !brokenTag) return null;
     const list = (names: readonly string[]) => [...new Set(names)].map(words).join(", ");
     return (
-        <span className="text-warning-foreground text-xs">
-            {t("editor.tagsDiffer")}
-            {diff.missing.length > 0 ? ` ${t("editor.tagsMissing", { tags: list(diff.missing) })}` : ""}
-            {diff.extra.length > 0 ? ` ${t("editor.tagsExtra", { tags: list(diff.extra) })}` : ""}
+        <span className="flex flex-col text-xs">
+            {diff.missing.length > 0 ? (
+                <span className="text-subtle-foreground">
+                    {t("editor.tagsDiffer")} {t("editor.tagsMissing", { tags: list(diff.missing) })}
+                </span>
+            ) : null}
+            {diff.extra.length > 0 ? <span className="text-warning-foreground">{t("editor.tagsExtra", { tags: list(diff.extra) })}</span> : null}
+            {lost.length > 0 ? <span className="text-warning-foreground">{t("editor.tokensLost", { tokens: lost.join(" ") })}</span> : null}
+            {added.length > 0 ? <span className="text-warning-foreground">{t("editor.tokensAdded", { tokens: added.join(" ") })}</span> : null}
+            {brokenTag ? <span className="text-warning-foreground">{t("editor.tagBroken")}</span> : null}
         </span>
     );
 }
