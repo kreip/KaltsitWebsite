@@ -21,6 +21,7 @@ import { toastManager } from "#/components/ui/toast";
 import { useT } from "#/lib/i18n";
 import type { TypedT } from "#/lib/i18n/messages";
 import { createSuggestionFn, suggestionsQueryOptions } from "#/lib/translators/api";
+import { trimEdges } from "./edges";
 import type { messages } from "./translators.messages";
 
 type T = TypedT<typeof messages>;
@@ -49,7 +50,8 @@ function elementOf(node: Node | null): Element | null {
 function readSelection(): ISelected | null {
     const sel = window.getSelection();
     if (!sel || sel.isCollapsed || sel.rangeCount === 0) return null;
-    const text = sel.toString().replace(/\s+/g, " ").trim();
+    // Without the blanks and punctuation a double click or a drag takes along (edges.ts).
+    const text = trimEdges(sel.toString().replace(/\s+/g, " "));
     if (!text || text.length > MAX_SELECTED) return null;
     const from = elementOf(sel.anchorNode);
     const cell = from?.closest("[data-sel]");

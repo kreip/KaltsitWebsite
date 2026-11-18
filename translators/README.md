@@ -166,7 +166,8 @@ story's lines, then the shorter text. A text pages long (over ~1,900 bytes) is o
 every test of the sort key tripled the time. Above the texts: the operators, enemies, items
 and stages whose name answers the query, each with a link to its card.
 
-A word or phrase selected in any table (a double click, a drag) opens a small menu: find it
+A word or phrase selected in any table (a double click, a drag; the blanks and punctuation at its edges are
+dropped — `edges.ts`, and so is a selection wrapped in a tag in the editor) opens a small menu: find it
 everywhere (the Search tab), find it in the glossary, or suggest it for the glossary. A
 suggestion (`translators.glossary_suggestions`; English, Russian, note, the line it was
 noticed in) shows in a list of its own on the Glossary tab, where a translator accepts or

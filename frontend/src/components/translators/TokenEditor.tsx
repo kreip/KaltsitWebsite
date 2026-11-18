@@ -23,6 +23,7 @@ import { useEffect, useRef, useState } from "react";
 import { badgeVariants } from "#/components/ui/badge";
 import { Button } from "#/components/ui/button";
 import { cn } from "#/lib/utils";
+import { trimRange } from "./edges";
 import { Hint } from "./Hint";
 import { type MarkNode, parseMarkup } from "./markup";
 import type { ISpanLook } from "./tags";
@@ -261,7 +262,8 @@ export function TokenEditor({ id, initial, nickname, palette, tags, lookup, onCh
     const wrap = (tag: ITagButton) => {
         const el = ref.current;
         if (!el) return;
-        const range = rangeIn(el);
+        // Without the blanks and punctuation at the selection's edges (edges.ts).
+        const range = trimRange(rangeIn(el));
         // Nothing selected: there is nothing to wrap (the hint beside the buttons says so).
         if (range.collapsed) return;
         const span = tagSpan(tag.open, tag.close, lookup);
