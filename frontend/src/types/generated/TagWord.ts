@@ -17,8 +17,9 @@ export type TagWord = {
      */
     lines: number;
     /**
-     * The Russian stem seen for it in the pack's text where the tag is kept
-     * (`умеренн-`, `урон искусств-`), the most frequent; null when no text keeps the tag.
+     * The Russian stem the pack writes for it (`умеренн-`, `урон искусств`): where
+     * the tag is kept, the most frequent; else the stems that stand with it; null
+     * when none is sure.
      */
     ru: string | null;
     /**

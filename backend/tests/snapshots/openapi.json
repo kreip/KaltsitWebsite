@@ -39591,7 +39591,7 @@
               "string",
               "null"
             ],
-            "description": "The Russian stem seen for it in the pack's text where the tag is kept\n(`умеренн-`, `урон искусств-`), the most frequent; null when no text keeps the tag."
+            "description": "The Russian stem the pack writes for it (`умеренн-`, `урон искусств`): where\nthe tag is kept, the most frequent; else the stems that stand with it; null\nwhen none is sure."
           },
           "ruLines": {
             "type": "integer",
