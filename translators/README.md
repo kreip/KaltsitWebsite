@@ -70,10 +70,19 @@ differs from the English source.
 pack and the glossary write them (классы, АТК / ЗАЩ / СОП / ХП, ОН, СКОР, ОВ, рассудок, орундум, чистый
 орундум…); the site is called «Мьюлсис» in Russian. Only the changelog's release notes
 (`changelog.note.*`, the developers' history) stay English. The file goes in with the backend
-binary and is written to the database with one SQL statement at start, so the 2 MB limit of
+binary and is written to the database with one SQL statement at start, so the body limit of
 `/api/admin/i18n/sync` does not apply to it. That limit holds for the English catalog the
-frontend sends with `bun run i18n:sync` (about 2.07 MB of 2 MiB now): the keys must be synced
-before the loader can write their Russian.
+frontend sends with `bun run i18n:sync`: it outgrew axum's default 2 MiB, so the route takes up
+to 8 MiB (`app/routes/i18n/mod.rs`). The keys must be synced before the loader can write their
+Russian.
+
+## The site's pictures
+
+The mascot is Muelsyse (`char_249_mlyss`), all from the game's data: the logo, the favicon, the
+PWA and Apple icons are her head and shoulders from the story sprite `avg_249_mlyss_1`; the home
+page's key visual is her elite 2 art on a blurred copy of itself; the three round portraits
+(`public/home/myrtle_*.png`, the old names kept) are her story expressions. Myrtle's files are
+kept out of git in `translators/local-tools/old-branding/`.
 
 ## Deploying
 

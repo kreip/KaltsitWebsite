@@ -20,8 +20,8 @@ export const messages = {
         description: "Second 404 action: opens the site-wide search palette (operators, stages, pages), for a visitor who followed an old link.",
     },
     "notFound.imageAlt": {
-        text: "Myrtle, face-down after dropping her snacks",
-        description: "Alt text for the chibi of Myrtle that stands in for the 0 of the giant 404.",
+        text: "Muelsyse, surprised",
+        description: "Alt text for the round portrait of Muelsyse (an operator, the site's mascot) with a surprised face that stands in for the 0 of the giant 404.",
     },
 } satisfies MessageMap;
 

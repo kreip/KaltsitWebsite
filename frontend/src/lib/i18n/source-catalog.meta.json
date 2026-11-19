@@ -1,6 +1,6 @@
 {
     "generatedBy": "bun run i18n:extract",
-    "generatedAt": "2026-11-18T19:32:20.748Z",
+    "generatedAt": "2026-11-19T17:31:46.828Z",
     "entries": [
         {
             "key": "admin.home.access.everyList",
@@ -9659,8 +9659,8 @@
         {
             "key": "common.notFound.imageAlt",
             "namespace": "common",
-            "source_text": "Myrtle, face-down after dropping her snacks",
-            "description": "Alt text for the chibi of Myrtle that stands in for the 0 of the giant 404.",
+            "source_text": "Muelsyse, surprised",
+            "description": "Alt text for the round portrait of Muelsyse (an operator, the site's mascot) with a surprised face that stands in for the 0 of the giant 404.",
             "placeholders": []
         },
         {
@@ -16993,8 +16993,8 @@
         {
             "key": "home.hero.myrtleAlt",
             "namespace": "home",
-            "source_text": "Myrtle, asleep under a blanket",
-            "description": "Alt text for the chibi of Myrtle (an operator, the site's mascot) beside the home page headline.",
+            "source_text": "Muelsyse with her eyes closed",
+            "description": "Alt text for the round portrait of Muelsyse (an operator, the site's mascot) with her eyes closed, beside the home page headline.",
             "placeholders": []
         },
         {

@@ -11,7 +11,7 @@ export interface IDefaultOgData {
     art?: DefaultOgArt;
 }
 
-/** The mascot files under `public/home/`. The key visual is 2400x1350; the three chibis are 300 px squares on transparency. */
+/** The mascot files under `public/home/`. The key visual is 2400x1350; the three portraits (Muelsyse's faces from the game, in a disc) are 300 px squares on transparency. */
 const ART_FILE: Record<DefaultOgArt, string> = {
     hero: "hero_art.jpg",
     happy: "myrtle_happy.png",
@@ -42,9 +42,9 @@ function titleFontSize(title: string): number {
 function HeroArt() {
     return (
         <div style={{ position: "absolute", left: HERO_LEFT, top: 0, width: HERO_W, height: 630, display: "flex", overflow: "hidden" }}>
-            {/* The drummer sits left of centre in the 16:9 plate; 42% keeps her and the
-                drum in the box. */}
-            <img alt="" src={artURL("hero")} width={HERO_W} height={630} style={{ width: HERO_W, height: 630, objectFit: "cover", objectPosition: "42% 30%" }} />
+            {/* Muelsyse stands right of centre in the 16:9 plate (about 62% across); 62% keeps
+                her and the light of her staff in the box. */}
+            <img alt="" src={artURL("hero")} width={HERO_W} height={630} style={{ width: HERO_W, height: 630, objectFit: "cover", objectPosition: "62% 30%" }} />
         </div>
     );
 }

@@ -254,7 +254,8 @@
         min-height: var(--chibi);
     }
     .artLayer img {
-        object-position: 42% 30%;
+        /* Muelsyse stands about 73% across the plate: keep her in a phone's narrow crop. */
+        object-position: 75% 30%;
     }
 }
 /* A landscape phone: the art stays behind the copy, but the headline makes the first screen. */
