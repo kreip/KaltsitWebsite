@@ -4,8 +4,8 @@ export const namespace = "common";
 
 export const messages = {
     "notFound.title": {
-        text: "We're counting on you again today, little apple.",
-        description: "Heading line of the 404 page, a line Myrtle says in-game. Keep it warm and in character rather than literal.",
+        text: "I told you to be careful... any ouchies?",
+        description: "Heading line of the 404 page, in the voice of the site's mascot Muelsyse. Keep it warm and in character rather than literal.",
     },
     "notFound.description": {
         text: "There's nothing here right now.",

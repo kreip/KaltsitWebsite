@@ -20,8 +20,8 @@ export const messages = {
         description: "Label on the Control key cap in the home page's search hint, shown everywhere but on a Mac. Use the label printed on that key on keyboards in this language, such as 'Strg' in German.",
     },
     "hero.myrtleAlt": {
-        text: "Muelsyse with her eyes closed",
-        description: "Alt text for the round portrait of Muelsyse (an operator, the site's mascot) with her eyes closed, beside the home page headline.",
+        text: "Muelsyse, laughing",
+        description: "Alt text for the round portrait of Muelsyse (an operator, the site's mascot) laughing, beside the home page headline.",
     },
     "hero.cue.title": {
         text: "See what's ending soon",

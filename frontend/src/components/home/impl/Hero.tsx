@@ -37,7 +37,7 @@ export default function Hero({ onOpenCommand, scrollTargetId }: { onOpenCommand:
             <div className={`${shared.container} ${styles.body}`}>
                 <div className={styles.myrtle}>
                     <div className={styles.myrtleGlow} aria-hidden="true" />
-                    <img src="/home/myrtle_sleepy.png" alt={t("hero.myrtleAlt")} width={300} height={300} className={styles.myrtleImg} />
+                    <img src="/home/myrtle_happy.png" alt={t("hero.myrtleAlt")} width={300} height={300} className={styles.myrtleImg} />
                 </div>
                 <div className={styles.copy}>
                     <div className={styles.intro}>
@@ -58,7 +58,7 @@ export default function Hero({ onOpenCommand, scrollTargetId }: { onOpenCommand:
             </div>
 
             <a href={`#${scrollTargetId}`} className={styles.cue}>
-                <img src="/home/myrtle_happy.png" alt="" width={52} height={52} className={styles.cueImg} />
+                <img src="/home/myrtle_sleepy.png" alt="" width={52} height={52} className={styles.cueImg} />
                 <span className={styles.cueText}>
                     <span className={styles.cueTitle}>{t("hero.cue.title")}</span>
                     <span className={styles.cueSub}>
