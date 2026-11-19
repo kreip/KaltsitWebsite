@@ -15,7 +15,7 @@ export function NotFound(): React.ReactElement {
         <section className="flex min-h-[calc(100svh-var(--site-header-height))] flex-1 flex-col items-center justify-center gap-7 px-4 py-12">
             <h1 className="m-0 flex select-none items-center justify-center font-black text-[clamp(120px,20vw,220px)] text-foreground leading-[0.8] tracking-[-0.06em]" aria-label="404">
                 <span aria-hidden="true">4</span>
-                <img src="/home/myrtle_fall.png" alt={t("notFound.imageAlt")} width={300} height={300} className="mx-[-0.04em] block size-[0.95em] object-cover object-[50%_40%]" />
+                <img src="/home/muelsyse_surprised.webp" alt={t("notFound.imageAlt")} width={300} height={300} className="mx-[-0.04em] block size-[0.95em] object-cover object-[50%_40%]" />
                 <span aria-hidden="true">4</span>
             </h1>
             <div className="flex max-w-110 flex-col gap-1.5 text-center">

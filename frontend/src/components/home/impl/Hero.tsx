@@ -37,7 +37,7 @@ export default function Hero({ onOpenCommand, scrollTargetId }: { onOpenCommand:
             <div className={`${shared.container} ${styles.body}`}>
                 <div className={styles.myrtle}>
                     <div className={styles.myrtleGlow} aria-hidden="true" />
-                    <img src="/home/myrtle_happy.png" alt={t("hero.myrtleAlt")} width={300} height={300} className={styles.myrtleImg} />
+                    <img src="/home/muelsyse_laugh.webp" alt={t("hero.myrtleAlt")} width={300} height={300} className={styles.myrtleImg} />
                 </div>
                 <div className={styles.copy}>
                     <div className={styles.intro}>
