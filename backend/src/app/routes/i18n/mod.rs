@@ -8,7 +8,8 @@ pub mod admin;
 pub mod catalog;
 pub mod permissions;
 
-use utoipa_axum::router::OpenApiRouter;
+use axum::extract::DefaultBodyLimit;
+use utoipa_axum::router::{OpenApiRouter, UtoipaMethodRouterExt};
 use utoipa_axum::routes;
 
 use crate::app::state::AppState;
@@ -28,7 +29,8 @@ pub fn router() -> OpenApiRouter<AppState> {
         .routes(routes!(admin::progress))
         .routes(routes!(admin::audit_log))
         .routes(routes!(admin::entry_audit_log))
-        .routes(routes!(admin::sync))
+        // The whole source catalog in one body: past axum's default 2 MB since 2026-11.
+        .routes(routes!(admin::sync).layer(DefaultBodyLimit::max(8 * 1024 * 1024)))
         .routes(routes!(admin::list_overrides, admin::put_override))
         .routes(routes!(admin::delete_override))
         .routes(routes!(permissions::list, permissions::grant))
