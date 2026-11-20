@@ -320,6 +320,33 @@ pub async fn search_lines(
             }
         }
     }
+    // An operator's voice line found as a text: the operator speaks ("check the gender").
+    let voices: Vec<String> = hits
+        .iter()
+        .filter_map(|h| h.at.iter().find(|a| a.field.as_deref() == Some("voice.text")))
+        .filter_map(|a| a.object_id.clone())
+        .collect();
+    if !voices.is_empty() {
+        let genders: std::collections::HashMap<String, String> = sqlx::query_as::<_, (String, String)>(
+            "SELECT char_id, gender FROM translators.char_genders WHERE char_id = ANY($1)",
+        )
+        .bind(&voices)
+        .fetch_all(&state.db)
+        .await?
+        .into_iter()
+        .collect();
+        for (hit, line) in hits.iter().zip(lines.iter_mut()) {
+            if line.kind == "text"
+                && let Some(id) = hit
+                    .at
+                    .iter()
+                    .find(|a| a.field.as_deref() == Some("voice.text"))
+                    .and_then(|a| a.object_id.as_ref())
+            {
+                line.speaker_gender = genders.get(id).cloned();
+            }
+        }
+    }
     fill_level_counts(&state, &places, &mut lines).await?;
     let edits = edits::attach_at(&state.db, &places, &mut lines, |_| false).await?;
     crate::translators::routes::mark_glossary(&state, &mut lines, &places, &edits).await?;
