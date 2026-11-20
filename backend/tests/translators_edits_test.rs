@@ -482,6 +482,7 @@ async fn history_of_a_line() {
     let a = user(&pool, "anna").await;
     let built = |ru: &str| import::Built {
         cn_pairs: Default::default(),
+        genders: Vec::new(),
         stories: vec![(
             "s1".to_owned(),
             vec![
