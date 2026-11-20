@@ -78,6 +78,7 @@ const MIGRATIONS: &[(&str, &str)] = &[
         include_str!("migrations/t024_cn_places.sql"),
     ),
     ("t025_genders", include_str!("migrations/t025_genders.sql")),
+    ("t026_cn_only", include_str!("migrations/t026_cn_only.sql")),
 ];
 
 pub async fn migrate(pool: &PgPool) -> Result<(), sqlx::Error> {
@@ -178,8 +179,10 @@ struct Row {
     cn: Option<String>,
     speaker_gender: Option<String>,
     sova: Option<String>,
+    artem: Option<String>,
     ai: Option<String>,
     edit_key: String,
+    cn_only: bool,
 }
 
 /// One story's lines in file order. Sova's and the AI's texts only when
@@ -193,8 +196,9 @@ pub async fn story_lines(
 ) -> Result<Vec<TranslatorLine>, sqlx::Error> {
     let rows: Vec<Row> = sqlx::query_as(
         "SELECT line, part, kind, speaker_en, speaker_ru, en, ru_game, ru_game_source, ru_game_match,
-                plugin_role, ru_dict, speaker_cn, cn, speaker_gender, edit_key,
+                plugin_role, ru_dict, speaker_cn, cn, speaker_gender, edit_key, cn_only,
                 CASE WHEN $3 THEN sova END AS sova,
+                CASE WHEN $3 THEN artem END AS artem,
                 CASE WHEN $3 THEN ai END AS ai
          FROM translators.story_lines
          WHERE server = $1 AND story_id = $2
@@ -217,7 +221,7 @@ pub async fn first_story_lines(
 ) -> Result<Vec<(String, TranslatorLine)>, sqlx::Error> {
     let rows: Vec<(String, Row)> = sqlx::query_as::<_, StoryRow>(
         "SELECT DISTINCT ON (edit_key) story_id, line, part, kind, speaker_en, speaker_ru, en, ru_game,
-                ru_game_source, ru_game_match, plugin_role, ru_dict, speaker_cn, cn, speaker_gender, edit_key, sova, ai
+                ru_game_source, ru_game_match, plugin_role, ru_dict, speaker_cn, cn, speaker_gender, edit_key, cn_only, sova, artem, ai
          FROM translators.story_lines
          WHERE server = $1 AND edit_key = ANY($2)
          ORDER BY edit_key, story_id, ord",
@@ -260,19 +264,27 @@ impl Row {
             plugin_role: r.plugin_role,
             ru_dict: r.ru_dict,
             speaker_cn: r.speaker_cn,
-            cn: r.cn,
+            cn: r.cn.clone(),
             speaker_gender: r.speaker_gender,
             sova: r.sova,
+            artem: r.artem,
             ai: r.ai,
             terms: Vec::new(),
-            editable: super::edits::status::editable(&r.edit_key),
-            // Every story line may get a proposal for its place only.
-            context_allowed: true,
+            // A line of a story only the CN client has is its own entry: editable when its Chinese has a word.
+            editable: if r.cn_only {
+                r.cn.as_deref()
+                    .is_some_and(|c| c.chars().any(char::is_alphabetic))
+            } else {
+                super::edits::status::editable(&r.edit_key)
+            },
+            // Every story line may get a proposal for its place only (a CN-only line is one place already).
+            context_allowed: !r.cn_only,
             edit_key: r.edit_key,
             places: 1,
             status: String::new(),
             variant_glossary: Vec::new(),
             level_texts: 0,
+            cn_only: r.cn_only,
         }
     }
 }

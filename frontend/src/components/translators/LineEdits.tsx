@@ -53,7 +53,7 @@ import { TextDiff } from "./TextDiff";
 import { type ITagButton, type ITokenLabels, type TagLookup, TokenEditor } from "./TokenEditor";
 import { spanLook, tagOf, tagWords, useGameTags } from "./tags";
 import type { messages } from "./translators.messages";
-import { editorLabel, fromWords, TRANSLATOR_SOURCES, translatorName } from "./translatorVariants";
+import { editorLabel, fromWords, TRANSLATOR_SOURCES, translatorName, type VariantSource } from "./translatorVariants";
 import { WordReplaceOffer } from "./WordReplace";
 import { SPEAKER_FIELD } from "./where";
 import { wordSwap } from "./wordSwap";
@@ -234,7 +234,7 @@ function CommentItem({ c, me, t }: { c: EditComment; me: TranslatorsMe; t: T }):
 }
 
 /** The translator's notes about one variant, under it. */
-export function VariantNotes({ edits, place, me, variant, proposalId, t }: ICommentsProps & { variant: "game" | "sova" | "ai" | "proposal"; proposalId?: number }): React.ReactElement | null {
+export function VariantNotes({ edits, place, me, variant, proposalId, t }: ICommentsProps & { variant: "game" | VariantSource | "proposal"; proposalId?: number }): React.ReactElement | null {
     const list = commentsAt(edits, place).filter((c) => c.kind === "note" && c.variant === variant && (variant !== "proposal" || c.proposalId === proposalId));
     if (list.length === 0) return null;
     return (
@@ -286,7 +286,7 @@ export function LineComments({ edits, place, me, t }: ICommentsProps): React.Rea
 }
 
 /** Who agrees with a translator's or the AI's text at this place. */
-export function placeVotes(edits: KeyEdits | undefined, place: EditPlace, variant: "sova" | "ai"): EditPerson[] {
+export function placeVotes(edits: KeyEdits | undefined, place: EditPlace, variant: VariantSource): EditPerson[] {
     return edits?.placeAgreements.find((a) => a.variant === variant && samePlace(a.place, place))?.people ?? [];
 }
 

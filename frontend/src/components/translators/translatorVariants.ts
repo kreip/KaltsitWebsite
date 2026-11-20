@@ -18,9 +18,19 @@ interface ITranslator {
 /** By the source's key in the data (`TranslatorLine.sova`, a proposal's `source`, a vote's `variant`). */
 export const TRANSLATORS = {
     sova: { name: { ru: "Сова", en: "Sova" } },
+    // The user's own corrections of the machine's text in arktr (the stories only the CN client has).
+    artem: { name: { ru: "Артём", en: "Artyom" } },
 } as const satisfies Record<string, ITranslator>;
 
 export type TranslatorSource = keyof typeof TRANSLATORS;
+
+/** A variant's source: a translator's or the machine's. */
+export type VariantSource = TranslatorSource | "ai";
+
+/** Whether a proposal's source is a variant (else my own text). */
+export function isVariantSource(source: string): source is VariantSource {
+    return source === "ai" || isTranslator(source);
+}
 
 /** The translators' sources, in the order their variants show. */
 export const TRANSLATOR_SOURCES = Object.keys(TRANSLATORS) as TranslatorSource[];

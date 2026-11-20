@@ -30,7 +30,7 @@ import { Spinner } from "#/components/ui/spinner";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "#/components/ui/table";
 import { useFormatters, useLocale, useT } from "#/lib/i18n";
 import type { TypedT } from "#/lib/i18n/messages";
-import { deleteProposalFn, editsQueryOptions, type ProposalDecision, proposalVersionsQueryOptions, rewriteProposalFn, translatorsMeQueryOptions } from "#/lib/translators/api";
+import { cnOnlyQueryOptions, deleteProposalFn, editsQueryOptions, type ProposalDecision, proposalVersionsQueryOptions, rewriteProposalFn, translatorsMeQueryOptions } from "#/lib/translators/api";
 import type { EditBatch } from "#/types/generated/EditBatch";
 import type { EditRow } from "#/types/generated/EditRow";
 import type { TranslatorsMe } from "#/types/generated/TranslatorsMe";
@@ -161,6 +161,7 @@ function SelectionBar({ ids, onDone, t }: { ids: number[]; onDone: () => void; t
 
 function Where({ row, nickname, t }: { row: EditRow; nickname: string; t: T }): React.ReactElement {
     const nameOf = useStoryNames();
+    const cnOnly = useQuery({ ...cnOnlyQueryOptions(), enabled: row.proposal.editKey.startsWith("cn:") });
     const { place } = row.proposal;
     // A text outside the story: it is found again in Search.
     if (place.storyId === TEXT_PLACE)
@@ -172,10 +173,17 @@ function Where({ row, nickname, t }: { row: EditRow; nickname: string; t: T }): 
                 {row.places > 1 ? <PlacesDialog place={row.proposal.place} count={row.places} after={row.proposal.text} nickname={nickname} t={t} /> : null}
             </span>
         );
-    const n = nameOf(place.storyId);
+    // A story only the CN client has: named by its Chinese library, out of the export until Global.
+    const cnStory = row.proposal.editKey.startsWith("cn:") ? cnOnly.data?.find((s) => s.storyId === place.storyId) : undefined;
+    const n = nameOf(place.storyId) ?? (cnStory ? { groupId: cnStory.groupId, group: cnStory.groupRu ?? cnStory.groupCn, story: [cnStory.code, cnStory.nameRu ?? cnStory.nameCn].filter(Boolean).join(" ") } : null);
     const label = t("where.item", { group: n?.group ?? "", story: n?.story ?? place.storyId, n: row.ord === null ? "?" : row.ord + 1 });
     return (
         <span className="flex flex-col gap-0.5">
+            {row.proposal.editKey.startsWith("cn:") ? (
+                <Badge variant="tint" className="self-start">
+                    {t("cnOnly.waiting")}
+                </Badge>
+            ) : null}
             {n ? (
                 <Link to="/translators" search={{ group: n.groupId, story: place.storyId }} hash={row.ord === null ? undefined : `n-${row.ord + 1}`} className="underline-offset-4 hover:underline">
                     {label}

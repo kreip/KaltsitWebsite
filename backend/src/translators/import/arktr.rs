@@ -13,6 +13,9 @@ use serde::Deserialize;
 
 #[derive(Debug, Clone, Deserialize)]
 pub struct Row {
+    /// The row's number in its story (the key of the user's corrections: `story#line_idx`).
+    #[serde(default)]
+    pub line_idx: Option<u32>,
     pub src_line: u32,
     #[serde(default)]
     pub kind: String,
@@ -20,6 +23,8 @@ pub struct Row {
     pub opt: Option<u32>,
     #[serde(default)]
     pub speaker_cn: String,
+    #[serde(default)]
+    pub speaker_ru: String,
     #[serde(default)]
     pub cn: String,
     #[serde(default)]
@@ -34,6 +39,11 @@ impl Row {
     /// Sova's text for this row, when it is hers.
     pub fn sova(&self) -> Option<&str> {
         (self.source.starts_with("sova") && !self.ru.trim().is_empty()).then_some(self.ru.as_str())
+    }
+
+    /// The user's own correction of the machine's text (arktr's `user_edit`).
+    pub fn user(&self) -> Option<&str> {
+        (self.source == "user_edit" && !self.ru.trim().is_empty()).then_some(self.ru.as_str())
     }
 
     /// The AI's text for this row, when it is the machine's.
@@ -78,11 +88,49 @@ pub fn group_footnotes(paragraphs: &[String]) -> Vec<String> {
     out
 }
 
-/// What arktr gives the import: rows and Sova's chapter notes, by script path.
+/// What arktr gives the import: rows and Sova's chapter notes, by script path;
+/// the Russian names of events and stories (`data/out/story_info.json`); the
+/// machine's text the user corrected (`data/review/user_edit_layer.json`).
 #[derive(Default)]
 pub struct Arktr {
     pub rows: HashMap<String, Vec<Row>>,
     pub notes: HashMap<String, Vec<String>>,
+    /// An event's Russian name by its id (`act55side`).
+    pub group_ru: HashMap<String, String>,
+    /// A story's Russian name and tag by its script path.
+    pub story_ru: HashMap<String, (String, String)>,
+    /// The machine's text before the user's correction, by `story path#line_idx`.
+    pub before_user: HashMap<String, String>,
+}
+
+#[derive(Deserialize, Default)]
+struct StoryInfo {
+    #[serde(default)]
+    entries: HashMap<String, InfoEntry>,
+    #[serde(default)]
+    stories: Vec<InfoStory>,
+}
+
+#[derive(Deserialize)]
+struct InfoEntry {
+    #[serde(default)]
+    ru: String,
+}
+
+#[derive(Deserialize)]
+struct InfoStory {
+    #[serde(default)]
+    story_txt: String,
+    #[serde(default)]
+    name_ru: String,
+    #[serde(default)]
+    tag_ru: String,
+}
+
+#[derive(Deserialize)]
+struct UserEdit {
+    #[serde(default)]
+    ru_before: String,
 }
 
 #[derive(Deserialize)]
@@ -106,6 +154,29 @@ pub fn load(dir: &Path) -> anyhow::Result<Arktr> {
         .collect();
     paths.sort();
     let mut out = Arktr::default();
+    if let Ok(bytes) = std::fs::read(out_dir.join("story_info.json"))
+        && let Ok(info) = serde_json::from_slice::<StoryInfo>(&bytes)
+    {
+        for (id, e) in info.entries {
+            if !e.ru.trim().is_empty() {
+                out.group_ru.insert(id, e.ru);
+            }
+        }
+        for st in info.stories {
+            if !st.story_txt.is_empty() {
+                out.story_ru.insert(st.story_txt, (st.name_ru, st.tag_ru));
+            }
+        }
+    }
+    if let Ok(bytes) = std::fs::read(dir.join("data/review/user_edit_layer.json"))
+        && let Ok(layer) = serde_json::from_slice::<HashMap<String, UserEdit>>(&bytes)
+    {
+        for (key, e) in layer {
+            if !e.ru_before.trim().is_empty() {
+                out.before_user.insert(key, e.ru_before);
+            }
+        }
+    }
     for path in paths {
         let stage: Stage = serde_json::from_slice(&std::fs::read(&path)?)
             .map_err(|e| anyhow::anyhow!("{}: {e}", path.display()))?;

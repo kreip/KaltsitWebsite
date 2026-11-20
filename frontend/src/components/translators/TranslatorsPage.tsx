@@ -14,7 +14,7 @@
  */
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
-import { BookCheck, BookOpen, Eye, NotebookPen } from "lucide-react";
+import { BookCheck, BookOpen, Eye, Languages, NotebookPen } from "lucide-react";
 import type React from "react";
 import { useContext, useId, useMemo } from "react";
 import { Alert, AlertAction, AlertDescription, AlertTitle } from "#/components/ui/alert";
@@ -36,7 +36,8 @@ import { storyIndexQueryOptions, storyQueryOptions } from "#/lib/api/story";
 import { useFormatters, useLocale, useT } from "#/lib/i18n";
 import type { TypedT } from "#/lib/i18n/messages";
 import { storyLabel } from "#/lib/story/book/book";
-import { charactersQueryOptions, progressQueryOptions, requestAccessFn, setStoryReadFn, translatorLinesQueryOptions, translatorsMeQueryOptions } from "#/lib/translators/api";
+import { charactersQueryOptions, cnOnlyQueryOptions, progressQueryOptions, requestAccessFn, setStoryReadFn, translatorLinesQueryOptions, translatorsMeQueryOptions } from "#/lib/translators/api";
+import type { CnOnlyStory } from "#/types/generated/CnOnlyStory";
 import type { StoryRead } from "#/types/generated/StoryRead";
 import type { TranslatorsMe } from "#/types/generated/TranslatorsMe";
 import { AdminTab } from "./AdminTab";
@@ -99,6 +100,11 @@ interface IGroupItem {
     progress: IProgress;
 }
 
+/** A story only the CN client has, as the picker names it: its code and its Russian name (arktr's), else the Chinese. */
+function cnStoryLabel(s: CnOnlyStory): string {
+    return [s.code, s.nameRu ?? s.nameCn].filter(Boolean).join(" ");
+}
+
 /** Search folding: any case, ё = е. */
 function fold(s: string): string {
     return s.toLowerCase().replaceAll("ё", "е");
@@ -111,6 +117,8 @@ interface ILinesProps {
     showService: boolean;
     showVariants: boolean;
     showDiff: boolean;
+    /** A story only the CN client has: no English, no service rows, the Chinese always shown. */
+    cnOnly?: boolean;
     t: T;
 }
 
@@ -183,11 +191,11 @@ function TranslatorNotes({ notes, t }: { notes: readonly string[]; t: T }): Reac
     );
 }
 
-function Lines({ storyId, title, showCn, showService, showVariants, showDiff, t }: ILinesProps): React.ReactElement {
+function Lines({ storyId, title, showCn, showService, showVariants, showDiff, cnOnly = false, t }: ILinesProps): React.ReactElement {
     const query = useQuery(translatorLinesQueryOptions(storyId));
     const me = useQuery(translatorsMeQueryOptions());
     // The stage commands come from the site's own parse of the EN script; the sprites' names from the import.
-    const script = useQuery({ ...storyQueryOptions(storyId, "en"), enabled: showService });
+    const script = useQuery({ ...storyQueryOptions(storyId, "en"), enabled: showService && !cnOnly });
     const chars = useQuery({ ...charactersQueryOptions(), enabled: showService });
     const locale = useLocale();
     useScrollToRow(Boolean(query.data && me.data));
@@ -226,7 +234,27 @@ function Lines({ storyId, title, showCn, showService, showVariants, showDiff, t 
             <p className="text-subtle-foreground text-xs">{t("table.summary", { count: lines.length, ru: withRu })}</p>
             {me.data.member ? <StoryStatus storyId={storyId} reads={reads} me={me.data} t={t} /> : null}
             <TranslatorNotes notes={sovaNotes} t={t} />
-            <LinesTable storyId={storyId} lines={lines} edits={edits} outdated={outdated} me={me.data} label={t("table.label", { story: title })} showCn={showCn} showVariants={showVariants} showDiff={showDiff} commands={showService ? (script.data?.commands ?? null) : null} nameOf={nameOf} nickname={nickname} />
+            {cnOnly ? (
+                <Alert variant="info">
+                    <Languages aria-hidden="true" />
+                    <AlertTitle>{t("cnOnly.title")}</AlertTitle>
+                    <AlertDescription>{t("cnOnly.description")}</AlertDescription>
+                </Alert>
+            ) : null}
+            <LinesTable
+                storyId={storyId}
+                lines={lines}
+                edits={edits}
+                outdated={outdated}
+                me={me.data}
+                label={t("table.label", { story: title })}
+                showCn={showCn || cnOnly}
+                showVariants={showVariants}
+                showDiff={showDiff}
+                commands={showService && !cnOnly ? (script.data?.commands ?? null) : null}
+                nameOf={nameOf}
+                nickname={nickname}
+            />
         </div>
     );
 }
@@ -245,8 +273,23 @@ function StoryTab({ search, onSearch }: ISearchProps): React.ReactElement {
     const groups = index.data?.groups ?? [];
     const rename = useRename();
     const progress = useProgress();
-    const items: IGroupItem[] = useMemo(() => groups.map((g) => ({ id: g.id, label: groupLabel(g, rename), en: groupLabel(g), kind: g.category, progress: g.stories.reduce((acc, st) => addProgress(acc, progress.get(st.id) ?? NO_PROGRESS), NO_PROGRESS) })), [groups, rename, progress]);
+    // The stories only the CN client has: a group of their own after the library's, «Только в китайской версии».
+    const cnOnly = useQuery(cnOnlyQueryOptions());
+    const cnGroups = useMemo(() => {
+        const by = new Map<string, CnOnlyStory[]>();
+        for (const st of cnOnly.data ?? []) by.set(st.groupId, [...(by.get(st.groupId) ?? []), st]);
+        return by;
+    }, [cnOnly.data]);
+    const items: IGroupItem[] = useMemo(
+        () => [
+            ...groups.map((g) => ({ id: g.id, label: groupLabel(g, rename), en: groupLabel(g), kind: g.category, progress: g.stories.reduce((acc, st) => addProgress(acc, progress.get(st.id) ?? NO_PROGRESS), NO_PROGRESS) })),
+            ...[...cnGroups].map(([id, list]) => ({ id, label: list[0].groupRu ?? list[0].groupCn, en: list[0].groupCn, kind: "cnOnly", progress: list.reduce((acc, st) => addProgress(acc, progress.get(st.storyId) ?? NO_PROGRESS), NO_PROGRESS) })),
+        ],
+        [groups, cnGroups, rename, progress],
+    );
     const group = groups.find((g) => g.id === search.group) ?? null;
+    const cnGroup = group ? null : (cnGroups.get(search.group ?? "") ?? null);
+    const cnStory = cnGroup?.find((s) => s.storyId === search.story) ?? null;
     const groupItem = items.find((i) => i.id === search.group) ?? null;
     const stories = useMemo(() => (group ? [...group.stories].sort((a, b) => a.sort - b.sort) : []), [group]);
     const story = stories.find((s) => s.id === search.story) ?? null;
@@ -293,28 +336,53 @@ function StoryTab({ search, onSearch }: ISearchProps): React.ReactElement {
                         </Combobox>
                     </div>
 
-                    <div className="flex w-full flex-col gap-1.5 sm:w-80">
-                        <Label htmlFor={ids.story}>{t("picker.story")}</Label>
-                        <Select value={story?.id ?? null} onValueChange={(v: string | null) => v && onSearch({ ...search, story: v })} disabled={!group}>
-                            <SelectTrigger id={ids.story}>
-                                <SelectValue placeholder={t("picker.storyPlaceholder")}>{() => (story ? entryLabel(story, rename) : t("picker.storyPlaceholder"))}</SelectValue>
-                            </SelectTrigger>
-                            <SelectContent>
-                                {stories.map((s) => (
-                                    <SelectItem key={s.id} value={s.id}>
-                                        <span className="flex min-w-0 flex-col">
-                                            <span className="truncate">
-                                                {entryLabel(s, rename)}
-                                                {s.avgTag ? <span className="text-subtle-foreground"> · {rename(s.avgTag)}</span> : null}
+                    {cnGroup ? (
+                        <div className="flex w-full flex-col gap-1.5 sm:w-80">
+                            <Label htmlFor={ids.story}>{t("picker.story")}</Label>
+                            <Select value={cnStory?.storyId ?? null} onValueChange={(v: string | null) => v && onSearch({ ...search, story: v })}>
+                                <SelectTrigger id={ids.story}>
+                                    <SelectValue placeholder={t("picker.storyPlaceholder")}>{() => (cnStory ? cnStoryLabel(cnStory) : t("picker.storyPlaceholder"))}</SelectValue>
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {cnGroup.map((s) => (
+                                        <SelectItem key={s.storyId} value={s.storyId}>
+                                            <span className="flex min-w-0 flex-col">
+                                                <span className="truncate">
+                                                    {cnStoryLabel(s)}
+                                                    {s.avgTag ? <span className="text-subtle-foreground"> · {s.avgTag}</span> : null}
+                                                </span>
+                                                {s.nameRu ? <span className="truncate text-subtle-foreground text-xs">{s.nameCn}</span> : null}
+                                                <ProgressShort p={progress.get(s.storyId) ?? NO_PROGRESS} t={t} />
                                             </span>
-                                            {rename(s.name) !== s.name ? <span className="truncate text-subtle-foreground text-xs">{storyLabel(s)}</span> : null}
-                                            <ProgressShort p={progress.get(s.id) ?? NO_PROGRESS} t={t} />
-                                        </span>
-                                    </SelectItem>
-                                ))}
-                            </SelectContent>
-                        </Select>
-                    </div>
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                        </div>
+                    ) : (
+                        <div className="flex w-full flex-col gap-1.5 sm:w-80">
+                            <Label htmlFor={ids.story}>{t("picker.story")}</Label>
+                            <Select value={story?.id ?? null} onValueChange={(v: string | null) => v && onSearch({ ...search, story: v })} disabled={!group}>
+                                <SelectTrigger id={ids.story}>
+                                    <SelectValue placeholder={t("picker.storyPlaceholder")}>{() => (story ? entryLabel(story, rename) : t("picker.storyPlaceholder"))}</SelectValue>
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {stories.map((s) => (
+                                        <SelectItem key={s.id} value={s.id}>
+                                            <span className="flex min-w-0 flex-col">
+                                                <span className="truncate">
+                                                    {entryLabel(s, rename)}
+                                                    {s.avgTag ? <span className="text-subtle-foreground"> · {rename(s.avgTag)}</span> : null}
+                                                </span>
+                                                {rename(s.name) !== s.name ? <span className="truncate text-subtle-foreground text-xs">{storyLabel(s)}</span> : null}
+                                                <ProgressShort p={progress.get(s.id) ?? NO_PROGRESS} t={t} />
+                                            </span>
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                        </div>
+                    )}
 
                     <ViewMenu search={search} onSearch={onSearch} story />
 
@@ -333,6 +401,8 @@ function StoryTab({ search, onSearch }: ISearchProps): React.ReactElement {
 
             {story ? (
                 <Lines storyId={story.id} title={entryLabel(story, rename)} showCn={showCn} showService={showService} showVariants={showVariants} showDiff={showDiff} t={t} />
+            ) : cnStory ? (
+                <Lines storyId={cnStory.storyId} title={cnStoryLabel(cnStory)} showCn={showCn} showService={false} showVariants={showVariants} showDiff={showDiff} cnOnly t={t} />
             ) : (
                 <Empty>
                     <EmptyHeader>

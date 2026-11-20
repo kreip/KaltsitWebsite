@@ -463,6 +463,25 @@ pub struct NameRu {
     pub ru: String,
 }
 
+/// A story only the CN client has (no English yet): «Только в китайской версии».
+#[derive(Debug, Serialize, TS, ToSchema, sqlx::FromRow)]
+#[serde(rename_all = "camelCase")]
+#[ts(export)]
+pub struct CnOnlyStory {
+    pub story_id: String,
+    /// The event (`act55side`), its Chinese name and arktr's Russian one.
+    pub group_id: String,
+    pub group_cn: String,
+    pub group_ru: Option<String>,
+    pub name_cn: String,
+    pub name_ru: Option<String>,
+    /// «До операции», «После операции»…
+    pub avg_tag: Option<String>,
+    /// The stage's code (`TL-1`).
+    pub code: Option<String>,
+    pub sort: i32,
+}
+
 /// Who agrees with Sova's or the AI's variant at one place.
 #[derive(Debug, Clone, Serialize, TS, ToSchema)]
 #[serde(rename_all = "camelCase")]

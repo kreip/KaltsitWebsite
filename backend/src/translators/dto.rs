@@ -75,6 +75,8 @@ pub struct TranslatorLine {
     pub speaker_gender: Option<String>,
     /// Sova's translation: signed-in translators only.
     pub sova: Option<String>,
+    /// The second translator's (Артём's corrections of the machine's text, arktr): members only.
+    pub artem: Option<String>,
     /// The AI's translation: signed-in translators only.
     pub ai: Option<String>,
     /// Glossary terms found in the English, in order.
@@ -89,6 +91,8 @@ pub struct TranslatorLine {
     pub places: i32,
     /// `unchecked`, `proposed`, `approved` or `outdated`.
     pub status: String,
+    /// A story the EN client has not got yet: the line has no English and its edits stay out of the export.
+    pub cn_only: bool,
     /// The variants whose Russian lacks a glossary term's form (a variant not
     /// listed holds them all): `game`, `sova`, `ai`, `approved`, `proposal:<id>`.
     pub variant_glossary: Vec<VariantGlossary>,

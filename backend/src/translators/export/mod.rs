@@ -234,6 +234,7 @@ pub async fn rows(pool: &PgPool, review: bool) -> Result<Vec<Row>, sqlx::Error> 
                         COUNT(*) OVER (PARTITION BY p.edit_key) AS alternatives
                  FROM translators.proposals p
                  WHERE p.deleted_at IS NULL AND p.rejected_at IS NULL AND NOT p.context AND p.outdated_at IS NULL
+                   AND p.edit_key NOT LIKE 'cn:%'
                    AND NOT EXISTS (SELECT 1 FROM translators.approvals a
                                    WHERE a.edit_key = p.edit_key AND a.outdated_at IS NULL)
                  ORDER BY p.edit_key,
@@ -254,6 +255,8 @@ pub async fn rows(pool: &PgPool, review: bool) -> Result<Vec<Row>, sqlx::Error> 
              JOIN users u ON u.id = x.approved_by
              {first_line}
              WHERE x.outdated_at IS NULL AND x.variant <> 'game'
+               -- A story only the CN client has waits for its English (`cn:` entries).
+               AND x.edit_key NOT LIKE 'cn:%'
              ORDER BY x.edit_key"
         ))
         .bind(SERVER)

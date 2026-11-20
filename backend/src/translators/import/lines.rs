@@ -29,6 +29,8 @@ pub struct Line {
     /// The speaker's gender (`f` / `m`) when the speaker is an operator (`genders.rs`).
     pub speaker_gender: Option<char>,
     pub sova: Option<String>,
+    /// The second translator's variant (the user's own corrections in arktr).
+    pub artem: Option<String>,
     pub ai: Option<String>,
     pub arktr_match: Option<&'static str>,
     /// The key of an edit: the dictionary entry found for the whole text,
@@ -511,6 +513,8 @@ mod tests {
 
     fn row(src_line: u32, en: &str, ru: &str, source: &str) -> arktr::Row {
         arktr::Row {
+            line_idx: None,
+            speaker_ru: String::new(),
             src_line,
             kind: "dialog".into(),
             opt: None,

@@ -69,7 +69,7 @@ import { type IFind, StoryText } from "./StoryText";
 import { DISPLAYED_KINDS, describeCommands } from "./service";
 import { TextDiff } from "./TextDiff";
 import type { messages } from "./translators.messages";
-import { TRANSLATOR_SOURCES, translatorName } from "./translatorVariants";
+import { isTranslator, isVariantSource, TRANSLATOR_SOURCES, translatorName, type VariantSource } from "./translatorVariants";
 import { GameOnly } from "./ViewMenu";
 
 type T = TypedT<typeof messages>;
@@ -331,7 +331,7 @@ function FullRuCell({ line, analysis, place, nickname, showVariants, showDiff, e
     };
     const onHover = useOnHover();
     // A translator's or the machine's variant: Approve (at once, no "propose" step) | propose from it, agree.
-    const variantActions = (variant: "sova" | "ai", text: string) => {
+    const variantActions = (variant: VariantSource, text: string) => {
         if (!line.editable) return undefined;
         const votes = placeVotes(edits, place, variant);
         return (
@@ -387,7 +387,7 @@ function FullRuCell({ line, analysis, place, nickname, showVariants, showDiff, e
                         compare={showDiff}
                         ruGame={line.ruGame}
                         marks={(p) => marks(`proposal:${p.id}`)}
-                        onEdit={(p) => onEditor({ kind: "proposal", text: p.text, source: p.source === "sova" || p.source === "ai" ? p.source : "own", context: p.context, here: p.here })}
+                        onEdit={(p) => onEditor({ kind: "proposal", text: p.text, source: isVariantSource(p.source) ? p.source : "own", context: p.context, here: p.here })}
                         t={t}
                     />
                     {actions}
@@ -431,15 +431,7 @@ function FullRuCell({ line, analysis, place, nickname, showVariants, showDiff, e
             {line.ruGameMatch === "lines" ? <span className="text-subtle-foreground text-xs">{t("ru.lineByLine")}</span> : null}
             <Terms terms={line.terms} t={t} />
             {settled ? null : (
-                <Proposals
-                    {...notes}
-                    nickname={nickname}
-                    compare={showDiff}
-                    ruGame={line.ruGame}
-                    levelTexts={line.levelTexts}
-                    marks={(p) => marks(`proposal:${p.id}`)}
-                    onEdit={(p) => onEditor({ kind: "proposal", text: p.text, source: p.source === "sova" || p.source === "ai" ? p.source : "own", context: p.context, here: p.here })}
-                />
+                <Proposals {...notes} nickname={nickname} compare={showDiff} ruGame={line.ruGame} levelTexts={line.levelTexts} marks={(p) => marks(`proposal:${p.id}`)} onEdit={(p) => onEditor({ kind: "proposal", text: p.text, source: isVariantSource(p.source) ? p.source : "own", context: p.context, here: p.here })} />
             )}
             {showVariants && !settled ? (
                 <>
@@ -623,7 +615,7 @@ export function LinesTable({ storyId, lines, edits, outdated, me, label, showCn,
         const place = placeOf(storyId, line);
         const e = byKey.get(line.editKey);
         const rec = analyses[i].recommended;
-        const recText = rec === "sova" ? line.sova : rec === "ai" ? line.ai : (proposalsAt(e, place).find((p) => `proposal:${p.id}` === rec)?.text ?? null);
+        const recText = rec === "ai" ? line.ai : rec && isTranslator(rec) ? line[rec] : (proposalsAt(e, place).find((p) => `proposal:${p.id}` === rec)?.text ?? null);
         return { n: i + 1, place, recommended: line.editable ? rec : null, recommendedText: recText, approved: line.status === "approved", hasGame: Boolean(line.ruGame) && line.editable, hasProposals: proposalsAt(e, place).length > 0 };
     });
     return (
@@ -712,7 +704,7 @@ export function LinesTable({ storyId, lines, edits, outdated, me, label, showCn,
                                         />
                                     </TableCell>
                                     <TableCell className={PROSE} data-sel="en">
-                                        <StoryText text={line.en} nickname={nickname} quotes={[...quotesAt(lineEdits, placeOf(storyId, line)), ...missingTermsEn(line.terms)]} />
+                                        {line.cnOnly ? <span className="text-subtle-foreground">{t("cnOnly.noEnglish")}</span> : <StoryText text={line.en} nickname={nickname} quotes={[...quotesAt(lineEdits, placeOf(storyId, line)), ...missingTermsEn(line.terms)]} />}
                                     </TableCell>
                                     {showCn ? <CnCell line={line} /> : null}
                                 </TableRow>

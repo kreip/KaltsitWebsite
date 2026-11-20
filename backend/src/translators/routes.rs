@@ -174,6 +174,7 @@ pub async fn require_reader(
 pub fn for_guest(lines: &mut [super::dto::TranslatorLine]) {
     for l in lines {
         l.sova = None;
+        l.artem = None;
         l.ai = None;
         l.ru_game_before = None;
         l.ru_game_changed_at = None;
@@ -347,6 +348,7 @@ pub async fn mark_glossary(
         for (name, text) in [
             ("game", &line.ru_game),
             ("sova", &line.sova),
+            ("artem", &line.artem),
             ("ai", &line.ai),
         ] {
             if let Some(t) = text {

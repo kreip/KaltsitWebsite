@@ -249,6 +249,7 @@ fn text_line(hit: &TextHit) -> TranslatorLine {
         cn: hit.cn.clone(),
         speaker_gender: None,
         sova: None,
+        artem: None,
         ai: None,
         terms: Vec::new(),
         edit_key: hit.edit_key.clone(),
@@ -258,6 +259,7 @@ fn text_line(hit: &TextHit) -> TranslatorLine {
         status: String::new(),
         variant_glossary: Vec::new(),
         level_texts: 0,
+        cn_only: false,
     }
 }
 

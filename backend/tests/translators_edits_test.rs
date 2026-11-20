@@ -483,6 +483,7 @@ async fn history_of_a_line() {
     let built = |ru: &str| import::Built {
         cn_pairs: Default::default(),
         genders: Vec::new(),
+        cn_only: Vec::new(),
         stories: vec![(
             "s1".to_owned(),
             vec![
@@ -502,6 +503,7 @@ async fn history_of_a_line() {
                     cn: None,
                     speaker_gender: None,
                     sova: None,
+                    artem: None,
                     ai: None,
                     arktr_match: None,
                     edit_key: "Hello.".to_owned(),
@@ -522,6 +524,7 @@ async fn history_of_a_line() {
                     cn: None,
                     speaker_gender: None,
                     sova: None,
+                    artem: None,
                     ai: None,
                     arktr_match: None,
                     edit_key: "Bye.".to_owned(),

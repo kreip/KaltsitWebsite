@@ -514,6 +514,7 @@ mod tests {
             cn: None,
             speaker_gender: None,
             sova: None,
+            artem: None,
             ai: None,
             arktr_match: None,
             edit_key: "Hello.".to_owned(),

@@ -13522,6 +13522,44 @@
         ]
       }
     },
+    "/api/translators/cn-only": {
+      "get": {
+        "tags": [
+          "translators"
+        ],
+        "summary": "The stories only the CN client has, in the library's order: the Story\ntab's group «Только в китайской версии». Any signed-in reader.",
+        "operationId": "cn_only_stories",
+        "responses": {
+          "200": {
+            "description": "Every story the EN client has not got yet, by event and order.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/CnOnlyStory"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        },
+        "security": [
+          {
+            "bearer_auth": []
+          }
+        ]
+      }
+    },
     "/api/translators/comments": {
       "post": {
         "tags": [
@@ -23043,6 +23081,62 @@
           "save_credentials": {
             "type": "boolean",
             "description": "\"Remember this login\". Defaults to true; false stores nothing and clears\nwhat a previous login left."
+          }
+        }
+      },
+      "CnOnlyStory": {
+        "type": "object",
+        "description": "A story only the CN client has (no English yet): «Только в китайской версии».",
+        "required": [
+          "storyId",
+          "groupId",
+          "groupCn",
+          "nameCn",
+          "sort"
+        ],
+        "properties": {
+          "avgTag": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "«До операции», «После операции»…"
+          },
+          "code": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The stage's code (`TL-1`)."
+          },
+          "groupCn": {
+            "type": "string"
+          },
+          "groupId": {
+            "type": "string",
+            "description": "The event (`act55side`), its Chinese name and arktr's Russian one."
+          },
+          "groupRu": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "nameCn": {
+            "type": "string"
+          },
+          "nameRu": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "sort": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "storyId": {
+            "type": "string"
           }
         }
       },
@@ -40914,6 +41008,7 @@
           "contextAllowed",
           "places",
           "status",
+          "cnOnly",
           "variantGlossary",
           "levelTexts"
         ],
@@ -40925,11 +41020,22 @@
             ],
             "description": "The AI's translation: signed-in translators only."
           },
+          "artem": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The second translator's (Артём's corrections of the machine's text, arktr): members only."
+          },
           "cn": {
             "type": [
               "string",
               "null"
             ]
+          },
+          "cnOnly": {
+            "type": "boolean",
+            "description": "A story the EN client has not got yet: the line has no English and its edits stay out of the export."
           },
           "contextAllowed": {
             "type": "boolean",
@@ -41036,6 +41142,13 @@
           },
           "speakerEn": {
             "type": "string"
+          },
+          "speakerGender": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The speaker's gender, `f` or `m`, when the speaker is an operator (an operator's voice line: the operator's)."
           },
           "speakerRu": {
             "type": [

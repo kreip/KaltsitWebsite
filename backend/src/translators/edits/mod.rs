@@ -32,6 +32,7 @@ pub fn router() -> OpenApiRouter<AppState> {
         .routes(routes!(routes::edits))
         .routes(routes!(routes::characters))
         .routes(routes!(routes::names))
+        .routes(routes!(routes::cn_only_stories))
         .routes(routes!(routes::set_story_read))
         .routes(routes!(routes::story_progress))
         .routes(routes!(routes::set_approval))

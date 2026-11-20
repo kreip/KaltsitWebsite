@@ -14,6 +14,7 @@
 
 pub mod arktr;
 pub mod cn;
+pub mod cn_only;
 pub mod genders;
 pub mod lines;
 pub mod normalize;
@@ -99,6 +100,15 @@ pub struct ImportSummary {
     pub cn_unpaired_examples: Vec<Unmatched>,
     /// Lines whose speaker's gender is known (an operator's).
     pub with_speaker_gender: usize,
+    /// Stories only the CN client has (`cn_only.rs`): stories, lines, with the machine's / Артём's text.
+    pub cn_only_stories: usize,
+    pub cn_only_groups: usize,
+    pub cn_only_lines: usize,
+    pub cn_only_with_ai: usize,
+    pub cn_only_with_artem: usize,
+    /// Edits of CN-only lines moved onto the EN lines once the EN client got the story, and those left to check by hand.
+    pub cn_moved: usize,
+    pub cn_manual: usize,
     /// Game data places that got their Chinese from the CN tables, by section, and those that did not.
     pub cn_places_by_section: HashMap<String, usize>,
     pub cn_places_missing_by_section: HashMap<String, usize>,
@@ -153,6 +163,8 @@ pub struct Built {
     pub cn_pairs: HashMap<String, Vec<CnPair>>,
     /// The operators' genders by id (`f` / `m`).
     pub genders: Vec<(String, char)>,
+    /// The stories only the CN client has, with their lines.
+    pub cn_only: Vec<cn_only::CnStory>,
     pub chars: Vec<CharName>,
     /// Sova's chapter notes by site story id.
     pub sova_notes: Vec<(String, Vec<String>)>,
@@ -486,10 +498,24 @@ pub fn build(
     summary.millis = started.elapsed().as_millis();
     let mut genders: Vec<(String, char)> = genders.by_char.into_iter().collect();
     genders.sort();
+    let en_ids: HashSet<&str> = stories.iter().map(|(id, _)| id.as_str()).collect();
+    let cn_only = sources
+        .cn_dir
+        .as_deref()
+        .map(|d| cn_only::collect(d, &en_ids, &arktr))
+        .unwrap_or_default();
+    summary.cn_only_stories = cn_only.len();
+    summary.cn_only_groups = cn_only.iter().map(|s| s.group_id.as_str()).collect::<HashSet<_>>().len();
+    for st in &cn_only {
+        summary.cn_only_lines += st.lines.len();
+        summary.cn_only_with_ai += st.lines.iter().filter(|l| l.ai.is_some()).count();
+        summary.cn_only_with_artem += st.lines.iter().filter(|l| l.artem.is_some()).count();
+    }
     Ok(Built {
         stories: out,
         cn_pairs,
         genders,
+        cn_only,
         chars,
         sova_notes,
         names_ru,
@@ -512,15 +538,16 @@ pub async fn store(
 ) -> Result<(), sqlx::Error> {
     let Built {
         stories,
-        cn_pairs: _,
+        cn_pairs,
         genders,
+        cn_only,
         chars,
         sova_notes,
         names_ru,
         texts,
         summary,
     } = built;
-    // 21 binds per row, under Postgres's 65,535-parameter limit.
+    // 23 binds per row, under Postgres's 65,535-parameter limit.
     const CHUNK: usize = 2_000;
     let mut tx = pool.begin().await?;
     // The Russian each entry has now, to tell afterwards which the import changed.
@@ -530,25 +557,36 @@ pub async fn store(
     .bind(server)
     .execute(&mut *tx)
     .await?;
+    // A story the EN client now has: the edits of its CN-only lines go onto the EN ones.
+    let moved = cn_only::transfer(&mut tx, stories, cn_pairs).await?;
+    let mut summary = summary.clone();
+    summary.cn_moved = moved.moved;
+    summary.cn_manual = moved.manual;
     sqlx::query("DELETE FROM translators.story_lines WHERE server = $1")
         .bind(server)
         .execute(&mut *tx)
         .await?;
-    let rows: Vec<(&str, usize, &Line)> = stories
+    let rows: Vec<(&str, usize, &Line, bool)> = stories
         .iter()
         .flat_map(|(id, lines)| {
             lines
                 .iter()
                 .enumerate()
-                .map(move |(ord, l)| (id.as_str(), ord, l))
+                .map(move |(ord, l)| (id.as_str(), ord, l, false))
         })
+        .chain(cn_only.iter().flat_map(|st| {
+            st.lines
+                .iter()
+                .enumerate()
+                .map(move |(ord, l)| (st.story_id.as_str(), ord, l, true))
+        }))
         .collect();
     for chunk in rows.chunks(CHUNK) {
         let mut qb: QueryBuilder<Postgres> = QueryBuilder::new(
             "INSERT INTO translators.story_lines (server, story_id, line, part, ord, kind, speaker_en, speaker_ru, en, \
-             ru_game, ru_game_source, ru_game_match, plugin_role, ru_dict, speaker_cn, cn, sova, ai, arktr_match, edit_key, speaker_gender) ",
+             ru_game, ru_game_source, ru_game_match, plugin_role, ru_dict, speaker_cn, cn, sova, ai, arktr_match, edit_key, speaker_gender, artem, cn_only) ",
         );
-        qb.push_values(chunk, |mut b, (id, ord, l)| {
+        qb.push_values(chunk, |mut b, (id, ord, l, only)| {
             b.push_bind(server)
                 .push_bind(*id)
                 .push_bind(i32::try_from(l.line).unwrap_or(i32::MAX))
@@ -569,7 +607,9 @@ pub async fn store(
                 .push_bind(&l.ai)
                 .push_bind(l.arktr_match)
                 .push_bind(&l.edit_key)
-                .push_bind(l.speaker_gender.map(String::from));
+                .push_bind(l.speaker_gender.map(String::from))
+                .push_bind(&l.artem)
+                .push_bind(*only);
         });
         // Two texts on one line and part would be a parser change; keep the first.
         qb.push(" ON CONFLICT (server, story_id, line, part) DO NOTHING");
@@ -622,6 +662,28 @@ pub async fn store(
         });
         qb.build().execute(&mut *tx).await?;
     }
+    sqlx::query("DELETE FROM translators.cn_only_stories")
+        .execute(&mut *tx)
+        .await?;
+    for st in cn_only {
+        sqlx::query(
+            "INSERT INTO translators.cn_only_stories
+                 (story_id, story_txt, group_id, group_cn, group_ru, name_cn, name_ru, avg_tag, code, sort)
+             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)",
+        )
+        .bind(&st.story_id)
+        .bind(&st.story_txt)
+        .bind(&st.group_id)
+        .bind(&st.group_cn)
+        .bind(&st.group_ru)
+        .bind(&st.name_cn)
+        .bind(&st.name_ru)
+        .bind(&st.avg_tag)
+        .bind(&st.code)
+        .bind(st.sort)
+        .execute(&mut *tx)
+        .await?;
+    }
     sqlx::query("DELETE FROM translators.char_genders")
         .execute(&mut *tx)
         .await?;
@@ -651,7 +713,7 @@ pub async fn store(
     )
     .bind(server)
     .bind(started_at)
-    .bind(sqlx::types::Json(summary))
+    .bind(sqlx::types::Json(&summary))
     .execute(&mut *tx)
     .await?;
     tx.commit().await

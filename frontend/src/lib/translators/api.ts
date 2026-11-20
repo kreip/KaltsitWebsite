@@ -15,6 +15,7 @@ import type { AccessRequest } from "#/types/generated/AccessRequest";
 import type { AdminStats } from "#/types/generated/AdminStats";
 import type { ApprovalBatchResult } from "#/types/generated/ApprovalBatchResult";
 import type { CharName } from "#/types/generated/CharName";
+import type { CnOnlyStory } from "#/types/generated/CnOnlyStory";
 import type { EditCreated } from "#/types/generated/EditCreated";
 import type { EditPlace } from "#/types/generated/EditPlace";
 import type { EditRows } from "#/types/generated/EditRows";
@@ -127,7 +128,7 @@ async function send(path: string, method: string, body?: unknown): Promise<Respo
     return res;
 }
 
-export type ProposalSource = "own" | "sova" | "ai";
+export type ProposalSource = "own" | "sova" | "artem" | "ai";
 
 /** Write my proposal for the line's entry (for every place, or for this place only with `context` — outside the story `here` names the place of the game data), or rewrite the one I have; `confirmMany` once the list of places was confirmed. */
 export const createProposalFn = createServerFn({ method: "POST" })
@@ -184,7 +185,7 @@ export function lineHistoryQueryOptions(place: EditPlace) {
 }
 
 /** Agree with a variant of the line's entry or take it back; `proposalId` null = keep as in the game. */
-export type AgreeVariant = "game" | "sova" | "ai" | "proposal";
+export type AgreeVariant = "game" | "sova" | "artem" | "ai" | "proposal";
 
 export const setAgreementFn = createServerFn({ method: "POST" })
     .inputValidator((d: { place: EditPlace; variant: AgreeVariant; proposalId: number | null; agree: boolean }) => d)
@@ -377,6 +378,16 @@ export const getNamesFn = createServerFn({ method: "GET" }).handler(async (): Pr
 /** The library's chapter and story names with the game's Russian. */
 export function namesQueryOptions() {
     return queryOptions({ queryKey: [...TRANSLATORS_QUERY_ROOT, "names"], queryFn: () => getNamesFn(), staleTime: 60 * 60_000 });
+}
+
+export const getCnOnlyFn = createServerFn({ method: "GET" }).handler(async (): Promise<CnOnlyStory[]> => {
+    const res = await send("/translators/cn-only", "GET");
+    return (await res.json()) as CnOnlyStory[];
+});
+
+/** The stories only the CN client has (no English yet), for the Story tab's group «Только в китайской версии». */
+export function cnOnlyQueryOptions() {
+    return queryOptions({ queryKey: [...TRANSLATORS_QUERY_ROOT, "cn-only"], queryFn: () => getCnOnlyFn(), staleTime: 10 * 60_000 });
 }
 
 // The same cookies the site's own sign-in sets (`lib/auth/server.ts`), so the

@@ -29,7 +29,21 @@ pub struct PlaceLine {
     pub edit_key: String,
     pub ru_game: Option<String>,
     pub sova: Option<String>,
+    /// The second translator's variant (`translatorVariants.ts`: Артём).
+    pub artem: Option<String>,
     pub ai: Option<String>,
+}
+
+impl PlaceLine {
+    /// A translator's or the machine's variant by its source name (`sova`, `artem`, `ai`).
+    pub fn variant(&self, name: &str) -> Option<&String> {
+        match name {
+            "sova" => self.sova.as_ref(),
+            "artem" => self.artem.as_ref(),
+            "ai" => self.ai.as_ref(),
+            _ => None,
+        }
+    }
 }
 
 pub async fn place_line(pool: &PgPool, p: &EditPlace) -> Result<Option<PlaceLine>, sqlx::Error> {
@@ -53,12 +67,13 @@ pub async fn place_line(pool: &PgPool, p: &EditPlace) -> Result<Option<PlaceLine
             edit_key,
             ru_game,
             sova: None,
+            artem: None,
             ai: None,
         }));
     }
     #[allow(clippy::type_complexity)]
-    let row: Option<(String, Option<String>, Option<String>, Option<String>)> = sqlx::query_as(
-        "SELECT edit_key, ru_game, sova, ai FROM translators.story_lines
+    let row: Option<(String, Option<String>, Option<String>, Option<String>, Option<String>)> = sqlx::query_as(
+        "SELECT edit_key, ru_game, sova, artem, ai FROM translators.story_lines
          WHERE server = $1 AND story_id = $2 AND line = $3 AND part = $4",
     )
     .bind(SERVER)
@@ -67,10 +82,11 @@ pub async fn place_line(pool: &PgPool, p: &EditPlace) -> Result<Option<PlaceLine
     .bind(p.part)
     .fetch_optional(pool)
     .await?;
-    Ok(row.map(|(edit_key, ru_game, sova, ai)| PlaceLine {
+    Ok(row.map(|(edit_key, ru_game, sova, artem, ai)| PlaceLine {
         edit_key,
         ru_game,
         sova,
+        artem,
         ai,
     }))
 }
@@ -329,7 +345,7 @@ async fn all_votes(pool: &PgPool, keys: &[String]) -> Result<(Votes, PlaceVotes)
     for r in rows {
         let who = person(r.user_id, r.name);
         match (r.variant.as_str(), r.story_id, r.line, r.part) {
-            ("sova" | "ai", Some(story), Some(line), Some(part)) => places
+            ("sova" | "artem" | "ai", Some(story), Some(line), Some(part)) => places
                 .entry((r.edit_key, r.variant, (story, line, part)))
                 .or_default()
                 .push(who),

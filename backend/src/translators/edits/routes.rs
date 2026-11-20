@@ -109,8 +109,8 @@ pub async fn create_proposal(
     Json(input): Json<ProposalInput>,
 ) -> Result<Json<EditCreated>, ApiError> {
     let me = require_member(&state, &auth).await?;
-    if !matches!(input.source.as_str(), "own" | "sova" | "ai") {
-        return Err(ApiError::BadRequest("source: own, sova or ai".into()));
+    if !matches!(input.source.as_str(), "own" | "sova" | "artem" | "ai") {
+        return Err(ApiError::BadRequest("source: own, sova, artem or ai".into()));
     }
     let line = editable_place(&state, &input.place).await?;
     // Outside the story the game shows one translation everywhere: "only here" must name
@@ -341,16 +341,12 @@ pub async fn set_agreement(
             }
             (None, None, None)
         }
-        "sova" | "ai" => {
-            let text = if variant == "sova" {
-                &line.sova
-            } else {
-                &line.ai
-            };
+        "sova" | "artem" | "ai" => {
+            let text = line.variant(&variant).cloned();
             if text.is_none() {
                 return Err(ApiError::BadRequest("this line has no such variant".into()));
             }
-            (None, Some(&input.place), text.clone())
+            (None, Some(&input.place), text)
         }
         _ => {
             return Err(ApiError::BadRequest(
@@ -420,8 +416,7 @@ pub async fn create_comment(
     let variant_text = match (input.variant.as_deref(), input.proposal_id) {
         (None, _) => None,
         (Some("game"), _) => line.ru_game.clone(),
-        (Some("sova"), _) => line.sova.clone(),
-        (Some("ai"), _) => line.ai.clone(),
+        (Some(v @ ("sova" | "artem" | "ai")), _) => line.variant(v).cloned(),
         (Some("proposal"), Some(id)) => {
             let (key, _, text, _, _) = db::proposal_owner(&state.db, id)
                 .await?
@@ -647,6 +642,35 @@ pub async fn names(
     Ok(Json(db::names_ru(&state.db).await?))
 }
 
+/// The stories only the CN client has, in the library's order: the Story
+/// tab's group «Только в китайской версии». Any signed-in reader.
+#[utoipa::path(
+    get,
+    path = "/translators/cn-only",
+    tag = "translators",
+    security(("bearer_auth" = [])),
+    responses(
+        (status = 200, description = "Every story the EN client has not got yet, by event and order.", body = Vec<super::dto::CnOnlyStory>),
+        (status = 401, response = crate::app::openapi::responses::Unauthorized),
+        (status = 403, response = crate::app::openapi::responses::Forbidden),
+        (status = 500, response = crate::app::openapi::responses::InternalError)
+    )
+)]
+pub async fn cn_only_stories(
+    State(state): State<AppState>,
+    auth: MaybeAuthUser,
+) -> Result<Json<Vec<super::dto::CnOnlyStory>>, ApiError> {
+    require_reader(&state, &auth).await?;
+    Ok(Json(
+        sqlx::query_as(
+            "SELECT story_id, group_id, group_cn, group_ru, name_cn, name_ru, avg_tag, code, sort
+             FROM translators.cn_only_stories ORDER BY group_id, sort, story_id",
+        )
+        .fetch_all(&state.db)
+        .await?,
+    ))
+}
+
 /// Mark a story read by the caller ("I have read this scene"), or not. Members only.
 #[utoipa::path(
     put,
@@ -742,8 +766,7 @@ async fn apply_approval(
     }
     let text = match input.variant.as_str() {
         "game" => line.ru_game.clone(),
-        "sova" => line.sova.clone(),
-        "ai" => line.ai.clone(),
+        v @ ("sova" | "artem" | "ai") => line.variant(v).cloned(),
         _ => {
             return Err(ApiError::BadRequest(
                 "variant: game, sova, ai or proposal".into(),

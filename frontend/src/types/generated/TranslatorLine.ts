@@ -55,6 +55,10 @@ speakerGender: string | null,
  */
 sova: string | null, 
 /**
+ * The second translator's (Артём's corrections of the machine's text, arktr): members only.
+ */
+artem: string | null, 
+/**
  * The AI's translation: signed-in translators only.
  */
 ai: string | null, 
@@ -82,6 +86,10 @@ places: number,
  * `unchecked`, `proposed`, `approved` or `outdated`.
  */
 status: string, 
+/**
+ * A story the EN client has not got yet: the line has no English and its edits stay out of the export.
+ */
+cnOnly: boolean, 
 /**
  * The variants whose Russian lacks a glossary term's form (a variant not
  * listed holds them all): `game`, `sova`, `ai`, `approved`, `proposal:<id>`.
