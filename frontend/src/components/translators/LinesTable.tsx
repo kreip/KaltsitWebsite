@@ -285,7 +285,7 @@ export function RuCell(props: IRuCellProps): React.ReactElement {
     // Only as in the game: the game's text, nothing else.
     if (gameOnly) {
         const { line, nickname, find = null, t } = props;
-        return <div data-sel="ru">{line.ruGame ? <StoryText text={line.ruGame} nickname={nickname} find={find} /> : <span className="text-subtle-foreground">{t("ru.missing")}</span>}</div>;
+        return <div data-sel="ru">{line.ruGame ? <StoryText text={line.ruGame} nickname={nickname} find={find} /> : <span className="text-subtle-foreground">{line.cnOnly ? t("cnOnly.notInGame") : t("ru.missing")}</span>}</div>;
     }
     if (!all && !props.expanded && props.editor === null) return <FoldedRuCell {...props} />;
     return (
@@ -308,7 +308,7 @@ function FoldedRuCell({ line, analysis, place, nickname, edits, find = null, t }
     return (
         <div className="flex flex-col gap-0.5" data-sel="ru">
             <div>
-                {text ? <StoryText text={text} nickname={nickname} quotes={quotesAt(edits, place)} find={settled ? null : find} /> : <span className="text-subtle-foreground">{t("ru.missing")}</span>}
+                {text ? <StoryText text={text} nickname={nickname} quotes={quotesAt(edits, place)} find={settled ? null : find} /> : <span className="text-subtle-foreground">{line.cnOnly ? t("cnOnly.notInGame") : t("ru.missing")}</span>}
                 {check ? <Marks check={check} recommended={false} skipGlossary t={t} /> : null}
                 {line.editable ? null : <SystemChecked t={t} />}
             </div>
@@ -398,7 +398,7 @@ function FullRuCell({ line, analysis, place, nickname, showVariants, showDiff, e
                     {/* The actions hang over the game's text on hover; in an opened row they stand under it. */}
                     <div className="relative">
                         {shown ? null : actions}
-                        {line.ruGame ? <StoryText text={line.ruGame} nickname={nickname} quotes={quotes} find={find} /> : <span className="text-subtle-foreground">{t("ru.missing")}</span>}
+                        {line.ruGame ? <StoryText text={line.ruGame} nickname={nickname} quotes={quotes} find={find} /> : <span className="text-subtle-foreground">{line.cnOnly ? t("cnOnly.notInGame") : t("ru.missing")}</span>}
                         {marks("game", true)}
                         {line.editable ? null : <SystemChecked t={t} />}
                         {line.ruGame && line.editable && (edits?.gameAgreements.length ?? 0) > 0 ? <AgreeButton place={place} variant="game" people={edits?.gameAgreements ?? []} me={me} t={t} /> : null}

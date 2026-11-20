@@ -96,7 +96,8 @@ pub fn collect(cn_dir: &Path, en_ids: &HashSet<&str>, arktr: &Arktr) -> Vec<CnSt
             for l in &mut lines {
                 // The CN text stands where the parser put it: in the English's place.
                 l.cn = Some(std::mem::take(&mut l.en));
-                l.speaker_cn = (!l.speaker_en.is_empty()).then(|| std::mem::take(&mut l.speaker_en));
+                // The speaker's CN name stands in the EN name's place too (under arktr's Russian one).
+                l.speaker_cn = (!l.speaker_en.is_empty()).then(|| l.speaker_en.clone());
                 l.edit_key = key(story_id, l.line, l.part);
             }
             attach(&mut lines, story_txt, arktr);

@@ -66,6 +66,7 @@ export const messages = {
         text: "The lines are translated from the Chinese. Proposals and approvals stay out of the export for the pack (the game's dictionaries are keyed by the English): they wait for the Global release, and then move onto the English lines.",
         description: "Text above the table of a story only the CN client has.",
     },
+    "cnOnly.notInGame": { text: "not in the game yet", description: "The Russian cell of a line of a story only the CN client has: the pack has no Russian for it." },
     "cnOnly.noEnglish": { text: "not yet", description: "The English cell of a line of a story only the CN client has." },
     "cnOnly.waiting": { text: "waits for Global", description: "Badge in the Edits list: an edit of a story only the CN client has, kept out of the export." },
     "category.side": { text: "Event", description: "Chapter kind in the chapter list." },
