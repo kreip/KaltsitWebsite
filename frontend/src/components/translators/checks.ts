@@ -39,7 +39,7 @@ export interface IVariantCheck {
      * operator) against «я сделал / я рада», or the Chinese 她 / 他 against «он / она» — when the text gives the other.
      */
     gender: { want: Gender; by: "speaker" | "cn" } | null;
-    /** «ты / вы» by the Chinese (a mark to look at): 您 → «вы», 你 → «ты», when the text uses the other. */
+    /** «ты / вы» by the Chinese (a mark to look at): 您 (polite) → «вы», when the text says «ты». */
     addressCn: Address | null;
 }
 
@@ -269,13 +269,12 @@ export function pronounGender(ru: string, cn: string | null): Gender | null {
     return (want === "f" && masc && !fem) || (want === "m" && fem && !masc) ? want : null;
 }
 
-/** «ты / вы» by the Chinese: 您 → «вы», 你 → «ты» (one person; 你们 / 您们 are left alone), when the text uses the other. */
+/** «ты / вы» by the Chinese: 您 (polite) → «вы», when the text says «ты» (你们 / 您们, plural, are left alone). */
 export function cnAddress(ru: string, cn: string | null): Address | null {
     if (!cn || cn.includes("你们") || cn.includes("您们")) return null;
-    const polite = cn.includes("您");
-    const plain = cn.includes("你");
-    if (polite === plain) return null;
-    const want: Address = polite ? "вы" : "ты";
+    // Only 您 asks for a form: 你 is the plain "you", and «вы» for it is the translator's choice.
+    if (!cn.includes("您") || cn.includes("你")) return null;
+    const want: Address = "вы";
     const own = addressOf(formWords(ru).join(" "));
     return own && own !== want ? want : null;
 }

@@ -144,7 +144,7 @@ describe("gender and address by the Chinese (the same cases as texts/forms.rs)",
     it("checks ты / вы against the Chinese", () => {
         expect(cnAddress("Ты устал?", "您累了吗？")).toBe("вы");
         expect(cnAddress("Вы устали?", "您累了吗？")).toBeNull();
-        expect(cnAddress("Вы устали?", "你累了吗？")).toBe("ты");
+        expect(cnAddress("Вы устали?", "你累了吗？")).toBeNull();
         expect(cnAddress("Вы устали?", "你们累了吗？")).toBeNull();
         expect(cnAddress("Устали?", "你累了吗？")).toBeNull();
     });

@@ -972,7 +972,7 @@ export const messages = {
     },
     "checks.addressCn": {
         text: "“{form}” by the Chinese",
-        description: "Short mark (to look at, not an error): the Chinese asks for this form of address (您 → вы, 你 → ты).",
+        description: "Short mark (to look at, not an error): the Chinese asks for this form of address (您 → вы).",
     },
     "checks.addressCnHint": {
         text: "The Chinese says {polite, select, yes {您 (polite): «вы» is expected} other {你 (one person, not polite): «ты» is expected}}. It may be wrong: check.",
@@ -2593,7 +2593,7 @@ export const messages = {
     },
     "problem.addressCn": {
         text: "«ты» / «вы» by the Chinese",
-        description: "Status filter item (a mark to look at, not in «every error»): the Chinese 您 where the Russian says ты, or 你 where it says вы.",
+        description: "Status filter item (a mark to look at, not in «every error»): the Chinese 您 (polite) where the Russian says ты.",
     },
     "problem.address": {
         text: "«ты» / «вы» not as in the scene",

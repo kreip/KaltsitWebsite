@@ -8,8 +8,9 @@
 //!   сделал» from a woman, «я рада» from a man.
 //! * A Chinese 她 / 他 (she / he; 们 plural and words like 其他 "other" left
 //!   out) where the Russian has only the other gender's pronouns.
-//! * 您 (polite "you") where the Russian says «ты», 你 (one person) where it
-//!   says «вы»; a line with 你们 / 您们 (plural) is left alone.
+//! * 您 (polite "you") where the Russian says «ты»; a line with 你们 / 您们
+//!   (plural) is left alone. 你 asks for nothing: it is the plain "you", and
+//!   «вы» for it is the translator's choice.
 
 /// `f` or `m`.
 pub type Gender = char;
@@ -210,11 +211,12 @@ pub fn cn_address(ru: &str, cn: Option<&str>) -> Option<char> {
     if cn.contains("你们") || cn.contains("您们") {
         return None;
     }
-    let want = match (cn.contains('您'), cn.contains('你')) {
-        (true, false) => 'в',
-        (false, true) => 'т',
-        _ => return None,
-    };
+    // Only 您 (polite) asks for a form: 你 is the plain "you" of most Chinese lines, and
+    // the Russian «вы» for it is a translator's choice (8,350 such marks, nearly all wrong).
+    if !cn.contains('您') || cn.contains('你') {
+        return None;
+    }
+    let want = 'в';
     address_of(ru).filter(|a| *a != want).map(|_| want)
 }
 
@@ -249,7 +251,7 @@ mod tests {
     fn address_by_the_chinese() {
         assert_eq!(cn_address("Ты устал?", Some("您累了吗？")), Some('в'));
         assert_eq!(cn_address("Вы устали?", Some("您累了吗？")), None);
-        assert_eq!(cn_address("Вы устали?", Some("你累了吗？")), Some('т'));
+        assert_eq!(cn_address("Вы устали?", Some("你累了吗？")), None);
         assert_eq!(cn_address("Вы устали?", Some("你们累了吗？")), None);
         assert_eq!(cn_address("Устали?", Some("你累了吗？")), None);
     }

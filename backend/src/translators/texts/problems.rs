@@ -6,8 +6,7 @@
 //! original has a tag the Russian lacks, the text otherwise whole),
 //! `newlines` (line breaks not as in the English); and two marks to look at,
 //! not errors (`forms.rs`): `gender` («я сделал» from a woman, 她 where the
-//! Russian says «он»), `addressCn` (您 where the Russian says «ты», 你 where it
-//! says «вы»), by the text's first place with the Chinese (and its speaker's
+//! Russian says «он»), `addressCn` (the polite 您 where the Russian says «ты»), by the text's first place with the Chinese (and its speaker's
 //! gender when every story line of it is spoken by operators of one gender).
 //! Redone after every import and glossary download.
 
