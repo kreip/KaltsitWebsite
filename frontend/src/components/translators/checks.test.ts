@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { TranslatorLine } from "#/types/generated/TranslatorLine";
-import { addressOf, checkVariant, type ICandidate, lineProblems, neighbourAddress, passes, recommend } from "./checks";
+import { addressOf, checkVariant, cnAddress, genderOf, type ICandidate, lineProblems, neighbourAddress, passes, pronounGender, recommend } from "./checks";
 import { tagHealth } from "./markup";
 
 function line(over: Partial<TranslatorLine>): TranslatorLine {
@@ -20,6 +20,7 @@ function line(over: Partial<TranslatorLine>): TranslatorLine {
         ruDict: null,
         speakerCn: null,
         cn: null,
+        speakerGender: null,
         sova: null,
         ai: null,
         terms: [],
@@ -121,5 +122,36 @@ describe("recommended", () => {
         expect(recommend([c("proposal:1", 1), c("proposal:2", 3), c("sova", 0), c("game", 0)], false, "A")).toBe("proposal:2");
         expect(recommend([c("sova", 0, false), c("ai", 0, false), c("game", 0)], false, "A")).toBe("game");
         expect(recommend([c("sova", 0, false), c("game", 0, false)], false, "A")).toBeNull();
+    });
+});
+
+describe("gender and address by the Chinese (the same cases as texts/forms.rs)", () => {
+    it("tells the speaker's gender by «я …»", () => {
+        expect(genderOf("Я сделал всё, что мог.")).toBe("m");
+        expect(genderOf("Я так рада тебя видеть!")).toBe("f");
+        expect(genderOf("Я уже не уверена…")).toBe("f");
+        expect(genderOf("Я тебя понял.")).toBeNull();
+        expect(genderOf("Он сказал: «Я ушёл».")).toBeNull();
+        expect(genderOf("Я — Амия.")).toBeNull();
+    });
+    it("checks the pronouns against the Chinese", () => {
+        expect(pronounGender("Он ушёл.", "她走了。")).toBe("f");
+        expect(pronounGender("Она ушла.", "她走了。")).toBeNull();
+        expect(pronounGender("Она ушла.", "其他人走了。")).toBeNull();
+        expect(pronounGender("Её нет.", "他不在。")).toBe("m");
+        expect(pronounGender("Он и она.", "他和她。")).toBeNull();
+    });
+    it("checks ты / вы against the Chinese", () => {
+        expect(cnAddress("Ты устал?", "您累了吗？")).toBe("вы");
+        expect(cnAddress("Вы устали?", "您累了吗？")).toBeNull();
+        expect(cnAddress("Вы устали?", "你累了吗？")).toBe("ты");
+        expect(cnAddress("Вы устали?", "你们累了吗？")).toBeNull();
+        expect(cnAddress("Устали?", "你累了吗？")).toBeNull();
+    });
+    it("marks a variant, never as an error", () => {
+        const c = checkVariant("Я сделал это.", "sova", line({ speakerGender: "f", cn: "我做到了。" }), null);
+        expect(c.gender).toEqual({ want: "f", by: "speaker" });
+        expect(passes(c)).toBe(true);
+        expect(lineProblems(c, false, false, new Map()).has("gender")).toBe(true);
     });
 });

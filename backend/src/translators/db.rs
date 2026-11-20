@@ -77,6 +77,7 @@ const MIGRATIONS: &[(&str, &str)] = &[
         "t024_cn_places",
         include_str!("migrations/t024_cn_places.sql"),
     ),
+    ("t025_genders", include_str!("migrations/t025_genders.sql")),
 ];
 
 pub async fn migrate(pool: &PgPool) -> Result<(), sqlx::Error> {
@@ -175,6 +176,7 @@ struct Row {
     ru_dict: Option<String>,
     speaker_cn: Option<String>,
     cn: Option<String>,
+    speaker_gender: Option<String>,
     sova: Option<String>,
     ai: Option<String>,
     edit_key: String,
@@ -191,7 +193,7 @@ pub async fn story_lines(
 ) -> Result<Vec<TranslatorLine>, sqlx::Error> {
     let rows: Vec<Row> = sqlx::query_as(
         "SELECT line, part, kind, speaker_en, speaker_ru, en, ru_game, ru_game_source, ru_game_match,
-                plugin_role, ru_dict, speaker_cn, cn, edit_key,
+                plugin_role, ru_dict, speaker_cn, cn, speaker_gender, edit_key,
                 CASE WHEN $3 THEN sova END AS sova,
                 CASE WHEN $3 THEN ai END AS ai
          FROM translators.story_lines
@@ -215,7 +217,7 @@ pub async fn first_story_lines(
 ) -> Result<Vec<(String, TranslatorLine)>, sqlx::Error> {
     let rows: Vec<(String, Row)> = sqlx::query_as::<_, StoryRow>(
         "SELECT DISTINCT ON (edit_key) story_id, line, part, kind, speaker_en, speaker_ru, en, ru_game,
-                ru_game_source, ru_game_match, plugin_role, ru_dict, speaker_cn, cn, edit_key, sova, ai
+                ru_game_source, ru_game_match, plugin_role, ru_dict, speaker_cn, cn, speaker_gender, edit_key, sova, ai
          FROM translators.story_lines
          WHERE server = $1 AND edit_key = ANY($2)
          ORDER BY edit_key, story_id, ord",
@@ -259,6 +261,7 @@ impl Row {
             ru_dict: r.ru_dict,
             speaker_cn: r.speaker_cn,
             cn: r.cn,
+            speaker_gender: r.speaker_gender,
             sova: r.sova,
             ai: r.ai,
             terms: Vec::new(),

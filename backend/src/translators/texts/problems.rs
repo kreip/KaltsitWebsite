@@ -4,8 +4,12 @@
 //! found), `brokenTag` (a tag left open or broken, a stray closer, a lost or
 //! added substitution `{…}`, a tag the original lacks), `noHighlight` (the
 //! original has a tag the Russian lacks, the text otherwise whole),
-//! `newlines` (line breaks not as in the English). Redone after every import
-//! and glossary download.
+//! `newlines` (line breaks not as in the English); and two marks to look at,
+//! not errors (`forms.rs`): `gender` («я сделал» from a woman, 她 where the
+//! Russian says «он»), `addressCn` (您 where the Russian says «ты», 你 where it
+//! says «вы»), by the text's first place with the Chinese (and its speaker's
+//! gender when every story line of it is spoken by operators of one gender).
+//! Redone after every import and glossary download.
 
 use std::collections::HashMap;
 use std::sync::LazyLock;
@@ -24,7 +28,12 @@ pub const PROBLEMS: &[&str] = &[
     "nickname",
     "noHighlight",
     "newlines",
+    "gender",
+    "addressCn",
 ];
+
+/// The problems that are no errors: not in «every error», only their own items.
+pub const NOT_ERRORS: &[&str] = &["noHighlight", "gender", "addressCn"];
 
 /// The markup scanner of `markup.ts`: 1 game opener · 2 universal closer ·
 /// 3 paragraph · 4 inline opener · 5 inline closer · 6 colour / size opener ·
@@ -401,6 +410,20 @@ fn breaks(s: &str) -> usize {
     s.replace("\\n", "\n").trim().matches('\n').count()
 }
 
+/// The marks by the Chinese `cn` and the speaker's gender: `gender`, `addressCn`.
+pub fn form_marks(ru: &str, cn: Option<&str>, speaker: Option<char>) -> Vec<&'static str> {
+    let mut out = Vec::new();
+    if super::forms::speaker_mismatch(ru, speaker).is_some()
+        || super::forms::pronoun_mismatch(ru, cn).is_some()
+    {
+        out.push("gender");
+    }
+    if super::forms::cn_address(ru, cn).is_some() {
+        out.push("addressCn");
+    }
+    out
+}
+
 /// Every problem of the game's Russian `ru` of the English `en`.
 pub fn problems(
     en: &str,
@@ -457,8 +480,28 @@ pub fn problems(
 pub async fn refresh(pool: &PgPool, server: &str) -> Result<usize, sqlx::Error> {
     let stored = glossary::load(pool).await?;
     let terms: Vec<_> = stored.iter().map(glossary::StoredTerm::as_term).collect();
-    let rows: Vec<(i64, String, String)> = sqlx::query_as(
-        "SELECT id, en, ru FROM translators.texts WHERE server = $1 AND ru IS NOT NULL",
+    // With each text: the Chinese of its first story line (else of its first game place),
+    // and its speakers' gender when every story line of it has the same one (or an
+    // operator's voice line: the operator's).
+    #[allow(clippy::type_complexity)]
+    let rows: Vec<(i64, String, String, Option<String>, Option<String>)> = sqlx::query_as(
+        "WITH s AS (
+             SELECT edit_key, (array_agg(cn ORDER BY story_id, ord) FILTER (WHERE cn IS NOT NULL))[1] AS cn,
+                    CASE WHEN COUNT(*) FILTER (WHERE speaker_gender IS NULL) = 0
+                          AND COUNT(DISTINCT speaker_gender) = 1 THEN MIN(speaker_gender) END AS gender
+             FROM translators.story_lines WHERE server = $1 GROUP BY edit_key
+         ), p AS (
+             SELECT DISTINCT ON (p.edit_key) p.edit_key, p.cn, g.gender
+             FROM translators.text_places p
+             LEFT JOIN translators.char_genders g ON p.field = 'voice.text' AND g.char_id = p.object_id
+             WHERE p.server = $1 AND p.cn IS NOT NULL
+             ORDER BY p.edit_key, p.section, p.object_id, p.ord
+         )
+         SELECT t.id, t.en, t.ru, COALESCE(s.cn, p.cn), COALESCE(s.gender, p.gender)
+         FROM translators.texts t
+         LEFT JOIN s ON s.edit_key = t.edit_key
+         LEFT JOIN p ON p.edit_key = t.edit_key
+         WHERE t.server = $1 AND t.ru IS NOT NULL",
     )
     .bind(server)
     .fetch_all(pool)
@@ -466,8 +509,13 @@ pub async fn refresh(pool: &PgPool, server: &str) -> Result<usize, sqlx::Error> 
     let found = tokio::task::spawn_blocking(move || {
         let finder = (!terms.is_empty()).then(|| Finder::new(&terms));
         rows.into_iter()
-            .filter_map(|(id, en, ru)| {
-                let p = problems(&en, &ru, finder.as_ref().map(|f| (f, terms.as_slice())));
+            .filter_map(|(id, en, ru, cn, gender)| {
+                let mut p = problems(&en, &ru, finder.as_ref().map(|f| (f, terms.as_slice())));
+                p.extend(form_marks(
+                    &ru,
+                    cn.as_deref(),
+                    gender.and_then(|g| g.chars().next()),
+                ));
                 (!p.is_empty()).then(|| (id, p.join(",")))
             })
             .collect::<Vec<_>>()

@@ -47,6 +47,10 @@ pluginRole: string | null,
  */
 ruDict: string | null, speakerCn: string | null, cn: string | null, 
 /**
+ * The speaker's gender, `f` or `m`, when the speaker is an operator (an operator's voice line: the operator's).
+ */
+speakerGender: string | null, 
+/**
  * Sova's translation: signed-in translators only.
  */
 sova: string | null, 

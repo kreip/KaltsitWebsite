@@ -958,6 +958,26 @@ export const messages = {
         text: "The speaker's neighbouring lines in this scene say “{form}”.",
         description: "Tooltip of the ты / вы mark; form is what the neighbouring lines use.",
     },
+    "checks.gender": {
+        text: "check the gender",
+        description: "Short mark (to look at, not an error): the variant's gender may be wrong — «я сделал» from a woman, or the Chinese says 她 (she) where the Russian says «он».",
+    },
+    "checks.genderSpeakerHint": {
+        text: "{want, select, f {The speaker is a woman (the game's file), the text speaks of her as of a man: «я сделал», «я рад».} other {The speaker is a man (the game's file), the text speaks of him as of a woman: «я сделала», «я рада».}} It may be wrong: check.",
+        description: "Tooltip of «check the gender» by the speaker; want is f or m, the speaker's gender.",
+    },
+    "checks.genderCnHint": {
+        text: "{want, select, f {The Chinese says 她 (she), the text only «он», «его»…} other {The Chinese says 他 (he), the text only «она», «её»…}} It may be wrong: check.",
+        description: "Tooltip of «check the gender» by the Chinese pronoun; want is f or m.",
+    },
+    "checks.addressCn": {
+        text: "“{form}” by the Chinese",
+        description: "Short mark (to look at, not an error): the Chinese asks for this form of address (您 → вы, 你 → ты).",
+    },
+    "checks.addressCnHint": {
+        text: "The Chinese says {polite, select, yes {您 (polite): «вы» is expected} other {你 (one person, not polite): «ты» is expected}}. It may be wrong: check.",
+        description: "Tooltip of the ты / вы mark by the Chinese; polite is yes when 您 asks for «вы», no when 你 asks for «ты».",
+    },
     "service.guessed": {
         text: "{name} (presumably)",
         description: "A story sprite's name guessed from who talks after it appears (not an operator).",
@@ -2566,6 +2586,14 @@ export const messages = {
     "problem.longer": {
         text: "a proposal longer than in the game",
         description: "Error: a proposal noticeably longer than the game's text.",
+    },
+    "problem.gender": {
+        text: "check the gender",
+        description: "Status filter item (a mark to look at, not in «every error»): «я сделал» from a woman, «я рада» from a man, or the Chinese 她 / 他 against the Russian «он» / «она».",
+    },
+    "problem.addressCn": {
+        text: "«ты» / «вы» by the Chinese",
+        description: "Status filter item (a mark to look at, not in «every error»): the Chinese 您 where the Russian says ты, or 你 where it says вы.",
     },
     "problem.address": {
         text: "«ты» / «вы» not as in the scene",

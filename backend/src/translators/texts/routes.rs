@@ -39,6 +39,8 @@ const STATUSES: &[&str] = &[
     "noHighlight",
     "newlines",
     "longer",
+    "gender",
+    "addressCn",
 ];
 
 /// Search every text of the game — the story, the game data by section
@@ -167,6 +169,19 @@ pub async fn object_lines(
         .map(|t| EditPlace::text_by_md5(&t.hit.edit_key, &t.hit.key_md5))
         .collect();
     let mut lines: Vec<TranslatorLine> = texts.iter().map(|t| text_line(&t.hit)).collect();
+    // An operator's voice lines are the operator's words: "check the gender" knows who speaks.
+    if query.section == super::gamedata::ARCHIVES {
+        let gender: Option<String> =
+            sqlx::query_scalar("SELECT gender FROM translators.char_genders WHERE char_id = $1")
+                .bind(&query.object)
+                .fetch_optional(&state.db)
+                .await?;
+        for (t, l) in texts.iter().zip(lines.iter_mut()) {
+            if t.field == "voice.text" {
+                l.speaker_gender.clone_from(&gender);
+            }
+        }
+    }
     fill_level_counts(&state, &places, &mut lines).await?;
     let edits = edits::attach_at(&state.db, &places, &mut lines, |_| false).await?;
     crate::translators::routes::mark_glossary(&state, &mut lines, &places, &edits).await?;
@@ -232,6 +247,7 @@ fn text_line(hit: &TextHit) -> TranslatorLine {
         ru_dict: None,
         speaker_cn: None,
         cn: hit.cn.clone(),
+        speaker_gender: None,
         sova: None,
         ai: None,
         terms: Vec::new(),

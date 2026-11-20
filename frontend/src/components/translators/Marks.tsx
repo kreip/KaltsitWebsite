@@ -3,7 +3,7 @@
  * grows: "recommended" as a small star (it is on most lines, by the rule), and
  * only what is wrong (a glossary form missing,
  * tags, substitutions, the player's nickname written as a word, line breaks, noticeably longer, ты / вы against the
- * speaker's neighbouring lines).
+ * speaker's neighbouring lines), and the marks to look at: «check the gender», ты / вы by the Chinese.
  */
 import { AlertTriangle, Star, X } from "lucide-react";
 import type React from "react";
@@ -39,7 +39,7 @@ export function Marks({ check, recommended, skipGlossary = false, t }: IMarksPro
     const f = useFormatters();
     const glossary = skipGlossary ? [] : check.glossary;
     const broken = check.brokenTag || check.placeholders.length > 0;
-    const any = recommended || glossary.length > 0 || broken || check.noNickname || check.newlines || check.longer !== null || check.address;
+    const any = recommended || glossary.length > 0 || broken || check.noNickname || check.newlines || check.longer !== null || check.address || check.gender || check.addressCn;
     if (!any) return null;
     return (
         <span className="ms-1.5 inline-flex flex-wrap items-center gap-x-1.5 align-baseline text-xs">
@@ -69,6 +69,8 @@ export function Marks({ check, recommended, skipGlossary = false, t }: IMarksPro
             {check.newlines ? <Warn title={t("checks.newlinesHint", { en: check.newlines.en, ru: check.newlines.ru })}>{t("checks.newlines", { en: check.newlines.en, ru: check.newlines.ru })}</Warn> : null}
             {check.longer !== null ? <Warn title={t("checks.longerHint")}>{t("checks.longer", { share: f.percent(check.longer) })}</Warn> : null}
             {check.address ? <Warn title={t("checks.addressHint", { form: check.address })}>{t("checks.address", { form: check.address === "ты" ? "вы" : "ты" })}</Warn> : null}
+            {check.gender ? <Warn title={check.gender.by === "speaker" ? t("checks.genderSpeakerHint", { want: check.gender.want }) : t("checks.genderCnHint", { want: check.gender.want })}>{t("checks.gender")}</Warn> : null}
+            {check.addressCn ? <Warn title={t("checks.addressCnHint", { polite: check.addressCn === "вы" ? "yes" : "no" })}>{t("checks.addressCn", { form: check.addressCn })}</Warn> : null}
         </span>
     );
 }

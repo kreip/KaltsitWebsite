@@ -169,12 +169,13 @@ const LONGER: &str = "(t.ru IS NOT NULL AND EXISTS (SELECT 1 FROM translators.pr
 /// The condition of a problem status (never on an approved text: it was checked).
 fn problem_condition(status: &str) -> Option<String> {
     let what = match status {
-        // Every error; «no highlight» is not one (the text is whole): it has its own item only.
+        // Every error; «no highlight» is not one (the text is whole), nor the marks to look
+        // at (`gender`, `addressCn`: they can be wrong): each has its own item only.
         "problems" => format!(
             "(t.problems && ARRAY['{}']::text[] OR {LONGER})",
             super::problems::PROBLEMS
                 .iter()
-                .filter(|p| **p != "noHighlight")
+                .filter(|p| !super::problems::NOT_ERRORS.contains(p))
                 .copied()
                 .collect::<Vec<_>>()
                 .join("','")
@@ -197,6 +198,8 @@ pub const PROBLEM_STATUSES: &[&str] = &[
     "noHighlight",
     "newlines",
     "longer",
+    "gender",
+    "addressCn",
 ];
 
 /// The WHERE of a search, after `FROM translators.texts t`.

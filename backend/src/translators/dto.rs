@@ -71,6 +71,8 @@ pub struct TranslatorLine {
     pub ru_dict: Option<String>,
     pub speaker_cn: Option<String>,
     pub cn: Option<String>,
+    /// The speaker's gender, `f` or `m`, when the speaker is an operator (an operator's voice line: the operator's).
+    pub speaker_gender: Option<String>,
     /// Sova's translation: signed-in translators only.
     pub sova: Option<String>,
     /// The AI's translation: signed-in translators only.

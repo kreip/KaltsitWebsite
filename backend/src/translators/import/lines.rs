@@ -26,6 +26,8 @@ pub struct Line {
     pub ru_dict: Option<String>,
     pub speaker_cn: Option<String>,
     pub cn: Option<String>,
+    /// The speaker's gender (`f` / `m`) when the speaker is an operator (`genders.rs`).
+    pub speaker_gender: Option<char>,
     pub sova: Option<String>,
     pub ai: Option<String>,
     pub arktr_match: Option<&'static str>,

@@ -8,6 +8,7 @@
 
 pub mod db;
 pub mod dto;
+pub mod forms;
 pub mod gamedata;
 pub mod levels;
 pub mod plugin_styles;
@@ -511,6 +512,7 @@ mod tests {
             ru_dict: None,
             speaker_cn: None,
             cn: None,
+            speaker_gender: None,
             sova: None,
             ai: None,
             arktr_match: None,

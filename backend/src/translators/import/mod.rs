@@ -14,6 +14,7 @@
 
 pub mod arktr;
 pub mod cn;
+pub mod genders;
 pub mod lines;
 pub mod normalize;
 pub mod plugin;
@@ -96,6 +97,8 @@ pub struct ImportSummary {
     pub cn_by: HashMap<String, usize>,
     pub cn_unpaired: usize,
     pub cn_unpaired_examples: Vec<Unmatched>,
+    /// Lines whose speaker's gender is known (an operator's).
+    pub with_speaker_gender: usize,
     /// Game data places that got their Chinese from the CN tables, by section, and those that did not.
     pub cn_places_by_section: HashMap<String, usize>,
     pub cn_places_missing_by_section: HashMap<String, usize>,
@@ -148,6 +151,8 @@ pub struct Built {
     pub stories: Vec<StoryLines>,
     /// By story: which CN line each EN line was paired with.
     pub cn_pairs: HashMap<String, Vec<CnPair>>,
+    /// The operators' genders by id (`f` / `m`).
+    pub genders: Vec<(String, char)>,
     pub chars: Vec<CharName>,
     /// Sova's chapter notes by site story id.
     pub sova_notes: Vec<(String, Vec<String>)>,
@@ -391,6 +396,18 @@ pub fn build(
         }
         summary.with_cn += en.iter().filter(|l| l.cn.is_some()).count();
     }
+    // The speakers' genders: an operator's, by its EN name or the CN one the script gives.
+    let cn_excel = sources.cn_dir.as_deref().map(cn::excel);
+    let genders = genders::Genders::load(
+        &assets_dir.join("gamedata").join("excel"),
+        cn_excel.as_deref(),
+    );
+    for (_, lines) in &mut out {
+        for l in lines.iter_mut().filter(|l| !l.speaker_en.is_empty()) {
+            l.speaker_gender = genders.speaker(&l.speaker_en, l.speaker_cn.as_deref());
+            summary.with_speaker_gender += usize::from(l.speaker_gender.is_some());
+        }
+    }
     let operators = OperatorIndex::new(&game.operators);
     let mut chars: Vec<CharName> = votes
         .into_iter()
@@ -436,7 +453,6 @@ pub fn build(
         })
         .collect();
     names_ru.sort();
-    let cn_excel = sources.cn_dir.as_deref().map(cn::excel);
     let texts = crate::translators::texts::collect(
         &dict,
         plugin.as_ref(),
@@ -468,9 +484,12 @@ pub fn build(
         }
     }
     summary.millis = started.elapsed().as_millis();
+    let mut genders: Vec<(String, char)> = genders.by_char.into_iter().collect();
+    genders.sort();
     Ok(Built {
         stories: out,
         cn_pairs,
+        genders,
         chars,
         sova_notes,
         names_ru,
@@ -494,13 +513,14 @@ pub async fn store(
     let Built {
         stories,
         cn_pairs: _,
+        genders,
         chars,
         sova_notes,
         names_ru,
         texts,
         summary,
     } = built;
-    // 20 binds per row, under Postgres's 65,535-parameter limit.
+    // 21 binds per row, under Postgres's 65,535-parameter limit.
     const CHUNK: usize = 2_000;
     let mut tx = pool.begin().await?;
     // The Russian each entry has now, to tell afterwards which the import changed.
@@ -526,7 +546,7 @@ pub async fn store(
     for chunk in rows.chunks(CHUNK) {
         let mut qb: QueryBuilder<Postgres> = QueryBuilder::new(
             "INSERT INTO translators.story_lines (server, story_id, line, part, ord, kind, speaker_en, speaker_ru, en, \
-             ru_game, ru_game_source, ru_game_match, plugin_role, ru_dict, speaker_cn, cn, sova, ai, arktr_match, edit_key) ",
+             ru_game, ru_game_source, ru_game_match, plugin_role, ru_dict, speaker_cn, cn, sova, ai, arktr_match, edit_key, speaker_gender) ",
         );
         qb.push_values(chunk, |mut b, (id, ord, l)| {
             b.push_bind(server)
@@ -548,7 +568,8 @@ pub async fn store(
                 .push_bind(&l.sova)
                 .push_bind(&l.ai)
                 .push_bind(l.arktr_match)
-                .push_bind(&l.edit_key);
+                .push_bind(&l.edit_key)
+                .push_bind(l.speaker_gender.map(String::from));
         });
         // Two texts on one line and part would be a parser change; keep the first.
         qb.push(" ON CONFLICT (server, story_id, line, part) DO NOTHING");
@@ -598,6 +619,17 @@ pub async fn store(
                 .push_bind(i32::try_from(c.votes).unwrap_or(i32::MAX))
                 .push_bind(i32::try_from(c.total).unwrap_or(i32::MAX))
                 .push_bind(c.guessed);
+        });
+        qb.build().execute(&mut *tx).await?;
+    }
+    sqlx::query("DELETE FROM translators.char_genders")
+        .execute(&mut *tx)
+        .await?;
+    for chunk in genders.chunks(5_000) {
+        let mut qb: QueryBuilder<Postgres> =
+            QueryBuilder::new("INSERT INTO translators.char_genders (char_id, gender) ");
+        qb.push_values(chunk, |mut b, (id, g)| {
+            b.push_bind(id).push_bind(g.to_string());
         });
         qb.build().execute(&mut *tx).await?;
     }

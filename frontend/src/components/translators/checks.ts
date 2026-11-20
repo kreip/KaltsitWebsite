@@ -34,6 +34,13 @@ export interface IVariantCheck {
     longer: number | null;
     /** The text says "ты" where the speaker's neighbouring lines say "вы", or the reverse: the neighbours' form. */
     address: Address | null;
+    /**
+     * «Check the gender» (a mark to look at, not an error): the gender the line should have — the speaker's (an
+     * operator) against «я сделал / я рада», or the Chinese 她 / 他 against «он / она» — when the text gives the other.
+     */
+    gender: { want: Gender; by: "speaker" | "cn" } | null;
+    /** «ты / вы» by the Chinese (a mark to look at): 您 → «вы», 你 → «ты», when the text uses the other. */
+    addressCn: Address | null;
 }
 
 /** Literal `\n` as a line break, trimmed: what the reader sees. */
@@ -104,6 +111,184 @@ export function neighbourAddress(lines: readonly TranslatorLine[], index: number
     return counts.ты > counts.вы ? "ты" : "вы";
 }
 
+export type Gender = "f" | "m";
+
+/*
+ * «Check the gender» and «ты / вы» by the Chinese — the backend's very rules (`texts/forms.rs`), the same cases in
+ * the tests. Marks to look at, never errors: they can be wrong.
+ */
+
+/** Short adjectives and the like after «я»: the feminine and the masculine. */
+const SHORT: readonly (readonly [string, string])[] = [
+    ["рада", "рад"],
+    ["готова", "готов"],
+    ["уверена", "уверен"],
+    ["должна", "должен"],
+    ["согласна", "согласен"],
+    ["свободна", "свободен"],
+    ["виновата", "виноват"],
+    ["права", "прав"],
+    ["жива", "жив"],
+    ["счастлива", "счастлив"],
+    ["благодарна", "благодарен"],
+    ["способна", "способен"],
+    ["обязана", "обязан"],
+    ["знакома", "знаком"],
+    ["занята", "занят"],
+    ["сама", "сам"],
+    ["одна", "один"],
+    ["удивлена", "удивлён"],
+    ["удивлена", "удивлен"],
+    ["тронута", "тронут"],
+    ["рождена", "рождён"],
+    ["рождена", "рожден"],
+    ["польщена", "польщён"],
+    ["польщена", "польщен"],
+    ["спокойна", "спокоен"],
+    ["больна", "болен"],
+    ["здорова", "здоров"],
+    ["честна", "честен"],
+    ["нужна", "нужен"],
+    ["влюблена", "влюблён"],
+    ["влюблена", "влюблен"],
+    ["измотана", "измотан"],
+    ["ранена", "ранен"],
+    ["заинтересована", "заинтересован"],
+    ["вынуждена", "вынужден"],
+    ["поражена", "поражён"],
+    ["поражена", "поражен"],
+    ["разочарована", "разочарован"],
+    ["напугана", "напуган"],
+    ["потрясена", "потрясён"],
+    ["потрясена", "потрясен"],
+];
+
+/** Words skipped between «я» and the word that tells the gender. */
+const FILLERS = new Set([
+    "не",
+    "уже",
+    "же",
+    "ж",
+    "ведь",
+    "тоже",
+    "бы",
+    "так",
+    "очень",
+    "все",
+    "всё",
+    "еще",
+    "ещё",
+    "просто",
+    "только",
+    "сейчас",
+    "правда",
+    "и",
+    "ни",
+    "вот",
+    "даже",
+    "лишь",
+    "никогда",
+    "всегда",
+    "давно",
+    "наконец",
+    "точно",
+    "действительно",
+    "совсем",
+    "вовсе",
+    "сегодня",
+    "тогда",
+    "почти",
+    "здесь",
+    "тут",
+    "там",
+    "ли",
+    "-",
+]);
+
+/** Words in «-л» / «-ла» that are no past verbs. */
+const NOT_VERBS = new Set(["мол", "пол", "стол", "зал", "бал", "вол", "кол", "тела", "дела", "мила", "сила", "пила", "стола", "зала", "пола", "игла", "мгла", "скала", "стрела", "пчела", "смола", "метла", "ангел"]);
+
+function wordGender(w: string): Gender | null {
+    for (const [f, m] of SHORT) {
+        if (f === w) return "f";
+        if (m === w) return "m";
+    }
+    if (NOT_VERBS.has(w) || !/^[а-яё]+$/.test(w)) return null;
+    const n = [...w].length;
+    if ((w.endsWith("лась") && n >= 6) || (w.endsWith("ла") && n >= 4)) return "f";
+    if ((w.endsWith("лся") && n >= 5) || (w.endsWith("л") && n >= 4) || ["был", "шел", "шёл"].includes(w)) return "m";
+    return null;
+}
+
+/** The text's words in lower case, tags and quoted speech left out (another's words: «…», “…”). */
+function formWords(text: string): string[] {
+    let out = "";
+    let tag = false;
+    let quote = 0;
+    for (const c of text) {
+        if (c === "<") tag = true;
+        else if (c === ">" && tag) tag = false;
+        else if (tag) continue;
+        else if (c === "«" || c === "“") quote++;
+        else if (c === "»" || c === "”") quote = Math.max(0, quote - 1);
+        else if (quote === 0) out += c.toLowerCase();
+    }
+    return out.split(/[^\p{L}-]+/u).filter(Boolean);
+}
+
+/** The gender the Russian gives its speaker by «я …», when it gives one. */
+export function genderOf(ru: string): Gender | null {
+    const w = formWords(ru);
+    let f = 0;
+    let m = 0;
+    w.forEach((word, i) => {
+        if (word !== "я") return;
+        const next = w.slice(i + 1, i + 5).find((x) => !FILLERS.has(x));
+        const g = next ? wordGender(next) : null;
+        if (g === "f") f++;
+        else if (g === "m") m++;
+    });
+    return f > 0 && m === 0 ? "f" : m > 0 && f === 0 ? "m" : null;
+}
+
+const MASC = new Set(["он", "его", "него", "ему", "нему", "нем", "нём"]);
+const FEM = new Set(["она", "ее", "её", "нее", "неё", "ей", "ней", "ею", "нею"]);
+/** Chinese words holding 他 / 她 that are no "he" / "she". */
+const CN_NOT_PERSON = ["他们", "她们", "其他", "他人", "吉他", "他乡", "他日", "他方", "他国", "利他", "他者", "无他", "排他"];
+
+/** The gender the Chinese's 她 / 他 asks for, when the Russian has only the other's pronouns. */
+export function pronounGender(ru: string, cn: string | null): Gender | null {
+    if (!cn) return null;
+    let rest = cn;
+    for (const w of CN_NOT_PERSON) rest = rest.replaceAll(w, "");
+    const want: Gender | null = rest.includes("她") && !rest.includes("他") ? "f" : rest.includes("他") && !rest.includes("她") ? "m" : null;
+    if (!want) return null;
+    const w = formWords(ru);
+    const masc = w.some((x) => MASC.has(x));
+    const fem = w.some((x) => FEM.has(x));
+    return (want === "f" && masc && !fem) || (want === "m" && fem && !masc) ? want : null;
+}
+
+/** «ты / вы» by the Chinese: 您 → «вы», 你 → «ты» (one person; 你们 / 您们 are left alone), when the text uses the other. */
+export function cnAddress(ru: string, cn: string | null): Address | null {
+    if (!cn || cn.includes("你们") || cn.includes("您们")) return null;
+    const polite = cn.includes("您");
+    const plain = cn.includes("你");
+    if (polite === plain) return null;
+    const want: Address = polite ? "вы" : "ты";
+    const own = addressOf(formWords(ru).join(" "));
+    return own && own !== want ? want : null;
+}
+
+/** «Check the gender» of a text of a line: by its speaker, else by the Chinese. */
+export function genderCheck(text: string, line: TranslatorLine): IVariantCheck["gender"] {
+    const speaker = line.speakerGender === "f" || line.speakerGender === "m" ? line.speakerGender : null;
+    const own = speaker ? genderOf(text) : null;
+    if (speaker && own && own !== speaker) return { want: speaker, by: "speaker" };
+    const pronoun = pronounGender(text, line.cn);
+    return pronoun ? { want: pronoun, by: "cn" } : null;
+}
+
 /** Every mark of one variant's text against its line. `variant` names it as the backend does (`game`, `sova`, `proposal:12`). */
 const NICKNAME = /\{@nickname\}/gi;
 
@@ -132,6 +317,8 @@ export function checkVariant(text: string, variant: string, line: TranslatorLine
         newlines: enBreaks === ruBreaks ? null : { en: enBreaks, ru: ruBreaks },
         longer,
         address: own && neighbours && own !== neighbours ? neighbours : null,
+        gender: genderCheck(text, line),
+        addressCn: cnAddress(text, line.cn),
     };
 }
 
@@ -149,9 +336,12 @@ export function passes(c: IVariantCheck): boolean {
     return c.glossary.length === 0 && !c.brokenTag && c.placeholders.length === 0 && !c.noNickname && c.newlines === null && c.longer === null && c.address === null;
 }
 
-/** Whether a line's problems hold an error — «Status: every error»; «no highlight» is only its own filter item. */
+/** The problems that are no errors — «no highlight» (the text is whole), the marks to look at (they can be wrong). */
+export const NOT_ERRORS: ReadonlySet<ProblemKind> = new Set(["noHighlight", "gender", "addressCn"]);
+
+/** Whether a line's problems hold an error — «Status: every error»; the others are only their own filter items. */
 export function hasError(problems: ReadonlySet<ProblemKind>): boolean {
-    for (const p of problems) if (p !== "noHighlight") return true;
+    for (const p of problems) if (!NOT_ERRORS.has(p)) return true;
     return false;
 }
 
@@ -198,7 +388,7 @@ export function recommend(candidates: readonly ICandidate[], approved: boolean, 
 }
 
 /** The problems the filters and the yellow rows name. */
-export const PROBLEM_KINDS = ["glossary", "brokenTag", "nickname", "noHighlight", "newlines", "longer", "address"] as const;
+export const PROBLEM_KINDS = ["glossary", "brokenTag", "nickname", "noHighlight", "newlines", "longer", "address", "gender", "addressCn"] as const;
 export type ProblemKind = (typeof PROBLEM_KINDS)[number];
 
 /**
@@ -218,6 +408,8 @@ export function lineProblems(shown: IVariantCheck | undefined, settled: boolean,
         if (shown.noHighlight) out.add("noHighlight");
         if (shown.newlines) out.add("newlines");
         if (shown.address) out.add("address");
+        if (shown.gender) out.add("gender");
+        if (shown.addressCn) out.add("addressCn");
     }
     if (settled) return out;
     for (const [variant, c] of checks) if (variant.startsWith("proposal:") && c.longer !== null) out.add("longer");
