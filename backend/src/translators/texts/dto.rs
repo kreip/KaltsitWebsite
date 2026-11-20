@@ -86,6 +86,10 @@ pub struct TextHit {
     pub status: String,
     /// Its first places, the game data's before the story's.
     pub at: Vec<TextAt>,
+    /// The Chinese at its first game data place that has one (the CN client's tables).
+    #[serde(skip)]
+    #[ts(skip)]
+    pub cn: Option<String>,
 }
 
 /// A page of the search.

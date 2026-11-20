@@ -40,7 +40,7 @@ import type { TranslatorsMe } from "#/types/generated/TranslatorsMe";
 import type { RecommendRule } from "./checks";
 import { Hint } from "./Hint";
 import { type EditorState, PlacesList, StatusDot } from "./LineEdits";
-import { analyse, filterWord, missingTermsEn, PROSE, RuCell, Speaker } from "./LinesTable";
+import { analyse, CnCell, filterWord, missingTermsEn, PROSE, RuCell, Speaker } from "./LinesTable";
 import { Folded, isLong, useUnfolded } from "./LongText";
 import { NextUnchecked, TextCounts } from "./Overview";
 import { OpenAll, RowToggle, useOpenRows } from "./openRows";
@@ -154,10 +154,11 @@ interface IResultsProps {
     find: IFind;
     showVariants: boolean;
     showDiff: boolean;
+    showCn: boolean;
     t: T;
 }
 
-function Results({ rows, edits, me, find, showVariants, showDiff, t }: IResultsProps): React.ReactElement {
+function Results({ rows, edits, me, find, showVariants, showDiff, showCn, t }: IResultsProps): React.ReactElement {
     const byKey = useMemo(() => new Map(edits.map((e) => [e.editKey, e])), [edits]);
     const rule: RecommendRule = me.recommendRule === "A" ? "A" : "B";
     const nickname = me.nickname ?? t("nickname.fallback");
@@ -179,6 +180,7 @@ function Results({ rows, edits, me, find, showVariants, showDiff, t }: IResultsP
                     {speakers ? <TableHead className="w-36">{t("table.speaker")}</TableHead> : null}
                     <TableHead>{t("table.ru")}</TableHead>
                     <TableHead>{t("table.en")}</TableHead>
+                    {showCn ? <TableHead>{t("table.cn")}</TableHead> : null}
                 </TableRow>
             </TableHeader>
             <TableBody>
@@ -242,6 +244,7 @@ function Results({ rows, edits, me, find, showVariants, showDiff, t }: IResultsP
                                     </Hint>
                                 </Folded>
                             </TableCell>
+                            {showCn ? <CnCell line={r.line} /> : null}
                         </TableRow>
                     );
                 })}
@@ -250,7 +253,7 @@ function Results({ rows, edits, me, find, showVariants, showDiff, t }: IResultsP
     );
 }
 
-function Found({ query, me, showVariants, showDiff, summary, t }: { query: { q: string; whole: boolean; section: string | null; status: string | null }; me: TranslatorsMe; showVariants: boolean; showDiff: boolean; summary: TextSummary | undefined; t: T }): React.ReactElement {
+function Found({ query, me, showVariants, showDiff, showCn, summary, t }: { query: { q: string; whole: boolean; section: string | null; status: string | null }; me: TranslatorsMe; showVariants: boolean; showDiff: boolean; showCn: boolean; summary: TextSummary | undefined; t: T }): React.ReactElement {
     const f = useFormatters();
     const search = useInfiniteQuery(searchLinesQueryOptions(query));
     const pages = search.data?.pages ?? [];
@@ -290,7 +293,7 @@ function Found({ query, me, showVariants, showDiff, summary, t }: { query: { q: 
                     </EmptyHeader>
                 </Empty>
             ) : (
-                <Results rows={rows} edits={edits} me={me} find={{ q: query.q, whole: query.whole }} showVariants={showVariants} showDiff={showDiff} t={t} />
+                <Results rows={rows} edits={edits} me={me} find={{ q: query.q, whole: query.whole }} showVariants={showVariants} showDiff={showDiff} showCn={showCn} t={t} />
             )}
             {search.hasNextPage ? (
                 <div className="flex flex-wrap items-center gap-3">
@@ -338,6 +341,7 @@ export function SearchTab({ search, onSearch, only, lead }: ISearchTabProps): Re
     const view = viewOf(search);
     const showVariants = view.variants;
     const showDiff = view.diff;
+    const showCn = view.cn;
     const q = search.q ?? "";
     const section = only ?? search.section;
     const filtered = q !== "" || section !== undefined || search.status !== undefined;
@@ -403,7 +407,7 @@ export function SearchTab({ search, onSearch, only, lead }: ISearchTabProps): Re
                     </EmptyHeader>
                 </Empty>
             ) : me.data ? (
-                <Found query={query} me={me.data} showVariants={showVariants} showDiff={showDiff} summary={summary.data} t={t} />
+                <Found query={query} me={me.data} showVariants={showVariants} showDiff={showDiff} showCn={showCn} summary={summary.data} t={t} />
             ) : (
                 <Skeleton className="h-96 w-full rounded-2xl" />
             )}

@@ -231,7 +231,7 @@ fn text_line(hit: &TextHit) -> TranslatorLine {
         plugin_role: hit.plugin_role.clone(),
         ru_dict: None,
         speaker_cn: None,
-        cn: None,
+        cn: hit.cn.clone(),
         sova: None,
         ai: None,
         terms: Vec::new(),

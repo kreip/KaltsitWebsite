@@ -1,7 +1,7 @@
 /**
  * "View": the page's display settings in one menu next to the filters, the
  * same on the Story, Search and Game sections tabs — show the variants,
- * compare, Chinese and service rows (the story only), and "Only as in the
+ * compare, Chinese, the service rows (the story only), and "Only as in the
  * game": the game's text (and the English) without proposals, approvals,
  * variants and hints; "Open every line" (openRows.tsx). Everything is kept in
  * the address.
@@ -51,7 +51,7 @@ export function ViewItem({ checked, onChange, label, hint, disabled = false }: {
     );
 }
 
-/** The View menu; `story` adds Chinese and the service rows. */
+/** The View menu; `story` adds the service rows. */
 export function ViewMenu({ search, onSearch, story = false }: { search: ITranslatorsSearch; onSearch: (next: ITranslatorsSearch) => void; story?: boolean }): React.ReactElement {
     const t: T = useT("translators");
     const guest = useContext(Guest);
@@ -71,12 +71,8 @@ export function ViewMenu({ search, onSearch, story = false }: { search: ITransla
                 <MenuSeparator />
                 <ViewItem checked={view.variants} disabled={view.gameOnly} onChange={(c) => onSearch({ ...search, variants: c ? undefined : false })} label={t("toggle.variants")} hint={t("toggle.variantsHint")} />
                 <ViewItem checked={view.diff} disabled={view.gameOnly} onChange={(c) => onSearch({ ...search, diff: c || undefined })} label={t("toggle.diff")} hint={t("toggle.diffHint")} />
-                {story ? (
-                    <>
-                        <ViewItem checked={view.cn} onChange={(c) => onSearch({ ...search, cn: c || undefined })} label={t("toggle.cn")} hint={t("toggle.cnHint")} />
-                        <ViewItem checked={view.service} onChange={(c) => onSearch({ ...search, service: c || undefined })} label={t("toggle.service")} hint={t("toggle.serviceHint")} />
-                    </>
-                ) : null}
+                <ViewItem checked={view.cn} onChange={(c) => onSearch({ ...search, cn: c || undefined })} label={t("toggle.cn")} hint={t("toggle.cnHint")} />
+                {story ? <ViewItem checked={view.service} onChange={(c) => onSearch({ ...search, service: c || undefined })} label={t("toggle.service")} hint={t("toggle.serviceHint")} /> : null}
             </MenuPopup>
         </Menu>
     );

@@ -8,9 +8,12 @@
 //!
 //! * `TRANSLATORS_RU_TEXT_DIR`: the `BepInEx/Translation/ru/Text` folder (required);
 //! * `TRANSLATORS_PLUGIN_DLL`: `ArknightsLocalization.RichTextFix.dll` (optional);
-//! * `TRANSLATORS_ARKTR_DIR`: the arktr checkout, read at `data/out` (optional).
+//! * `TRANSLATORS_ARKTR_DIR`: the arktr checkout, read at `data/out` (optional);
+//! * `TRANSLATORS_CN_DIR`: the CN client's data as the site's downloader and
+//!   unpacker leave it (`assets/output/cn`; optional): the Chinese original.
 
 pub mod arktr;
+pub mod cn;
 pub mod lines;
 pub mod normalize;
 pub mod plugin;
@@ -32,6 +35,7 @@ pub struct Sources {
     pub ru_text_dir: PathBuf,
     pub plugin_dll: Option<PathBuf>,
     pub arktr_dir: Option<PathBuf>,
+    pub cn_dir: Option<PathBuf>,
 }
 
 impl Sources {
@@ -48,6 +52,7 @@ impl Sources {
             ru_text_dir,
             plugin_dll: get("TRANSLATORS_PLUGIN_DLL"),
             arktr_dir: get("TRANSLATORS_ARKTR_DIR"),
+            cn_dir: cn::dir_of(get("TRANSLATORS_CN_DIR")),
         })
     }
 }
@@ -82,6 +87,18 @@ pub struct ImportSummary {
     pub with_sova: usize,
     pub with_ai: usize,
     pub with_cn: usize,
+    /// Lines whose Chinese came from arktr before the CN client's scripts were read (arktr alone).
+    pub with_cn_arktr: usize,
+    /// Stories whose CN script was found, and those the CN client lacks.
+    pub cn_stories: usize,
+    pub cn_stories_missing: usize,
+    /// How the lines found their CN line (`order`, `line`, `aligned`), and the lines left without.
+    pub cn_by: HashMap<String, usize>,
+    pub cn_unpaired: usize,
+    pub cn_unpaired_examples: Vec<Unmatched>,
+    /// Game data places that got their Chinese from the CN tables, by section, and those that did not.
+    pub cn_places_by_section: HashMap<String, usize>,
+    pub cn_places_missing_by_section: HashMap<String, usize>,
     /// Sova's chapter notes attached to stories (a note per story of its chapter).
     pub sova_notes: usize,
     pub dictionary_files: Vec<String>,
@@ -118,9 +135,19 @@ pub struct CharName {
     pub guessed: bool,
 }
 
+/// A CN script's line paired with an EN story's line (its index in the story).
+#[derive(Debug, Clone, Copy)]
+pub struct CnPair {
+    pub cn: (u32, i16),
+    pub en: usize,
+    pub how: cn::How,
+}
+
 /// The import's output: every story's lines, the sprites' names, the summary.
 pub struct Built {
     pub stories: Vec<StoryLines>,
+    /// By story: which CN line each EN line was paired with.
+    pub cn_pairs: HashMap<String, Vec<CnPair>>,
     pub chars: Vec<CharName>,
     /// Sova's chapter notes by site story id.
     pub sova_notes: Vec<(String, Vec<String>)>,
@@ -238,6 +265,7 @@ pub fn build(
     let mut sova_notes = Vec::new();
 
     let mut out = Vec::with_capacity(stories.len());
+    let mut cn_lines: Vec<Option<Vec<Line>>> = Vec::with_capacity(stories.len());
     let mut seen_txt = HashSet::new();
     let mut votes: HashMap<String, HashMap<String, u32>> = HashMap::new();
     for (id, story_ref) in stories {
@@ -307,9 +335,61 @@ pub fn build(
             }
             summary.with_sova += usize::from(l.sova.is_some());
             summary.with_ai += usize::from(l.ai.is_some());
-            summary.with_cn += usize::from(l.cn.is_some());
+            summary.with_cn_arktr += usize::from(l.cn.is_some());
         }
+        // The CN client's script of the same story, paired below.
+        cn_lines.push(sources.cn_dir.as_deref().and_then(|d| {
+            let got = cn::script_lines(d, &story_ref.story_txt);
+            if got.is_some() {
+                summary.cn_stories += 1;
+            } else {
+                summary.cn_stories_missing += 1;
+            }
+            got
+        }));
         out.push((id.clone(), lines));
+    }
+    // The Chinese: first the speakers' names from the stories that pair in
+    // order, then every story; the CN client's text wins over arktr's copy.
+    let mut speakers = cn::Speakers::default();
+    for ((_, en), cn_story) in out.iter().zip(&cn_lines) {
+        if let Some(c) = cn_story
+            && let Some(p) = cn::in_order(en, c)
+        {
+            speakers.vote(en, c, &p);
+        }
+    }
+    let mut cn_pairs: HashMap<String, Vec<CnPair>> = HashMap::new();
+    for ((id, en), cn_story) in out.iter_mut().zip(&cn_lines) {
+        if let Some(c) = cn_story {
+            let pairs = cn::align(en, c, &speakers);
+            cn::apply(en, c, &pairs);
+            for (i, p) in pairs.iter().enumerate() {
+                match p {
+                    Some((j, how)) => {
+                        *summary.cn_by.entry(how.word().to_owned()).or_default() += 1;
+                        cn_pairs.entry(id.clone()).or_default().push(CnPair {
+                            cn: (c[*j].line, c[*j].part),
+                            en: i,
+                            how: *how,
+                        });
+                    }
+                    None => {
+                        summary.cn_unpaired += 1;
+                        if summary.cn_unpaired_examples.len() < EXAMPLES
+                            && summary.cn_unpaired % 53 == 1
+                        {
+                            summary.cn_unpaired_examples.push(Unmatched {
+                                story_id: id.clone(),
+                                line: en[i].line,
+                                en: en[i].en.clone(),
+                            });
+                        }
+                    }
+                }
+            }
+        }
+        summary.with_cn += en.iter().filter(|l| l.cn.is_some()).count();
     }
     let operators = OperatorIndex::new(&game.operators);
     let mut chars: Vec<CharName> = votes
@@ -356,15 +436,32 @@ pub fn build(
         })
         .collect();
     names_ru.sort();
+    let cn_excel = sources.cn_dir.as_deref().map(cn::excel);
     let texts = crate::translators::texts::collect(
         &dict,
         plugin.as_ref(),
         &matcher,
         &out,
         &assets_dir.join("gamedata").join("excel"),
+        cn_excel.as_deref().map(|d| (d, &speakers)),
     );
     summary.texts = texts.rows.len();
     summary.text_places = texts.places.len();
+    if cn_excel.is_some() {
+        for p in &texts.places {
+            let by = if p.cn.is_some() {
+                &mut summary.cn_places_by_section
+            } else {
+                &mut summary.cn_places_missing_by_section
+            };
+            let name = if p.field == "skill.level" {
+                "operators (skill levels)"
+            } else {
+                p.section
+            };
+            *by.entry(name.to_owned()).or_default() += 1;
+        }
+    }
     for r in &texts.rows {
         for s in &r.sections {
             *summary.texts_by_section.entry((*s).to_owned()).or_default() += 1;
@@ -373,6 +470,7 @@ pub fn build(
     summary.millis = started.elapsed().as_millis();
     Ok(Built {
         stories: out,
+        cn_pairs,
         chars,
         sova_notes,
         names_ru,
@@ -395,6 +493,7 @@ pub async fn store(
 ) -> Result<(), sqlx::Error> {
     let Built {
         stories,
+        cn_pairs: _,
         chars,
         sova_notes,
         names_ru,

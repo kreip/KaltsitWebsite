@@ -19,6 +19,10 @@ services:
             TRANSLATORS_RU_TEXT_DIR: /data/translators/ru-text
             TRANSLATORS_PLUGIN_DLL: /data/translators/plugin/ArknightsLocalization.RichTextFix.dll
             TRANSLATORS_ARKTR_DIR: /data/translators/arktr
+            # The CN client's data (the Chinese original), when the site's downloader
+            # filled assets/output/cn: `download.sh cn 6 gamedata`, then
+            # `unpacker extract … --gamedata` (translators/README.md). Never served.
+            TRANSLATORS_CN_DIR: /data/output/cn
 
     frontend:
         image: kaltsit-translators-frontend:local

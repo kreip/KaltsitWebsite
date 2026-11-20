@@ -481,6 +481,7 @@ async fn history_of_a_line() {
     let lead = user(&pool, "lead").await;
     let a = user(&pool, "anna").await;
     let built = |ru: &str| import::Built {
+        cn_pairs: Default::default(),
         stories: vec![(
             "s1".to_owned(),
             vec![
@@ -708,6 +709,7 @@ async fn texts_are_stored_and_searched() {
         note: String::new(),
         ord: 0,
         of_key: None,
+        cn: None,
     }];
     line(
         &pool,
@@ -1055,6 +1057,7 @@ async fn a_long_text_is_edited() {
         note: note.to_owned(),
         ord: 0,
         of_key: None,
+        cn: None,
     };
     let rows = vec![
         row("Amiya", "Амия", "operators"),

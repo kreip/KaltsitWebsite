@@ -551,6 +551,16 @@ export interface ILinesTableProps {
     nickname: string;
 }
 
+/** The Chinese original of a line (the CN client's text; its speaker above), as every table shows it. */
+export function CnCell({ line, speaker = true }: { line: TranslatorLine; speaker?: boolean }): React.ReactElement {
+    return (
+        <TableCell className={PROSE} data-sel="cn">
+            {speaker && line.speakerCn ? <span className="block text-muted-foreground text-xs">{line.speakerCn}</span> : null}
+            {line.cn ? <span className="whitespace-pre-line">{line.cn.replaceAll("\\n", "\n")}</span> : null}
+        </TableCell>
+    );
+}
+
 export function LinesTable({ storyId, lines, edits, outdated, me, label, showCn, showVariants, showDiff, commands, nameOf, nickname }: ILinesTableProps): React.ReactElement {
     const t: T = useT("translators");
     const columns = showCn ? 5 : 4;
@@ -704,12 +714,7 @@ export function LinesTable({ storyId, lines, edits, outdated, me, label, showCn,
                                     <TableCell className={PROSE} data-sel="en">
                                         <StoryText text={line.en} nickname={nickname} quotes={[...quotesAt(lineEdits, placeOf(storyId, line)), ...missingTermsEn(line.terms)]} />
                                     </TableCell>
-                                    {showCn ? (
-                                        <TableCell className={PROSE} data-sel="cn">
-                                            {line.speakerCn ? <span className="block text-muted-foreground text-xs">{line.speakerCn}</span> : null}
-                                            {line.cn ? <span className="whitespace-pre-line">{line.cn.replaceAll("\\n", "\n")}</span> : null}
-                                        </TableCell>
-                                    ) : null}
+                                    {showCn ? <CnCell line={line} /> : null}
                                 </TableRow>
                             </Fragment>
                         );

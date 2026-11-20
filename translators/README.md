@@ -40,6 +40,33 @@ Tables: Postgres schema `translators` (own migrations, `translators._migrations`
    `./translators/import.sh`, or "Run import" on the Admin tab
 4. Open http://localhost:3000/translators
 
+## The Chinese original
+
+The import reads the CN client's data from a folder the site's own tools fill — never the CN
+server of the site (it would keep all of it in memory): `assets/output/cn`, mounted as
+`TRANSLATORS_CN_DIR=/data/output/cn` (`translators/compose.yml`). To fill or refresh it:
+
+    cd assets
+    docker run --rm --user $(id -u):$(id -g) -v $PWD/ArkAssets:/data/ArkAssets -v $PWD/output:/data/output kaltsit-assets download.sh cn 6 gamedata
+    docker run --rm --user $(id -u):$(id -g) -v $PWD/ArkAssets:/data/ArkAssets -v $PWD/output:/data/output kaltsit-assets unpacker extract -i /data/ArkAssets/cn -o /data/output/cn --gamedata -j 8
+
+(~110 MB to download, ~0.6 GB unpacked), then an import. Without the folder the Chinese is
+arktr's, as before.
+
+- **The story** (`import/cn.rs`): the CN script at the story's own path, its displayed lines
+  paired with the EN ones — in order where both show the same kinds in the same order (almost
+  every story), else by an alignment of lines of one kind that prefers the same line number and
+  a speaker whose CN name the corpus pairs with the EN one. A line left unpaired keeps arktr's
+  Chinese, if any, never a wrong one. The CN speaker's name comes along.
+- **Game sections** (`texts/gamedata.rs::cn_texts`): the CN tables read by the same code as the
+  EN ones; a place takes the Chinese of the same record, field, number and note (skill level,
+  elite phase, voice set), the n-th text of a field the n-th where notes tell nothing. It is kept
+  per place (`text_places.cn`, migration t024): one English may stand with different Chinese.
+  A speaker's name takes the CN name its lines pair with. The skill levels' dictionary entries,
+  the other tables' texts and the stages (the CN client's `stage_table` does not decode with the
+  site's schemas: they are older than the client) have none.
+- On screen: View → Chinese on the Story, Search and Game sections tabs.
+
 ## Development sign-in
 
 Off unless the backend has `TRANSLATORS_DEV_LOGIN=1`. When on, `/translators/dev-login`

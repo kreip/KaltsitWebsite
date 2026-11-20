@@ -614,6 +614,63 @@ pub fn places(excel_dir: &Path) -> Vec<GamePlace> {
     kept
 }
 
+/// The CN text of each EN place, from the same places of the CN tables: the
+/// same section, record, field and number, and the same note (a skill level,
+/// an elite phase, a voice set). Where the notes tell nothing, the n-th text
+/// at that field pairs with the n-th.
+pub fn cn_texts(en: &[GamePlace], cn: &[GamePlace]) -> Vec<Option<String>> {
+    type Group<'a> = (&'static str, &'a str, &'static str, i16);
+    fn tokens(note: &str) -> Vec<&str> {
+        note.split(',').filter(|t| !t.is_empty()).collect()
+    }
+    let mut groups: HashMap<Group<'_>, Vec<&GamePlace>> = HashMap::new();
+    for p in cn {
+        groups
+            .entry((p.section, p.object_id.as_str(), p.field, p.idx))
+            .or_default()
+            .push(p);
+    }
+    let mut en_groups: HashMap<Group<'_>, Vec<usize>> = HashMap::new();
+    for (i, p) in en.iter().enumerate() {
+        en_groups
+            .entry((p.section, p.object_id.as_str(), p.field, p.idx))
+            .or_default()
+            .push(i);
+    }
+    let mut out = vec![None; en.len()];
+    for (key, members) in en_groups {
+        let Some(cands) = groups.get(&key) else {
+            continue;
+        };
+        let same_shape = members.len() == cands.len()
+            && members
+                .iter()
+                .zip(cands)
+                .all(|(&i, c)| en[i].note == c.note || (en[i].note.is_empty() && c.note.is_empty()));
+        for (pos, &i) in members.iter().enumerate() {
+            if same_shape {
+                out[i] = Some(cands[pos].text.clone());
+                continue;
+            }
+            let mine = tokens(&en[i].note);
+            let best = cands
+                .iter()
+                .enumerate()
+                .filter_map(|(k, c)| {
+                    let theirs = tokens(&c.note);
+                    let common = mine.iter().filter(|t| theirs.contains(t)).count();
+                    let fits = common > 0 || (mine.is_empty() && theirs.is_empty());
+                    fits.then_some((common, std::cmp::Reverse(k.abs_diff(pos)), k))
+                })
+                .max();
+            if let Some((_, _, k)) = best {
+                out[i] = Some(cands[k].text.clone());
+            }
+        }
+    }
+    out
+}
+
 /// Every string of every table (`table name`, `text`), for the texts no
 /// named section holds: the caller keeps those the pack translates.
 pub fn every_string(excel_dir: &Path, mut each: impl FnMut(&str, &str)) {
@@ -842,6 +899,49 @@ mod tests {
         assert_eq!(note("description", "No DP."), "C");
         assert_eq!(note("description", "Hard."), "DT");
         assert_eq!(note("description", "Slow."), "#B1");
+    }
+
+    #[test]
+    fn the_chinese_comes_from_the_same_place() {
+        let place = |field: &'static str, idx: i16, note: &str, text: &str| GamePlace {
+            section: OPERATORS,
+            object_id: "char_1".into(),
+            object_en: "Amiya".into(),
+            field,
+            idx,
+            note: note.into(),
+            text: text.into(),
+            of_key: None,
+        };
+        let en = vec![
+            place("name", 0, "", "Amiya"),
+            place("skill.description", 1, "S1,S2,S3", "ATK +{x}"),
+            place("skill.description", 1, "M1", "ATK +{y}"),
+            place("file.text", 1, "", "First."),
+            place("file.text", 1, "", "Second."),
+            place("talent.name", 2, "", "Lost"),
+        ];
+        let cn = vec![
+            place("name", 0, "", "阿米娅"),
+            // CN tells the levels apart differently: the note still pairs them.
+            place("skill.description", 1, "S1", "攻击力+{x}"),
+            place("skill.description", 1, "S2,S3", "攻击力提升{x}"),
+            place("skill.description", 1, "M1", "攻击力+{y}"),
+            place("file.text", 1, "", "第一。"),
+            place("file.text", 1, "", "第二。"),
+        ];
+        let got = cn_texts(&en, &cn);
+        assert_eq!(
+            got,
+            vec![
+                Some("阿米娅".into()),
+                Some("攻击力提升{x}".into()),
+                Some("攻击力+{y}".into()),
+                Some("第一。".into()),
+                Some("第二。".into()),
+                None,
+            ]
+        );
     }
 
     #[test]

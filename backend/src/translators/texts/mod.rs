@@ -74,6 +74,8 @@ pub struct TextPlace {
     pub ord: i32,
     /// A skill level's entry: the entry of the description template (`GamePlace::of_key`).
     pub of_key: Option<String>,
+    /// The Chinese at the same place of the CN client's tables, when found.
+    pub cn: Option<String>,
 }
 
 /// The import's list of texts.
@@ -182,7 +184,7 @@ impl<'a> Builder<'a> {
         }
     }
 
-    fn place(&mut self, i: usize, p: &GamePlace) {
+    fn place(&mut self, i: usize, p: &GamePlace, cn: Option<String>) {
         let id = (i, p.section, p.object_id.clone(), p.field.to_owned(), p.idx);
         if !self.seen_places.insert(id) {
             return;
@@ -201,6 +203,7 @@ impl<'a> Builder<'a> {
             note: p.note.clone(),
             ord: *ord,
             of_key: p.of_key.clone(),
+            cn,
         });
         *ord += 1;
         self.rows[i].places += 1;
@@ -216,6 +219,7 @@ pub fn collect(
     matcher: &Matcher<'_>,
     stories: &[(String, Vec<Line>)],
     excel_dir: &Path,
+    cn: Option<(&Path, &crate::translators::import::cn::Speakers)>,
 ) -> Texts {
     let mut b = Builder {
         matcher,
@@ -247,9 +251,12 @@ pub fn collect(
         }
     }
     // The named sections of the game data.
-    for p in gamedata::places(excel_dir) {
+    let en_places = gamedata::places(excel_dir);
+    let cn_places = cn.map(|(d, _)| gamedata::places(d)).unwrap_or_default();
+    let cn_texts = gamedata::cn_texts(&en_places, &cn_places);
+    for (p, c) in en_places.iter().zip(cn_texts) {
         let i = b.entry(&p.text);
-        b.place(i, &p);
+        b.place(i, p, c);
     }
     // The story's speakers: a name the pack translates stands in every scene
     // it speaks in («Сюжет › Говорящие»), never "not tied".
@@ -263,6 +270,7 @@ pub fn collect(
     }
     for (story_id, name) in speakers {
         let i = b.entry(name);
+        let speaker_cn = cn.and_then(|(_, sp)| sp.best(name));
         b.place(
             i,
             &GamePlace {
@@ -275,11 +283,12 @@ pub fn collect(
                 text: name.to_owned(),
                 of_key: None,
             },
+            speaker_cn,
         );
     }
     // A record's name by its code (`char_487_bobb`): the pack names it so for
     // the plugin, which shows the name by the code (13_names.txt).
-    let by_code: HashMap<String, (&'static str, String, String)> = b
+    let by_code: HashMap<String, (&'static str, String, String, Option<String>)> = b
         .places
         .iter()
         .filter(|p| {
@@ -290,7 +299,7 @@ pub fn collect(
             let row = &b.rows[*b.by_key.get(&p.edit_key)?];
             Some((
                 p.object_id.clone(),
-                (p.section, p.object_en.clone(), row.en.clone()),
+                (p.section, p.object_en.clone(), row.en.clone(), p.cn.clone()),
             ))
         })
         .collect();
@@ -301,7 +310,7 @@ pub fn collect(
         .collect();
     codes.sort_by(|a, c| a.0.cmp(c.0));
     for (key, e) in codes {
-        let (section, object_en, name) = &by_code[key.as_str()];
+        let (section, object_en, name, name_cn) = &by_code[key.as_str()];
         let (role, ru_plugin) = match b.plugin.get(plain(key).as_str()) {
             Some((role, ru)) => (Some((*role).to_owned()), Some((*ru).to_owned())),
             None => (None, None),
@@ -329,6 +338,7 @@ pub fn collect(
                 text: name.clone(),
                 of_key: None,
             },
+            name_cn.clone(),
         );
     }
     // The other tables: what the pack translates and no section above holds.
@@ -358,6 +368,7 @@ pub fn collect(
                 text: s,
                 of_key: None,
             },
+            None,
         );
     }
     // The rest of the dictionaries: an entry with a skill level's numbers put
@@ -392,7 +403,7 @@ pub fn collect(
         for mut link in links {
             let template = b.entry(&link.template);
             link.place.of_key = Some(b.rows[template].edit_key.clone());
-            b.place(i, &link.place);
+            b.place(i, &link.place, None);
         }
     }
     // What only the plugin's catalog holds.
@@ -511,7 +522,7 @@ mod tests {
         hello.push(child.clone());
         hello.push(child);
         let stories = vec![("s1".to_owned(), hello)];
-        let t = collect(&d, Some(&plugin), &matcher, &stories, dir.path());
+        let t = collect(&d, Some(&plugin), &matcher, &stories, dir.path(), None);
         let row = |key: &str| t.rows.iter().find(|r| r.edit_key == key).unwrap();
         assert_eq!(row("Hello.").sections, vec![STORY]);
         // One entry for the operator and the enemy of the same name; the plugin shows its own Russian.

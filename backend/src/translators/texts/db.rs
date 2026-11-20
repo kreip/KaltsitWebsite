@@ -53,10 +53,10 @@ pub async fn store(
         qb.push(" ON CONFLICT DO NOTHING");
         qb.build().execute(&mut **tx).await?;
     }
-    // 10 binds per row.
-    for chunk in places.chunks(6_000) {
+    // 11 binds per row.
+    for chunk in places.chunks(5_500) {
         let mut qb: QueryBuilder<Postgres> = QueryBuilder::new(
-            "INSERT INTO translators.text_places (server, edit_key, section, object_id, object_en, field, idx, note, ord, of_key) ",
+            "INSERT INTO translators.text_places (server, edit_key, section, object_id, object_en, field, idx, note, ord, of_key, cn) ",
         );
         qb.push_values(chunk, |mut b, p| {
             b.push_bind(server)
@@ -68,7 +68,8 @@ pub async fn store(
                 .push_bind(p.idx)
                 .push_bind(&p.note)
                 .push_bind(p.ord)
-                .push_bind(&p.of_key);
+                .push_bind(&p.of_key)
+                .push_bind(&p.cn);
         });
         qb.build().execute(&mut **tx).await?;
     }
@@ -349,10 +350,11 @@ pub async fn search(
 
     let keys: Vec<String> = rows.iter().map(|r| r.edit_key.clone()).collect();
     let mut at: HashMap<String, Vec<TextAt>> = HashMap::new();
+    let mut cn: HashMap<String, String> = HashMap::new();
     if !keys.is_empty() {
         #[allow(clippy::type_complexity)]
-        let game: Vec<(String, String, String, String, String, i16, String)> = sqlx::query_as(
-            "SELECT edit_key, section, object_id, object_en, field, idx, note FROM (
+        let game: Vec<(String, String, String, String, String, i16, String, Option<String>)> = sqlx::query_as(
+            "SELECT edit_key, section, object_id, object_en, field, idx, note, cn FROM (
                  SELECT p.*, ROW_NUMBER() OVER (PARTITION BY p.edit_key ORDER BY p.section, p.object_id, p.ord) AS n
                  FROM translators.text_places p WHERE p.server = $1 AND p.edit_key = ANY($2)
              ) x WHERE n <= $3 ORDER BY edit_key, n",
@@ -362,7 +364,10 @@ pub async fn search(
         .bind(i64::try_from(PLACES_SHOWN).unwrap_or(3))
         .fetch_all(pool)
         .await?;
-        for (key, section, object_id, object_en, field, idx, note) in game {
+        for (key, section, object_id, object_en, field, idx, note, place_cn) in game {
+            if let Some(c) = place_cn {
+                cn.entry(key.clone()).or_insert(c);
+            }
             at.entry(key).or_default().push(TextAt {
                 section,
                 story_id: None,
@@ -410,6 +415,7 @@ pub async fn search(
         .into_iter()
         .map(|r| TextHit {
             at: at.remove(&r.edit_key).unwrap_or_default(),
+            cn: cn.remove(&r.edit_key),
             id: r.id,
             edit_key: r.edit_key,
             key_md5: r.key_md5,
@@ -769,6 +775,7 @@ struct ObjectTextRow {
     field: String,
     idx: i16,
     note: String,
+    cn: Option<String>,
     #[sqlx(flatten)]
     hit: HitRow,
 }
@@ -785,10 +792,11 @@ pub async fn object_texts(
 ) -> Result<Vec<ObjectText>, sqlx::Error> {
     let key = object_key(section);
     let rows: Vec<ObjectTextRow> = sqlx::query_as(&format!(
-        "SELECT x.object_id, x.field, x.idx, x.note, t.id, t.edit_key, md5(t.edit_key) AS key_md5, t.en, t.ru, t.file,
+        "SELECT x.object_id, x.field, x.idx, x.note, x.cn, t.id, t.edit_key, md5(t.edit_key) AS key_md5, t.en, t.ru, t.file,
                 t.plugin_role, t.ru_plugin, t.sections, t.places, '' AS status
          FROM (SELECT p.field, p.idx, p.edit_key, MIN(p.ord) AS ord, MIN(p.object_id) AS object_id,
-                      COALESCE(string_agg(DISTINCT NULLIF(p.note, ''), ','), '') AS note
+                      COALESCE(string_agg(DISTINCT NULLIF(p.note, ''), ','), '') AS note,
+                      (array_agg(p.cn ORDER BY p.ord) FILTER (WHERE p.cn IS NOT NULL))[1] AS cn
                FROM translators.text_places p
                WHERE p.server = $1 AND p.section = $2 AND {key} = $3
                GROUP BY p.field, p.idx, p.edit_key) x
@@ -809,6 +817,7 @@ pub async fn object_texts(
             note: r.note,
             hit: TextHit {
                 at: Vec::new(),
+                cn: r.cn,
                 id: r.hit.id,
                 edit_key: r.hit.edit_key,
                 key_md5: r.hit.key_md5,

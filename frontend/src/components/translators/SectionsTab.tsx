@@ -33,7 +33,7 @@ import { ApproveMatching } from "./ApproveMatching";
 import { hasError, type ProblemKind, type RecommendRule } from "./checks";
 import { Hint } from "./Hint";
 import { type EditorState, isLead, StatusDot } from "./LineEdits";
-import { analyse, filterWord, missingTermsEn, PROSE, problemOptions, RuCell } from "./LinesTable";
+import { analyse, CnCell, filterWord, missingTermsEn, PROSE, problemOptions, RuCell } from "./LinesTable";
 import { Folded, isLong, useUnfolded } from "./LongText";
 import { NextUnchecked, TextCounts } from "./Overview";
 import { OpenAll, RowToggle, useOpenRows } from "./openRows";
@@ -118,11 +118,12 @@ interface ICardProps {
     me: TranslatorsMe;
     showVariants: boolean;
     showDiff: boolean;
+    showCn: boolean;
     t: T;
 }
 
 /** One object's texts: the story's table with the field for the speaker. */
-function Card({ section, item, me, showVariants, showDiff, t }: ICardProps): React.ReactElement {
+function Card({ section, item, me, showVariants, showDiff, showCn, t }: ICardProps): React.ReactElement {
     const f = useFormatters();
     const query = useQuery(objectLinesQueryOptions(section, item.id));
     useScrollToRow(Boolean(query.data));
@@ -214,6 +215,7 @@ function Card({ section, item, me, showVariants, showDiff, t }: ICardProps): Rea
                         <TableHead className="w-44">{t("sections.field")}</TableHead>
                         <TableHead>{t("table.ru")}</TableHead>
                         <TableHead>{t("table.en")}</TableHead>
+                        {showCn ? <TableHead>{t("table.cn")}</TableHead> : null}
                     </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -224,6 +226,7 @@ function Card({ section, item, me, showVariants, showDiff, t }: ICardProps): Rea
                             <TableCell className={PROSE}>{t("sections.code")}</TableCell>
                             <TableCell className={PROSE}>{code}</TableCell>
                             <TableCell className={PROSE}>{code}</TableCell>
+                            {showCn ? <TableCell className={PROSE}>{code}</TableCell> : null}
                         </TableRow>
                     ) : null}
                     {order.map((entry) => {
@@ -233,7 +236,7 @@ function Card({ section, item, me, showVariants, showDiff, t }: ICardProps): Rea
                             return (
                                 <TableRow key={`levels-${entry.idx}`} className="bg-muted/30 hover:bg-muted/30">
                                     <TableCell className="py-1" />
-                                    <TableCell colSpan={3} className="py-1">
+                                    <TableCell colSpan={showCn ? 4 : 3} className="py-1">
                                         <Button variant="link" size="xs" className="h-auto px-0 text-xs" aria-expanded={open} onClick={() => levelsOpen.toggle(String(entry.idx))}>
                                             {open ? <ChevronDown aria-hidden="true" /> : <ChevronRight aria-hidden="true" />}
                                             {t("sections.levels", { count: entry.count })}
@@ -306,6 +309,7 @@ function Card({ section, item, me, showVariants, showDiff, t }: ICardProps): Rea
                                         </Hint>
                                     </Folded>
                                 </TableCell>
+                                {showCn ? <CnCell line={r.line} /> : null}
                             </TableRow>
                         );
                     })}
@@ -341,6 +345,7 @@ function Cards({ section, search, onSearch, lead, t }: ICardsProps): React.React
     const view = viewOf(search);
     const showVariants = view.variants;
     const showDiff = view.diff;
+    const showCn = view.cn;
     const summary = useQuery({ ...textSummaryQueryOptions({ q: "", whole: false, section, status: null }), enabled: Boolean(me.data) });
     const at = item ? items.indexOf(item) : -1;
     const step = (by: number) => {
@@ -399,7 +404,7 @@ function Cards({ section, search, onSearch, lead, t }: ICardsProps): React.React
                 </div>
             )}
             {item && me.data ? (
-                <Card key={`${section}/${item.id}`} section={section} item={item} me={me.data} showVariants={showVariants} showDiff={showDiff} t={t} />
+                <Card key={`${section}/${item.id}`} section={section} item={item} me={me.data} showVariants={showVariants} showDiff={showDiff} showCn={showCn} t={t} />
             ) : objects.data ? (
                 <Empty>
                     <EmptyHeader>
