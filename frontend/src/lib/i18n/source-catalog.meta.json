@@ -1,6 +1,6 @@
 {
     "generatedBy": "bun run i18n:extract",
-    "generatedAt": "2026-11-19T18:33:06.215Z",
+    "generatedAt": "2026-11-22T11:19:18.046Z",
     "entries": [
         {
             "key": "admin.home.access.everyList",
@@ -55622,6 +55622,13 @@
             ]
         },
         {
+            "key": "translators.category.cnOnly",
+            "namespace": "translators",
+            "source_text": "Only in the Chinese version",
+            "description": "Chapter kind in the chapter list: an event the EN client has not got yet.",
+            "placeholders": []
+        },
+        {
             "key": "translators.category.is",
             "namespace": "translators",
             "source_text": "Integrated Strategies",
@@ -55680,6 +55687,24 @@
             ]
         },
         {
+            "key": "translators.checks.addressCn",
+            "namespace": "translators",
+            "source_text": "“{form}” by the Chinese",
+            "description": "Short mark (to look at, not an error): the Chinese asks for this form of address (您 → вы).",
+            "placeholders": [
+                "form"
+            ]
+        },
+        {
+            "key": "translators.checks.addressCnHint",
+            "namespace": "translators",
+            "source_text": "The Chinese says {polite, select, yes {您 (polite): «вы» is expected} other {你 (one person, not polite): «ты» is expected}}. It may be wrong: check.",
+            "description": "Tooltip of the ты / вы mark by the Chinese; polite is yes when 您 asks for «вы», no when 你 asks for «ты».",
+            "placeholders": [
+                "polite"
+            ]
+        },
+        {
             "key": "translators.checks.addressHint",
             "namespace": "translators",
             "source_text": "The speaker's neighbouring lines in this scene say “{form}”.",
@@ -55701,6 +55726,31 @@
             "source_text": "A tag is left open or broken, a closer has nothing to close, or a tag the English lacks.",
             "description": "Hint of the broken tag mark.",
             "placeholders": []
+        },
+        {
+            "key": "translators.checks.gender",
+            "namespace": "translators",
+            "source_text": "check the gender",
+            "description": "Short mark (to look at, not an error): the variant's gender may be wrong — «я сделал» from a woman, or the Chinese says 她 (she) where the Russian says «он».",
+            "placeholders": []
+        },
+        {
+            "key": "translators.checks.genderCnHint",
+            "namespace": "translators",
+            "source_text": "{want, select, f {The Chinese says 她 (she), the text only «он», «его»…} other {The Chinese says 他 (he), the text only «она», «её»…}} It may be wrong: check.",
+            "description": "Tooltip of «check the gender» by the Chinese pronoun; want is f or m.",
+            "placeholders": [
+                "want"
+            ]
+        },
+        {
+            "key": "translators.checks.genderSpeakerHint",
+            "namespace": "translators",
+            "source_text": "{want, select, f {The speaker is a woman (the game's file), the text speaks of her as of a man: «я сделал», «я рад».} other {The speaker is a man (the game's file), the text speaks of him as of a woman: «я сделала», «я рада».}} It may be wrong: check.",
+            "description": "Tooltip of «check the gender» by the speaker; want is f or m, the speaker's gender.",
+            "placeholders": [
+                "want"
+            ]
         },
         {
             "key": "translators.checks.glossaryHint",
@@ -55725,6 +55775,20 @@
             "namespace": "translators",
             "source_text": "Longer than in the game: may not fit the dialogue box.",
             "description": "Tooltip of the length mark.",
+            "placeholders": []
+        },
+        {
+            "key": "translators.checks.mixedGender",
+            "namespace": "translators",
+            "source_text": "one line for operators of different genders",
+            "description": "Short mark (to look at, not an error) instead of «check the gender»: one English line is said by women and men, and the Russian has a gender.",
+            "placeholders": []
+        },
+        {
+            "key": "translators.checks.mixedGenderHint",
+            "namespace": "translators",
+            "source_text": "A woman and a man both say this line, and the game has one translation for it. Each needs a separate translation.",
+            "description": "Tooltip of «one line for operators of different genders».",
             "placeholders": []
         },
         {
@@ -55782,6 +55846,41 @@
             "namespace": "translators",
             "source_text": "The best variant without errors.",
             "description": "Tooltip of the recommended badge.",
+            "placeholders": []
+        },
+        {
+            "key": "translators.cnOnly.description",
+            "namespace": "translators",
+            "source_text": "The lines are translated from the Chinese. Proposals and approvals stay out of the export for the pack (the game's dictionaries are keyed by the English): they wait for the Global release, and then move onto the English lines.",
+            "description": "Text above the table of a story only the CN client has.",
+            "placeholders": []
+        },
+        {
+            "key": "translators.cnOnly.noEnglish",
+            "namespace": "translators",
+            "source_text": "not yet",
+            "description": "The English cell of a line of a story only the CN client has.",
+            "placeholders": []
+        },
+        {
+            "key": "translators.cnOnly.notInGame",
+            "namespace": "translators",
+            "source_text": "not in the game yet",
+            "description": "The Russian cell of a line of a story only the CN client has: the pack has no Russian for it.",
+            "placeholders": []
+        },
+        {
+            "key": "translators.cnOnly.title",
+            "namespace": "translators",
+            "source_text": "Not in the English version yet",
+            "description": "Title above the table of a story only the CN client has.",
+            "placeholders": []
+        },
+        {
+            "key": "translators.cnOnly.waiting",
+            "namespace": "translators",
+            "source_text": "waits for Global",
+            "description": "Badge in the Edits list: an edit of a story only the CN client has, kept out of the export.",
             "placeholders": []
         },
         {
@@ -56151,6 +56250,20 @@
             "placeholders": [
                 "name"
             ]
+        },
+        {
+            "key": "translators.editor.mixedGender",
+            "namespace": "translators",
+            "source_text": "Operators of different genders say this line: each needs a separate translation. Save, then pick «A separate translation is needed»; it goes to Kolooo in only_here.tsv.",
+            "description": "Under the proposal box of a line outside the story that operators of both genders say; names the save dialog’s option (save.onlyHere).",
+            "placeholders": []
+        },
+        {
+            "key": "translators.editor.mixedGenderStory",
+            "namespace": "translators",
+            "source_text": "Operators of different genders say this line: each needs a separate translation. For this story line pick «Only for this place» when saving; for an operator’s voice line open it in the operator’s archives and pick «A separate translation is needed»; it goes to Kolooo in only_here.tsv.",
+            "description": "Under the proposal box of a story line that operators of both genders say; names the save dialog’s options (save.here, save.onlyHere).",
+            "placeholders": []
         },
         {
             "key": "translators.editor.onlyHere",
@@ -57816,6 +57929,13 @@
             "placeholders": []
         },
         {
+            "key": "translators.problem.addressCn",
+            "namespace": "translators",
+            "source_text": "«ты» / «вы» by the Chinese",
+            "description": "Status filter item (a mark to look at, not in «every error»): the Chinese 您 (polite) where the Russian says ты.",
+            "placeholders": []
+        },
+        {
             "key": "translators.problem.all",
             "namespace": "translators",
             "source_text": "Errors: all ({count})",
@@ -57836,6 +57956,13 @@
             "namespace": "translators",
             "source_text": "broken tag",
             "description": "Error: a tag left open or broken, a stray closer, a substitution {…} lost or added.",
+            "placeholders": []
+        },
+        {
+            "key": "translators.problem.gender",
+            "namespace": "translators",
+            "source_text": "check the gender",
+            "description": "Status filter item (a mark to look at, not in «every error»): «я сделал» from a woman, «я рада» from a man, or the Chinese 她 / 他 against the Russian «он» / «она».",
             "placeholders": []
         },
         {
@@ -57860,6 +57987,13 @@
             "namespace": "translators",
             "source_text": "a proposal longer than in the game",
             "description": "Error: a proposal noticeably longer than the game's text.",
+            "placeholders": []
+        },
+        {
+            "key": "translators.problem.mixedGender",
+            "namespace": "translators",
+            "source_text": "one line for operators of different genders",
+            "description": "Status filter item: a gendered translation of a line operators of both genders say.",
             "placeholders": []
         },
         {

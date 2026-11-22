@@ -21,6 +21,7 @@ function line(over: Partial<TranslatorLine>): TranslatorLine {
         speakerCn: null,
         cn: null,
         speakerGender: null,
+        mixedGender: false,
         artem: null,
         cnOnly: false,
         sova: null,
@@ -155,5 +156,18 @@ describe("gender and address by the Chinese (the same cases as texts/forms.rs)",
         expect(c.gender).toEqual({ want: "f", by: "speaker" });
         expect(passes(c)).toBe(true);
         expect(lineProblems(c, false, false, new Map()).has("gender")).toBe(true);
+    });
+    it("marks one line for operators of different genders instead", () => {
+        const l = line({ speakerGender: "f", mixedGender: true, cn: null });
+        const c = checkVariant("Я готов.", "game", l, null);
+        expect(c.gender).toBeNull();
+        expect(c.mixedGender).toBe(true);
+        expect(passes(c)).toBe(true);
+        expect([...lineProblems(c, false, false, new Map())]).toContain("mixedGender");
+        expect(checkVariant("Всё готово.", "game", l, null).mixedGender).toBe(false);
+        // A separate translation is checked against its own operator only.
+        expect(checkVariant("Я готов.", "proposal:1", l, null, "here").gender).toEqual({ want: "f", by: "speaker" });
+        expect(checkVariant("Я готова.", "proposal:1", l, null, "here").mixedGender).toBe(false);
+        expect(checkVariant("Я готов.", "proposal:1", l, null, "elsewhere").gender).toBeNull();
     });
 });

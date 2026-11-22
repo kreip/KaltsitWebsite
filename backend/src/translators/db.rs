@@ -266,6 +266,7 @@ impl Row {
             speaker_cn: r.speaker_cn,
             cn: r.cn.clone(),
             speaker_gender: r.speaker_gender,
+            mixed_gender: false,
             sova: r.sova,
             artem: r.artem,
             ai: r.ai,

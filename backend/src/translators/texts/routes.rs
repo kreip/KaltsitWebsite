@@ -13,7 +13,7 @@ use crate::app::extractors::auth::MaybeAuthUser;
 use crate::app::state::AppState;
 use crate::translators::SERVER;
 use crate::translators::dto::TranslatorLine;
-use crate::translators::edits::dto::EditPlace;
+use crate::translators::edits::dto::{EditPlace, GameHere, KeyEdits};
 use crate::translators::edits::{self, status};
 use crate::translators::routes::{for_guest, require_member, require_reader};
 
@@ -40,6 +40,7 @@ const STATUSES: &[&str] = &[
     "newlines",
     "longer",
     "gender",
+    "mixedGender",
     "addressCn",
 ];
 
@@ -184,6 +185,20 @@ pub async fn object_lines(
     }
     fill_level_counts(&state, &places, &mut lines).await?;
     let edits = edits::attach_at(&state.db, &places, &mut lines, |_| false).await?;
+    let here: Vec<Option<GameHere>> = texts
+        .iter()
+        .map(|t| {
+            Some(GameHere {
+                section: query.section.clone(),
+                object_id: t.object_id.clone(),
+                object_en: None,
+                field: t.field.clone(),
+                idx: t.idx,
+            })
+        })
+        .collect();
+    settle_here(&mut lines, &places, &here, &edits);
+    super::speakers::fill(&state.db, SERVER, &mut lines).await?;
     crate::translators::routes::mark_glossary(&state, &mut lines, &places, &edits).await?;
     // A reader outside the team: the game's texts only.
     let edits = if member.is_some() {
@@ -248,6 +263,7 @@ fn text_line(hit: &TextHit) -> TranslatorLine {
         speaker_cn: None,
         cn: hit.cn.clone(),
         speaker_gender: None,
+        mixed_gender: false,
         sova: None,
         artem: None,
         ai: None,
@@ -349,6 +365,9 @@ pub async fn search_lines(
     }
     fill_level_counts(&state, &places, &mut lines).await?;
     let edits = edits::attach_at(&state.db, &places, &mut lines, |_| false).await?;
+    let here: Vec<Option<GameHere>> = hits.iter().map(game_here).collect();
+    settle_here(&mut lines, &places, &here, &edits);
+    super::speakers::fill(&state.db, SERVER, &mut lines).await?;
     crate::translators::routes::mark_glossary(&state, &mut lines, &places, &edits).await?;
     // A reader outside the team: the game's texts only.
     let edits = if member.is_some() {
@@ -433,6 +452,53 @@ pub async fn text_summary(
     Ok(Json(db::summary(&state.db, SERVER, &query).await?))
 }
 
+/// The game's place a found text is shown at (its first), as the page names it (`SearchTab.tsx::gameHere`).
+fn game_here(hit: &TextHit) -> Option<GameHere> {
+    let at = hit.at.first().filter(|a| a.story_id.is_none())?;
+    Some(GameHere {
+        section: at.section.clone(),
+        object_id: at.object_id.clone()?,
+        object_en: None,
+        field: at.field.clone()?,
+        idx: at.idx.unwrap_or(0),
+    })
+}
+
+/// Outside the story every place of an entry is one `EditPlace`, so a translation approved for one
+/// operator's line would read as every other's: a row is approved by a one-place proposal only when
+/// the proposal names the row's own place.
+fn settle_here(
+    lines: &mut [TranslatorLine],
+    places: &[EditPlace],
+    here: &[Option<GameHere>],
+    edits: &[KeyEdits],
+) {
+    for ((line, place), here) in lines.iter_mut().zip(places).zip(here) {
+        if !place.is_text() || !line.editable || line.status != "approved" {
+            continue;
+        }
+        let Some(e) = edits.iter().find(|e| e.edit_key == line.edit_key) else {
+            continue;
+        };
+        let own = e
+            .proposals
+            .iter()
+            .filter(|p| p.context && p.approved_at.is_some())
+            .any(|p| match (&p.here, here) {
+                (Some(a), Some(b)) => same_game_place(a, b),
+                (Some(_), None) => false,
+                (None, _) => true,
+            });
+        if e.approval.is_none() && !own {
+            "proposed".clone_into(&mut line.status);
+        }
+    }
+}
+
+fn same_game_place(a: &GameHere, b: &GameHere) -> bool {
+    (&a.section, &a.object_id, &a.field, a.idx) == (&b.section, &b.object_id, &b.field, b.idx)
+}
+
 /// How many skill level entries each text's template has, for the texts
 /// outside the story (`TranslatorLine::level_texts`).
 async fn fill_level_counts(
@@ -513,4 +579,22 @@ pub async fn apply_levels(
         created += 1;
     }
     Ok(Json(LevelsApplied { created, skipped }))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn a_separate_translation_is_for_its_own_operator() {
+        let at = |object: &str| GameHere {
+            section: "archives".to_owned(),
+            object_id: object.to_owned(),
+            object_en: None,
+            field: "voice.text".to_owned(),
+            idx: 17,
+        };
+        assert!(same_game_place(&at("char_469_indigo"), &at("char_469_indigo")));
+        assert!(!same_game_place(&at("char_469_indigo"), &at("char_457_blitz")));
+    }
 }

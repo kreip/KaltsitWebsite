@@ -39,6 +39,8 @@ export interface IVariantCheck {
      * operator) against «я сделал / я рада», or the Chinese 她 / 他 against «он / она» — when the text gives the other.
      */
     gender: { want: Gender; by: "speaker" | "cn" } | null;
+    /** Instead of «check the gender»: the text gives its speaker a gender, and operators of both genders say the line. */
+    mixedGender: boolean;
     /** «ты / вы» by the Chinese (a mark to look at): 您 (polite) → «вы», when the text says «ты». */
     addressCn: Address | null;
 }
@@ -279,8 +281,20 @@ export function cnAddress(ru: string, cn: string | null): Address | null {
     return own && own !== want ? want : null;
 }
 
-/** «Check the gender» of a text of a line: by its speaker, else by the Chinese. */
-export function genderCheck(text: string, line: TranslatorLine): IVariantCheck["gender"] {
+/**
+ * For whom a text is: every place of the entry (the game's Russian, a variant, a proposal for all); this row's
+ * speaker only (a separate translation); or another operator's separate translation, not this row's to check.
+ */
+export type TextScope = "all" | "here" | "elsewhere";
+
+/** «One line for operators of different genders»: the text is for all who say it and gives them one gender. */
+export function mixedGender(text: string, line: TranslatorLine, scope: TextScope = "all"): boolean {
+    return scope === "all" && line.mixedGender && genderOf(text) !== null;
+}
+
+/** «Check the gender» of a text of a line: by its speaker, else by the Chinese; never beside `mixedGender`. */
+export function genderCheck(text: string, line: TranslatorLine, scope: TextScope = "all"): IVariantCheck["gender"] {
+    if (scope === "elsewhere" || mixedGender(text, line, scope)) return null;
     const speaker = line.speakerGender === "f" || line.speakerGender === "m" ? line.speakerGender : null;
     const own = speaker ? genderOf(text) : null;
     if (speaker && own && own !== speaker) return { want: speaker, by: "speaker" };
@@ -291,7 +305,7 @@ export function genderCheck(text: string, line: TranslatorLine): IVariantCheck["
 /** Every mark of one variant's text against its line. `variant` names it as the backend does (`game`, `sova`, `proposal:12`). */
 const NICKNAME = /\{@nickname\}/gi;
 
-export function checkVariant(text: string, variant: string, line: TranslatorLine, neighbours: Address | null): IVariantCheck {
+export function checkVariant(text: string, variant: string, line: TranslatorLine, neighbours: Address | null, scope: TextScope = "all"): IVariantCheck {
     // The nickname written as a word: its own mark, not a broken tag.
     const noNickname = /\{@nickname\}/i.test(line.en) && !/\{@nickname\}/i.test(text);
     const en = noNickname ? line.en.replace(NICKNAME, "Nickname") : line.en;
@@ -316,7 +330,8 @@ export function checkVariant(text: string, variant: string, line: TranslatorLine
         newlines: enBreaks === ruBreaks ? null : { en: enBreaks, ru: ruBreaks },
         longer,
         address: own && neighbours && own !== neighbours ? neighbours : null,
-        gender: genderCheck(text, line),
+        gender: genderCheck(text, line, scope),
+        mixedGender: mixedGender(text, line, scope),
         addressCn: cnAddress(text, line.cn),
     };
 }
@@ -336,7 +351,7 @@ export function passes(c: IVariantCheck): boolean {
 }
 
 /** The problems that are no errors — «no highlight» (the text is whole), the marks to look at (they can be wrong). */
-export const NOT_ERRORS: ReadonlySet<ProblemKind> = new Set(["noHighlight", "gender", "addressCn"]);
+export const NOT_ERRORS: ReadonlySet<ProblemKind> = new Set(["noHighlight", "gender", "mixedGender", "addressCn"]);
 
 /** Whether a line's problems hold an error — «Status: every error»; the others are only their own filter items. */
 export function hasError(problems: ReadonlySet<ProblemKind>): boolean {
@@ -387,7 +402,7 @@ export function recommend(candidates: readonly ICandidate[], approved: boolean, 
 }
 
 /** The problems the filters and the yellow rows name. */
-export const PROBLEM_KINDS = ["glossary", "brokenTag", "nickname", "noHighlight", "newlines", "longer", "address", "gender", "addressCn"] as const;
+export const PROBLEM_KINDS = ["glossary", "brokenTag", "nickname", "noHighlight", "newlines", "longer", "address", "gender", "mixedGender", "addressCn"] as const;
 export type ProblemKind = (typeof PROBLEM_KINDS)[number];
 
 /**
@@ -408,6 +423,7 @@ export function lineProblems(shown: IVariantCheck | undefined, settled: boolean,
         if (shown.newlines) out.add("newlines");
         if (shown.address) out.add("address");
         if (shown.gender) out.add("gender");
+        if (shown.mixedGender) out.add("mixedGender");
         if (shown.addressCn) out.add("addressCn");
     }
     if (settled) return out;

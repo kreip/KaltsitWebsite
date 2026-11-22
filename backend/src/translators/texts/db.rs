@@ -170,7 +170,7 @@ const LONGER: &str = "(t.ru IS NOT NULL AND EXISTS (SELECT 1 FROM translators.pr
 fn problem_condition(status: &str) -> Option<String> {
     let what = match status {
         // Every error; «no highlight» is not one (the text is whole), nor the marks to look
-        // at (`gender`, `addressCn`: they can be wrong): each has its own item only.
+        // at (`gender`, `mixedGender`, `addressCn`: they can be wrong): each has its own item only.
         "problems" => format!(
             "(t.problems && ARRAY['{}']::text[] OR {LONGER})",
             super::problems::PROBLEMS
@@ -199,6 +199,7 @@ pub const PROBLEM_STATUSES: &[&str] = &[
     "newlines",
     "longer",
     "gender",
+    "mixedGender",
     "addressCn",
 ];
 

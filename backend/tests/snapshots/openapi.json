@@ -15228,7 +15228,7 @@
           {
             "name": "status",
             "in": "query",
-            "description": "`unchecked` (nobody proposed or approved anything), `proposed`,\n`approved`, `untranslated` (no Russian), `plugin` (the plugin's catalog\nholds it), or a problem of a text not approved: `problems` (any),\n`glossary`, `brokenTag`, `noHighlight`, `newlines`, `longer` (a\nproposal noticeably longer than the game's text).",
+            "description": "`unchecked` (nobody proposed or approved anything), `proposed`,\n`approved`, `untranslated` (no Russian), `plugin` (the plugin's catalog\nholds it), or a problem of a text not approved: `problems` (any),\n`glossary`, `brokenTag`, `noHighlight`, `newlines`, `longer` (a\nproposal noticeably longer than the game's text), or a mark to look at:\n`gender`, `mixedGender` (a gendered line operators of both genders say), `addressCn`.",
             "required": false,
             "schema": {
               "type": "string"
@@ -15500,7 +15500,7 @@
           {
             "name": "status",
             "in": "query",
-            "description": "`unchecked` (nobody proposed or approved anything), `proposed`,\n`approved`, `untranslated` (no Russian), `plugin` (the plugin's catalog\nholds it), or a problem of a text not approved: `problems` (any),\n`glossary`, `brokenTag`, `noHighlight`, `newlines`, `longer` (a\nproposal noticeably longer than the game's text).",
+            "description": "`unchecked` (nobody proposed or approved anything), `proposed`,\n`approved`, `untranslated` (no Russian), `plugin` (the plugin's catalog\nholds it), or a problem of a text not approved: `problems` (any),\n`glossary`, `brokenTag`, `noHighlight`, `newlines`, `longer` (a\nproposal noticeably longer than the game's text), or a mark to look at:\n`gender`, `mixedGender` (a gendered line operators of both genders say), `addressCn`.",
             "required": false,
             "schema": {
               "type": "string"
@@ -15595,7 +15595,7 @@
           {
             "name": "status",
             "in": "query",
-            "description": "`unchecked` (nobody proposed or approved anything), `proposed`,\n`approved`, `untranslated` (no Russian), `plugin` (the plugin's catalog\nholds it), or a problem of a text not approved: `problems` (any),\n`glossary`, `brokenTag`, `noHighlight`, `newlines`, `longer` (a\nproposal noticeably longer than the game's text).",
+            "description": "`unchecked` (nobody proposed or approved anything), `proposed`,\n`approved`, `untranslated` (no Russian), `plugin` (the plugin's catalog\nholds it), or a problem of a text not approved: `problems` (any),\n`glossary`, `brokenTag`, `noHighlight`, `newlines`, `longer` (a\nproposal noticeably longer than the game's text), or a mark to look at:\n`gender`, `mixedGender` (a gendered line operators of both genders say), `addressCn`.",
             "required": false,
             "schema": {
               "type": "string"
@@ -41002,6 +41002,7 @@
           "kind",
           "speakerEn",
           "en",
+          "mixedGender",
           "terms",
           "editKey",
           "editable",
@@ -41066,6 +41067,10 @@
             "format": "int32",
             "description": "1-based line in the EN script.",
             "minimum": 0
+          },
+          "mixedGender": {
+            "type": "boolean",
+            "description": "Operators of both genders say the entry (one English, one translation in the game): a gendered\ntranslation of it needs a separate one for each."
           },
           "part": {
             "type": "integer",

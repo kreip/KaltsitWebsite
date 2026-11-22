@@ -73,6 +73,9 @@ pub struct TranslatorLine {
     pub cn: Option<String>,
     /// The speaker's gender, `f` or `m`, when the speaker is an operator (an operator's voice line: the operator's).
     pub speaker_gender: Option<String>,
+    /// Operators of both genders say the entry (one English, one translation in the game): a gendered
+    /// translation of it needs a separate one for each.
+    pub mixed_gender: bool,
     /// Sova's translation: signed-in translators only.
     pub sova: Option<String>,
     /// The second translator's (Артём's corrections of the machine's text, arktr): members only.

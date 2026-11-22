@@ -23,7 +23,8 @@ pub struct TextQuery {
     /// `approved`, `untranslated` (no Russian), `plugin` (the plugin's catalog
     /// holds it), or a problem of a text not approved: `problems` (any),
     /// `glossary`, `brokenTag`, `noHighlight`, `newlines`, `longer` (a
-    /// proposal noticeably longer than the game's text).
+    /// proposal noticeably longer than the game's text), or a mark to look at:
+    /// `gender`, `mixedGender` (a gendered line operators of both genders say), `addressCn`.
     #[serde(default)]
     pub status: Option<String>,
     #[serde(default)]

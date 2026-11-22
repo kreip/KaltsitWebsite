@@ -8,7 +8,7 @@
  */
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
-import { Check, CircleHelp, History, Layers, MessageSquare, NotebookPen, PenLine, ThumbsUp, Trash2, Undo2, X } from "lucide-react";
+import { AlertTriangle, Check, CircleHelp, History, Layers, MessageSquare, NotebookPen, PenLine, ThumbsUp, Trash2, Undo2, X } from "lucide-react";
 import type React from "react";
 import { createContext, useContext, useId, useState } from "react";
 import { AlertDialog, AlertDialogClose, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogPopup, AlertDialogTitle } from "#/components/ui/alert-dialog";
@@ -42,6 +42,7 @@ import type { OutdatedEdit } from "#/types/generated/OutdatedEdit";
 import type { Proposal } from "#/types/generated/Proposal";
 import type { TranslatorLine } from "#/types/generated/TranslatorLine";
 import type { TranslatorsMe } from "#/types/generated/TranslatorsMe";
+import { genderOf } from "./checks";
 import { dropDraft, readDraft, writeDraft } from "./drafts";
 import { missingTerms } from "./glossaryForm";
 import { Hint } from "./Hint";
@@ -1093,7 +1094,6 @@ interface IEditorProps {
     t: T;
 }
 
-/** The in-row editor of my proposal: Ctrl+Enter saves, Esc cancels; a substitution is one chip, a tag a span as in the game (TokenEditor.tsx). */
 /** Under the proposal box while one types: the glossary terms of the English whose form the text lacks. */
 export function GlossaryWarning({ text, terms, t }: { text: string; terms: readonly LineTerm[]; t: T }): React.ReactElement | null {
     const missing = missingTerms(text, terms);
@@ -1106,6 +1106,18 @@ export function GlossaryWarning({ text, terms, t }: { text: string; terms: reado
     );
 }
 
+/** Under the box of a line operators of both genders say, while a text of it has a gender: how a separate translation for each is asked. */
+function MixedGenderNote({ line, text, t }: { line: TranslatorLine; text: string; t: T }): React.ReactElement | null {
+    if (!line.mixedGender || (genderOf(text) === null && (line.ruGame === null || genderOf(line.ruGame) === null))) return null;
+    return (
+        <output className="flex items-start gap-1 text-warning-foreground text-xs">
+            <AlertTriangle className="mt-0.5 size-3 shrink-0" aria-hidden="true" />
+            {line.kind === "text" ? t("editor.mixedGender") : t("editor.mixedGenderStory")}
+        </output>
+    );
+}
+
+/** The in-row editor of my proposal: Ctrl+Enter saves, Esc cancels; a substitution is one chip, a tag a span as in the game (TokenEditor.tsx). */
 export function ProposalEditor({ line, place, initial, source, context, here = null, nickname, onClose, t }: IEditorProps): React.ReactElement {
     const id = useId();
     const hintId = useId();
@@ -1177,6 +1189,7 @@ export function ProposalEditor({ line, place, initial, source, context, here = n
             <TokenEditor key={boxKey} id={id} initial={start} nickname={nickname} palette={tools.palette} tags={tools.tags} lookup={tools.lookup} onChange={change} onSubmit={submit} onCancel={close} labels={tools.labels} describedBy={hintId} />
             <TagsWarning en={line.en} text={text} words={tools.words} t={t} />
             <GlossaryWarning text={text} terms={line.terms} t={t} />
+            {context ? null : <MixedGenderNote line={line} text={text} t={t} />}
             <span id={hintId} className="text-subtle-foreground text-xs">
                 {t("save.proposalOnly")}
             </span>

@@ -131,7 +131,7 @@ function Card({ section, item, me, showVariants, showDiff, showCn, t }: ICardPro
     const edits = query.data?.edits ?? [];
     const byKey = useMemo(() => new Map(edits.map((e) => [e.editKey, e])), [edits]);
     const rule: RecommendRule = me.recommendRule === "A" ? "A" : "B";
-    const analyses = useMemo(() => rows.map((r) => analyse(r.line, byKey.get(r.line.editKey), r.place, null, rule)), [rows, byKey, rule]);
+    const analyses = useMemo(() => rows.map((r) => analyse(r.line, byKey.get(r.line.editKey), r.place, null, rule, { section, objectId: r.objectId, objectEn: item.en, field: r.field, idx: r.idx })), [rows, byKey, rule, section, item.en]);
     // Fields that several texts share («Talent 1 · description» at each elite phase): those rows say what tells them apart.
     const repeated = useMemo(() => {
         const count = new Map<string, number>();

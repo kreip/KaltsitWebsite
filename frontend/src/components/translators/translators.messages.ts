@@ -979,6 +979,14 @@ export const messages = {
         text: "{want, select, f {The Chinese says 她 (she), the text only «он», «его»…} other {The Chinese says 他 (he), the text only «она», «её»…}} It may be wrong: check.",
         description: "Tooltip of «check the gender» by the Chinese pronoun; want is f or m.",
     },
+    "checks.mixedGender": {
+        text: "one line for operators of different genders",
+        description: "Short mark (to look at, not an error) instead of «check the gender»: one English line is said by women and men, and the Russian has a gender.",
+    },
+    "checks.mixedGenderHint": {
+        text: "A woman and a man both say this line, and the game has one translation for it. Each needs a separate translation.",
+        description: "Tooltip of «one line for operators of different genders».",
+    },
     "checks.addressCn": {
         text: "“{form}” by the Chinese",
         description: "Short mark (to look at, not an error): the Chinese asks for this form of address (您 → вы).",
@@ -2600,6 +2608,10 @@ export const messages = {
         text: "check the gender",
         description: "Status filter item (a mark to look at, not in «every error»): «я сделал» from a woman, «я рада» from a man, or the Chinese 她 / 他 against the Russian «он» / «она».",
     },
+    "problem.mixedGender": {
+        text: "one line for operators of different genders",
+        description: "Status filter item: a gendered translation of a line operators of both genders say.",
+    },
     "problem.addressCn": {
         text: "«ты» / «вы» by the Chinese",
         description: "Status filter item (a mark to look at, not in «every error»): the Chinese 您 (polite) where the Russian says ты.",
@@ -2775,6 +2787,14 @@ export const messages = {
     "editor.glossary": {
         text: "Glossary: {terms} — this form is not in the text.",
         description: "Warning under the proposal box: glossary terms of the English whose Russian form the text lacks.",
+    },
+    "editor.mixedGender": {
+        text: "Operators of different genders say this line: each needs a separate translation. Save, then pick «A separate translation is needed»; it goes to Kolooo in only_here.tsv.",
+        description: "Under the proposal box of a line outside the story that operators of both genders say; names the save dialog’s option (save.onlyHere).",
+    },
+    "editor.mixedGenderStory": {
+        text: "Operators of different genders say this line: each needs a separate translation. For this story line pick «Only for this place» when saving; for an operator’s voice line open it in the operator’s archives and pick «A separate translation is needed»; it goes to Kolooo in only_here.tsv.",
+        description: "Under the proposal box of a story line that operators of both genders say; names the save dialog’s options (save.here, save.onlyHere).",
     },
     "diff.tags": {
         text: "tags changed",

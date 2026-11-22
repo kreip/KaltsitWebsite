@@ -144,6 +144,12 @@ pub fn speaker_gender_in(ru: &str) -> Option<Gender> {
     }
 }
 
+/// «One line for operators of different genders»: a text both a woman and a man say whose Russian gives
+/// its speaker a gender — wrong for one of them whichever it is.
+pub fn mixed_mismatch(ru: &str, mixed: bool) -> bool {
+    mixed && speaker_gender_in(ru).is_some()
+}
+
 /// «Check the gender» by the speaker: the gender the line should have, when the Russian gives the other.
 pub fn speaker_mismatch(ru: &str, speaker: Option<Gender>) -> Option<Gender> {
     let want = speaker?;
@@ -236,6 +242,14 @@ mod tests {
         assert_eq!(speaker_mismatch("Я сделал это.", Some('f')), Some('f'));
         assert_eq!(speaker_mismatch("Я сделала это.", Some('f')), None);
         assert_eq!(speaker_mismatch("Я сделал это.", None), None);
+    }
+
+    #[test]
+    fn one_line_for_operators_of_both_genders() {
+        assert!(mixed_mismatch("Я готова.", true));
+        assert!(mixed_mismatch("Как я и ожидал.", true));
+        assert!(!mixed_mismatch("Всё готово.", true));
+        assert!(!mixed_mismatch("Я готова.", false));
     }
 
     #[test]

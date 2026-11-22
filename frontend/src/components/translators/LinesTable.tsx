@@ -28,11 +28,12 @@ import type { GameHere } from "#/types/generated/GameHere";
 import type { KeyEdits } from "#/types/generated/KeyEdits";
 import type { LineTerm } from "#/types/generated/LineTerm";
 import type { OutdatedEdit } from "#/types/generated/OutdatedEdit";
+import type { Proposal } from "#/types/generated/Proposal";
 import type { StoryCommand } from "#/types/generated/StoryCommand";
 import type { TranslatorLine } from "#/types/generated/TranslatorLine";
 import type { TranslatorsMe } from "#/types/generated/TranslatorsMe";
 import { BulkApprove, type IBulkLine } from "./BulkApprove";
-import { type Address, checkVariant, hasError, type ICandidate, type IVariantCheck, lineProblems, neighbourAddress, PROBLEM_KINDS, type ProblemKind, problemCount, type RecommendRule, recommend } from "./checks";
+import { type Address, checkVariant, hasError, type ICandidate, type IVariantCheck, lineProblems, neighbourAddress, PROBLEM_KINDS, type ProblemKind, problemCount, type RecommendRule, recommend, type TextScope } from "./checks";
 import { readDraft } from "./drafts";
 import { Hint } from "./Hint";
 import {
@@ -227,26 +228,25 @@ export function problemOptions(analyses: readonly IAnalysis[]): { value: "proble
     return [{ value: "problems" as const, count: analyses.filter((a) => hasError(a.problems)).length }, ...PROBLEM_KINDS.map((k) => ({ value: k, count: count(k) }))];
 }
 
-export function analyse(line: TranslatorLine, edits: KeyEdits | undefined, place: EditPlace, neighbours: Address | null, rule: RecommendRule): IAnalysis {
+export function analyse(line: TranslatorLine, edits: KeyEdits | undefined, place: EditPlace, neighbours: Address | null, rule: RecommendRule, here: GameHere | null = null): IAnalysis {
     const checks = new Map<string, IVariantCheck>();
     const candidates: ICandidate[] = [];
-    const add = (variant: string, text: string | null | undefined, agreements = 0) => {
+    const add = (variant: string, text: string | null | undefined, agreements = 0, scope: TextScope = "all") => {
         if (!text) return;
-        const check = checkVariant(text, variant, line, neighbours);
+        const check = checkVariant(text, variant, line, neighbours, scope);
         checks.set(variant, check);
         candidates.push({ variant, agreements, check });
     };
-    for (const p of proposalsAt(edits, place)) add(`proposal:${p.id}`, p.text, p.agreements.length);
+    for (const p of proposalsAt(edits, place)) add(`proposal:${p.id}`, p.text, p.agreements.length, p.context ? (isForRow(p, here) ? "here" : "elsewhere") : "all");
     for (const source of TRANSLATOR_SOURCES) add(source, translatorText(line, source));
     add("ai", aiText(line));
     add("game", line.ruGame);
     if (edits?.approval) checks.set("approved", checkVariant(edits.approval.text, "approved", line, neighbours));
-    const approvedHere = Boolean(edits?.approval) || proposalsAt(edits, place).some((p) => p.context && p.approvedAt !== null);
     // Counted as the folded row shows it: the text the line stands with.
-    const settled = settledText(edits, place);
+    const settled = settledText(edits, place, here);
     const shown = checks.get(settled ? settled.variant : "game");
     const glossaryMissing = line.terms.some((term) => term.found === false);
-    return { checks, recommended: line.editable ? recommend(candidates, approvedHere, rule) : null, problems: lineProblems(shown, settled !== null, glossaryMissing, checks) };
+    return { checks, recommended: line.editable ? recommend(candidates, settled !== null, rule) : null, problems: lineProblems(shown, settled !== null, glossaryMissing, checks) };
 }
 
 export interface IRuCellProps {
@@ -272,10 +272,19 @@ export interface IRuCellProps {
     t: T;
 }
 
+/**
+ * Whether a one-place proposal is this row's: outside the story every place of an entry is one `EditPlace`, so it is
+ * the game's place it names that tells one operator's separate translation from another's.
+ */
+function isForRow(p: Proposal, here: GameHere | null): boolean {
+    if (!p.here) return true;
+    return here !== null && p.here.section === here.section && p.here.objectId === here.objectId && p.here.field === here.field && p.here.idx === here.idx;
+}
+
 /** The text a line stands with once approved: the entry's approval, or a proposal approved for this place only. */
-export function settledText(edits: KeyEdits | undefined, place: EditPlace): { text: string; variant: string; proposalId: number | null } | null {
+export function settledText(edits: KeyEdits | undefined, place: EditPlace, here: GameHere | null = null): { text: string; variant: string; proposalId: number | null } | null {
     if (edits?.approval) return { text: edits.approval.text, variant: "approved", proposalId: null };
-    const p = proposalsAt(edits, place).find((x) => x.context && x.approvedAt !== null);
+    const p = proposalsAt(edits, place).find((x) => x.context && x.approvedAt !== null && isForRow(x, here));
     return p ? { text: p.text, variant: `proposal:${p.id}`, proposalId: p.id } : null;
 }
 
@@ -301,8 +310,8 @@ function SystemChecked({ t }: { t: T }): React.ReactElement {
 }
 
 /** A folded row: the text it stands with (the approved one, else the game's) and what is wrong with it, nothing else. */
-function FoldedRuCell({ line, analysis, place, nickname, edits, find = null, t }: IRuCellProps): React.ReactElement {
-    const settled = settledText(edits, place);
+function FoldedRuCell({ line, analysis, place, nickname, edits, find = null, here = null, t }: IRuCellProps): React.ReactElement {
+    const settled = settledText(edits, place, here);
     const check = analysis.checks.get(settled ? settled.variant : "game");
     const text = settled?.text ?? line.ruGame;
     return (
@@ -359,7 +368,7 @@ function FullRuCell({ line, analysis, place, nickname, showVariants, showDiff, e
     // The machine's variant, unless it is the game's text again.
     const ai = aiText(line);
     // Approved: only the approved text (the game's old one and the proposals are in the history).
-    const settled = settledText(edits, place);
+    const settled = settledText(edits, place, here);
     const shown = useContext(ActionsShown);
     const actions =
         editor === null ? (

@@ -55,7 +55,7 @@ type T = TypedT<typeof messages>;
 
 export const SEARCH_SECTIONS = ["story", "operators", "enemies", "stages", "items", "archives", "other"] as const;
 /** The states, then the problems of the texts not approved (`texts.problems` on the backend, with a count each). */
-export const SEARCH_STATUSES = ["unchecked", "proposed", "approved", "untranslated", "problems", "glossary", "brokenTag", "nickname", "noHighlight", "newlines", "longer", "gender", "addressCn"] as const;
+export const SEARCH_STATUSES = ["unchecked", "proposed", "approved", "untranslated", "problems", "glossary", "brokenTag", "nickname", "noHighlight", "newlines", "longer", "gender", "mixedGender", "addressCn"] as const;
 const STATES = 4;
 export type SearchSection = (typeof SEARCH_SECTIONS)[number];
 export type SearchStatus = (typeof SEARCH_STATUSES)[number];
@@ -162,7 +162,7 @@ function Results({ rows, edits, me, find, showVariants, showDiff, showCn, t }: I
     const byKey = useMemo(() => new Map(edits.map((e) => [e.editKey, e])), [edits]);
     const rule: RecommendRule = me.recommendRule === "A" ? "A" : "B";
     const nickname = me.nickname ?? t("nickname.fallback");
-    const analyses = useMemo(() => rows.map((r) => analyse(r.line, byKey.get(r.line.editKey), r.place, null, rule)), [rows, byKey, rule]);
+    const analyses = useMemo(() => rows.map((r) => analyse(r.line, byKey.get(r.line.editKey), r.place, null, rule, gameHere(r))), [rows, byKey, rule]);
     // One editor open at a time: the row's text id and what it is open for.
     const [editing, setEditing] = useState<{ id: number; state: EditorState } | null>(null);
     const unfolded = useUnfolded();

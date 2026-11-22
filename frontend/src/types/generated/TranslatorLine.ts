@@ -51,6 +51,11 @@ ruDict: string | null, speakerCn: string | null, cn: string | null,
  */
 speakerGender: string | null, 
 /**
+ * Operators of both genders say the entry (one English, one translation in the game): a gendered
+ * translation of it needs a separate one for each.
+ */
+mixedGender: boolean, 
+/**
  * Sova's translation: signed-in translators only.
  */
 sova: string | null, 
