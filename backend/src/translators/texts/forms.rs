@@ -4,18 +4,23 @@
 //! `pronounGender`, `cnAddress`), with the same test cases.
 //!
 //! * The speaker's gender (an operator's, from the game's files): a Russian
-//!   past verb or short adjective right after «я» of the other gender — «я
-//!   сделал» from a woman, «я рада» from a man.
+//!   past verb or short adjective (participle) right after «я» of the other
+//!   gender — «я сделал» from a woman, «я рада» from a man. Nothing else: no
+//!   noun («я профессионал»), pronoun («я сама»: skipped to the verb after
+//!   it), name («Я Гавиал») or word of the next sentence.
 //! * A Chinese 她 / 他 (she / he; 们 plural and words like 其他 "other" left
 //!   out) where the Russian has only the other gender's pronouns.
 //! * 您 (polite "you") where the Russian says «ты»; a line with 你们 / 您们
 //!   (plural) is left alone. 你 asks for nothing: it is the plain "you", and
 //!   «вы» for it is the translator's choice.
 
+use std::collections::HashSet;
+use std::sync::LazyLock;
+
 /// `f` or `m`.
 pub type Gender = char;
 
-/// Short adjectives and the like after «я»: the feminine, then the masculine.
+/// Short adjectives and participles after «я»: the feminine, then the masculine.
 const SHORT: &[(&str, &str)] = &[
     ("рада", "рад"),
     ("готова", "готов"),
@@ -32,8 +37,6 @@ const SHORT: &[(&str, &str)] = &[
     ("обязана", "обязан"),
     ("знакома", "знаком"),
     ("занята", "занят"),
-    ("сама", "сам"),
-    ("одна", "один"),
     ("удивлена", "удивлён"),
     ("удивлена", "удивлен"),
     ("тронута", "тронут"),
@@ -65,14 +68,13 @@ const FILLERS: &[&str] = &[
     "не", "уже", "же", "ж", "ведь", "тоже", "бы", "так", "очень", "все", "всё", "еще", "ещё", "просто",
     "только", "сейчас", "правда", "и", "ни", "вот", "даже", "лишь", "никогда", "всегда", "давно",
     "наконец", "точно", "действительно", "совсем", "вовсе", "сегодня", "тогда", "почти", "здесь",
-    "тут", "там", "ли", "-",
+    "тут", "там", "ли", "-", "сам", "сама", "один", "одна",
 ];
 
-/// Words in «-л» / «-ла» that are no past verbs.
-const NOT_VERBS: &[&str] = &[
-    "мол", "пол", "стол", "зал", "бал", "вол", "кол", "тела", "дела", "мила", "сила", "пила",
-    "стола", "зала", "пола", "игла", "мгла", "скала", "стрела", "пчела", "смола", "метла", "ангел",
-];
+/// Words in «-л» / «-ла» that are no past verbs: the nouns and adverbs of the game's Russian («профессионал»,
+/// «генерал», «сначала»). The page has the same list (`notVerbs.ts`): change both.
+static NOT_VERBS: LazyLock<HashSet<&str>> =
+    LazyLock::new(|| include_str!("not_verbs.txt").split_whitespace().collect());
 
 /// The gender a word tells as the speaker's, right after «я».
 fn word_gender(w: &str) -> Option<Gender> {
@@ -84,7 +86,7 @@ fn word_gender(w: &str) -> Option<Gender> {
             return Some('m');
         }
     }
-    if NOT_VERBS.contains(&w) || !w.chars().all(|c| ('а'..='я').contains(&c) || c == 'ё') {
+    if NOT_VERBS.contains(w) || !w.chars().all(|c| ('а'..='я').contains(&c) || c == 'ё') {
         return None;
     }
     let n = w.chars().count();
@@ -97,9 +99,8 @@ fn word_gender(w: &str) -> Option<Gender> {
     None
 }
 
-/// The text's words in lower case, ё kept, tags and quoted speech left out
-/// (another's words: «…», “…”).
-fn words(text: &str) -> Vec<String> {
+/// The text without tags and quoted speech (another's words: «…», “…”).
+fn own_speech(text: &str) -> String {
     let mut out = String::with_capacity(text.len());
     let (mut tag, mut quote) = (false, 0usize);
     for c in text.chars() {
@@ -110,28 +111,101 @@ fn words(text: &str) -> Vec<String> {
             '«' | '“' => quote += 1,
             '»' | '”' => quote = quote.saturating_sub(1),
             _ if quote > 0 => {}
-            _ => out.extend(c.to_lowercase()),
+            _ => out.push(c),
         }
     }
-    out.split(|c: char| !(c.is_alphabetic() || c == '-'))
+    out
+}
+
+fn in_word(c: char) -> bool {
+    c.is_alphabetic() || c == '-'
+}
+
+/// The speaker's own words in lower case, ё kept.
+fn words(text: &str) -> Vec<String> {
+    own_speech(text)
+        .to_lowercase()
+        .split(|c: char| !in_word(c))
         .filter(|w| !w.is_empty())
         .map(str::to_owned)
         .collect()
 }
 
+enum Token {
+    /// A word in lower case; `named`: written as a name («Гавиал», not «ГОТОВ»).
+    Word { lower: String, named: bool },
+    /// A full stop: what follows is no longer said of «я».
+    Stop,
+    /// «…», «!», «?»: the speaker goes on («Я... Ответила»), maybe with a capital.
+    Pause,
+}
+
+fn tokens(text: &str) -> Vec<Token> {
+    let text = own_speech(text);
+    let mut out = Vec::new();
+    let mut rest = text.as_str();
+    while let Some(c) = rest.chars().next() {
+        if in_word(c) {
+            let end = rest.find(|c: char| !in_word(c)).unwrap_or(rest.len());
+            let word = &rest[..end];
+            let mut after_first = word.chars().skip(1).peekable();
+            let named = c.is_uppercase()
+                && after_first.peek().is_some()
+                && !after_first.any(char::is_uppercase);
+            out.push(Token::Word {
+                lower: word.to_lowercase(),
+                named,
+            });
+            rest = &rest[end..];
+        } else if c == '.' {
+            let end = rest.find(|c: char| c != '.').unwrap_or(rest.len());
+            out.push(if end == 1 { Token::Stop } else { Token::Pause });
+            rest = &rest[end..];
+        } else {
+            if matches!(c, '…' | '!' | '?') {
+                out.push(Token::Pause);
+            }
+            rest = &rest[c.len_utf8()..];
+        }
+    }
+    out
+}
+
+/// The gender the first telling word after a «я» gives: `after` is what follows it.
+fn after_ia(after: &[Token]) -> Option<Gender> {
+    let mut paused = false;
+    let mut seen = 0;
+    for token in after {
+        match token {
+            Token::Stop => return None,
+            Token::Pause => paused = true,
+            Token::Word { lower, named } => {
+                seen += 1;
+                if seen > 4 {
+                    return None;
+                }
+                if FILLERS.contains(&lower.as_str()) {
+                    paused = false;
+                } else if *named && !paused {
+                    return None;
+                } else {
+                    return word_gender(lower);
+                }
+            }
+        }
+    }
+    None
+}
+
 /// The gender the Russian gives its speaker by «я …», when it gives one.
 pub fn speaker_gender_in(ru: &str) -> Option<Gender> {
-    let w = words(ru);
+    let all = tokens(ru);
     let (mut f, mut m) = (0, 0);
-    for (i, word) in w.iter().enumerate() {
-        if word != "я" {
+    for (i, token) in all.iter().enumerate() {
+        if !matches!(token, Token::Word { lower, .. } if lower == "я") {
             continue;
         }
-        let next = w[i + 1..]
-            .iter()
-            .take(4)
-            .find(|x| !FILLERS.contains(&x.as_str()));
-        match next.and_then(|x| word_gender(x)) {
+        match after_ia(&all[i + 1..]) {
             Some('f') => f += 1,
             Some(_) => m += 1,
             None => {}
@@ -242,6 +316,26 @@ mod tests {
         assert_eq!(speaker_mismatch("Я сделал это.", Some('f')), Some('f'));
         assert_eq!(speaker_mismatch("Я сделала это.", Some('f')), None);
         assert_eq!(speaker_mismatch("Я сделал это.", None), None);
+    }
+
+    #[test]
+    fn only_verbs_and_short_forms_of_the_first_person() {
+        assert_eq!(speaker_gender_in("Я готов."), Some('m'));
+        assert_eq!(speaker_gender_in("Я занята."), Some('f'));
+        assert_eq!(speaker_gender_in("Я не нужна."), Some('f'));
+        assert_eq!(speaker_gender_in("Я вернулся."), Some('m'));
+        assert_eq!(speaker_gender_in("Я... понял!"), Some('m'));
+        assert_eq!(speaker_gender_in("Я? Боялся?"), Some('m'));
+        assert_eq!(speaker_gender_in("Я ОБЯЗАН его увидеть."), Some('m'));
+        assert_eq!(speaker_gender_in("Я сам пришёл."), Some('m'));
+        // Nouns, adverbs, pronouns, names, the next sentence.
+        assert_eq!(speaker_gender_in("Вообще-то я профессионал!"), None);
+        assert_eq!(speaker_gender_in("Я тоже генерал."), None);
+        assert_eq!(speaker_gender_in("Я сначала схожу в доки."), None);
+        assert_eq!(speaker_gender_in("Здесь я выступаю как я сама."), None);
+        assert_eq!(speaker_gender_in("Я сама разберусь."), None);
+        assert_eq!(speaker_gender_in("Я Грейвл, рыцарь."), None);
+        assert_eq!(speaker_gender_in("Ты видел больше, чем я. Слышал о городе?"), None);
     }
 
     #[test]

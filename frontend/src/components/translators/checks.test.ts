@@ -137,6 +137,24 @@ describe("gender and address by the Chinese (the same cases as texts/forms.rs)",
         expect(genderOf("Он сказал: «Я ушёл».")).toBeNull();
         expect(genderOf("Я — Амия.")).toBeNull();
     });
+    it("reads only verbs and short forms of the first person", () => {
+        expect(genderOf("Я готов.")).toBe("m");
+        expect(genderOf("Я занята.")).toBe("f");
+        expect(genderOf("Я не нужна.")).toBe("f");
+        expect(genderOf("Я вернулся.")).toBe("m");
+        expect(genderOf("Я... понял!")).toBe("m");
+        expect(genderOf("Я? Боялся?")).toBe("m");
+        expect(genderOf("Я ОБЯЗАН его увидеть.")).toBe("m");
+        expect(genderOf("Я сам пришёл.")).toBe("m");
+        // Nouns, adverbs, pronouns, names, the next sentence.
+        expect(genderOf("Вообще-то я профессионал!")).toBeNull();
+        expect(genderOf("Я тоже генерал.")).toBeNull();
+        expect(genderOf("Я сначала схожу в доки.")).toBeNull();
+        expect(genderOf("Здесь я выступаю как я сама.")).toBeNull();
+        expect(genderOf("Я сама разберусь.")).toBeNull();
+        expect(genderOf("Я Грейвл, рыцарь.")).toBeNull();
+        expect(genderOf("Ты видел больше, чем я. Слышал о городе?")).toBeNull();
+    });
     it("checks the pronouns against the Chinese", () => {
         expect(pronounGender("Он ушёл.", "她走了。")).toBe("f");
         expect(pronounGender("Она ушла.", "她走了。")).toBeNull();

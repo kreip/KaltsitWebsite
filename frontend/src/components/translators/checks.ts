@@ -7,6 +7,7 @@
 import type { MissingTerm } from "#/types/generated/MissingTerm";
 import type { TranslatorLine } from "#/types/generated/TranslatorLine";
 import { TOKEN_SOURCE, tagHealth } from "./markup";
+import { NOT_VERBS } from "./notVerbs";
 
 /** "Noticeably longer than in the game": both more than this share longer… */
 export const LONGER_SHARE = 0.15;
@@ -120,7 +121,7 @@ export type Gender = "f" | "m";
  * the tests. Marks to look at, never errors: they can be wrong.
  */
 
-/** Short adjectives and the like after «я»: the feminine and the masculine. */
+/** Short adjectives and participles after «я»: the feminine and the masculine. */
 const SHORT: readonly (readonly [string, string])[] = [
     ["рада", "рад"],
     ["готова", "готов"],
@@ -137,8 +138,6 @@ const SHORT: readonly (readonly [string, string])[] = [
     ["обязана", "обязан"],
     ["знакома", "знаком"],
     ["занята", "занят"],
-    ["сама", "сам"],
-    ["одна", "один"],
     ["удивлена", "удивлён"],
     ["удивлена", "удивлен"],
     ["тронута", "тронут"],
@@ -205,10 +204,11 @@ const FILLERS = new Set([
     "там",
     "ли",
     "-",
+    "сам",
+    "сама",
+    "один",
+    "одна",
 ]);
-
-/** Words in «-л» / «-ла» that are no past verbs. */
-const NOT_VERBS = new Set(["мол", "пол", "стол", "зал", "бал", "вол", "кол", "тела", "дела", "мила", "сила", "пила", "стола", "зала", "пола", "игла", "мгла", "скала", "стрела", "пчела", "смола", "метла", "ангел"]);
 
 function wordGender(w: string): Gender | null {
     for (const [f, m] of SHORT) {
@@ -222,8 +222,8 @@ function wordGender(w: string): Gender | null {
     return null;
 }
 
-/** The text's words in lower case, tags and quoted speech left out (another's words: «…», “…”). */
-function formWords(text: string): string[] {
+/** The text without tags and quoted speech (another's words: «…», “…”). */
+function ownSpeech(text: string): string {
     let out = "";
     let tag = false;
     let quote = 0;
@@ -233,20 +233,52 @@ function formWords(text: string): string[] {
         else if (tag) continue;
         else if (c === "«" || c === "“") quote++;
         else if (c === "»" || c === "”") quote = Math.max(0, quote - 1);
-        else if (quote === 0) out += c.toLowerCase();
+        else if (quote === 0) out += c;
     }
-    return out.split(/[^\p{L}-]+/u).filter(Boolean);
+    return out;
 }
 
-/** The gender the Russian gives its speaker by «я …», when it gives one. */
+/** The speaker's own words in lower case. */
+function formWords(text: string): string[] {
+    return ownSpeech(text)
+        .toLowerCase()
+        .split(/[^\p{Alphabetic}-]+/u)
+        .filter(Boolean);
+}
+
+/** A word, a full stop, or a pause («…», «!», «?»): what `genderOf` reads. */
+const SPEECH = /[\p{Alphabetic}-]+|\.+|[…!?]/gu;
+/** Written as a name («Гавиал», not «ГОТОВ»). */
+const NAMED = /^\p{Uppercase}\P{Uppercase}+$/u;
+
+/** The gender the first telling word after a «я» gives; none past a full stop, none for a name. */
+function afterIa(after: readonly string[]): Gender | null {
+    let paused = false;
+    let seen = 0;
+    for (const token of after) {
+        if (token === ".") return null;
+        if (token.startsWith(".") || token === "…" || token === "!" || token === "?") {
+            paused = true;
+            continue;
+        }
+        seen++;
+        if (seen > 4) return null;
+        const lower = token.toLowerCase();
+        if (FILLERS.has(lower)) paused = false;
+        else if (!paused && NAMED.test(token)) return null;
+        else return wordGender(lower);
+    }
+    return null;
+}
+
+/** The gender the Russian gives its speaker by «я …», when it gives one: a past verb or a short form, nothing else. */
 export function genderOf(ru: string): Gender | null {
-    const w = formWords(ru);
+    const all: string[] = ownSpeech(ru).match(SPEECH) ?? [];
     let f = 0;
     let m = 0;
-    w.forEach((word, i) => {
-        if (word !== "я") return;
-        const next = w.slice(i + 1, i + 5).find((x) => !FILLERS.has(x));
-        const g = next ? wordGender(next) : null;
+    all.forEach((token, i) => {
+        if (token !== "я" && token !== "Я") return;
+        const g = afterIa(all.slice(i + 1));
         if (g === "f") f++;
         else if (g === "m") m++;
     });
