@@ -4,17 +4,18 @@
  * operators' archives: file, records, stories, voice lines) is the Story
  * tab over again with "Section / Object" for "Chapter / Story": the chosen
  * object's texts as the same dense table, Field | Russian as in the game |
- * English, in the order the game shows them, with the same actions. A text
+ * English, in the order the game shows them, with the same actions (an operator's: also who speaks, with the
+ * gender). The address's `#at-…` names a row: shown, opened and highlighted. A text
  * is edited as the text itself: one translation wherever its English stands
  * ("N places" and the confirmation as everywhere). A long text is folded to
  * a few lines until clicked. «Interface and other» has no objects: it is the
  * search over that section.
  */
 import { useQuery } from "@tanstack/react-query";
-import { Link } from "@tanstack/react-router";
+import { Link, useRouterState } from "@tanstack/react-router";
 import { ChevronDown, ChevronLeft, ChevronRight } from "lucide-react";
 import type React from "react";
-import { useContext, useId, useMemo, useState } from "react";
+import { useContext, useEffect, useId, useMemo, useState } from "react";
 import { Button } from "#/components/ui/button";
 import { Combobox, ComboboxEmpty, ComboboxInput, ComboboxItem, ComboboxList, ComboboxPopup } from "#/components/ui/combobox";
 import { Empty, EmptyHeader, EmptyTitle } from "#/components/ui/empty";
@@ -28,12 +29,13 @@ import { useFormatters, useLocale, useT } from "#/lib/i18n";
 import type { TypedT } from "#/lib/i18n/messages";
 import { objectLinesQueryOptions, objectsQueryOptions, textSummaryQueryOptions, translatorsMeQueryOptions } from "#/lib/translators/api";
 import { cn } from "#/lib/utils";
+import type { ObjectLine } from "#/types/generated/ObjectLine";
 import type { TranslatorsMe } from "#/types/generated/TranslatorsMe";
 import { ApproveMatching } from "./ApproveMatching";
 import { hasError, type ProblemKind, type RecommendRule } from "./checks";
 import { Hint } from "./Hint";
 import { type EditorState, isLead, StatusDot } from "./LineEdits";
-import { analyse, CnCell, filterWord, missingTermsEn, PROSE, problemOptions, RuCell } from "./LinesTable";
+import { analyse, CnCell, filterWord, missingTermsEn, PROSE, problemOptions, RuCell, Speaker } from "./LinesTable";
 import { Folded, isLong, useUnfolded } from "./LongText";
 import { NextUnchecked, TextCounts } from "./Overview";
 import { OpenAll, RowToggle, useOpenRows } from "./openRows";
@@ -43,7 +45,7 @@ import { useStoryNames } from "./storyNames";
 import type { messages } from "./translators.messages";
 import { useScrollToRow } from "./useScrollToRow";
 import { ViewMenu, viewOf } from "./ViewMenu";
-import { type CardSection, fieldLabel, isCode, LEVEL_FIELD, noteStories, noteWords } from "./where";
+import { anchoredRow, type CardSection, fieldLabel, isCode, LEVEL_FIELD, noteStories, noteWords } from "./where";
 
 type T = TypedT<typeof messages>;
 
@@ -122,11 +124,14 @@ interface ICardProps {
     t: T;
 }
 
+function rowId(r: ObjectLine): string {
+    return `${r.field}.${r.idx}.${r.line.editKey}`;
+}
+
 /** One object's texts: the story's table with the field for the speaker. */
 function Card({ section, item, me, showVariants, showDiff, showCn, t }: ICardProps): React.ReactElement {
     const f = useFormatters();
     const query = useQuery(objectLinesQueryOptions(section, item.id));
-    useScrollToRow(Boolean(query.data));
     const rows = query.data?.rows ?? [];
     const edits = query.data?.edits ?? [];
     const byKey = useMemo(() => new Map(edits.map((e) => [e.editKey, e])), [edits]);
@@ -141,10 +146,32 @@ function Card({ section, item, me, showVariants, showDiff, showCn, t }: ICardPro
     // One editor open at a time: the row and what it is open for.
     const [editing, setEditing] = useState<{ id: string; state: EditorState } | null>(null);
     const unfolded = useUnfolded();
-    const opened = useOpenRows();
     const all = useContext(OpenAll);
     // Which skills' level entries are unfolded (by the skill's number).
     const levelsOpen = useUnfolded();
+    // The row the address names (a link from a place): opened, unfolded, highlighted, scrolled to.
+    const hash = useRouterState({ select: (s) => s.location.hash });
+    const namedAt = useMemo(
+        () =>
+            hash.startsWith("at-")
+                ? anchoredRow(
+                      hash,
+                      rows.map((r) => ({ field: r.field, idx: r.idx, editKey: r.line.editKey })),
+                  )
+                : -1,
+        [hash, rows],
+    );
+    const named = namedAt >= 0 ? rows[namedAt] : null;
+    const namedId = named ? rowId(named) : null;
+    const namedLevels = named?.field === LEVEL_FIELD ? String(named.idx) : null;
+    const opened = useOpenRows(namedId);
+    const { show: unfoldRow } = unfolded;
+    const { show: unfoldLevels } = levelsOpen;
+    useEffect(() => {
+        if (namedId) unfoldRow(namedId);
+        if (namedLevels) unfoldLevels(namedLevels);
+    }, [namedId, namedLevels, unfoldRow, unfoldLevels]);
+    useScrollToRow(Boolean(query.data) && (!namedLevels || levelsOpen.has(namedLevels)), named ? `n-${namedAt + 1}` : undefined);
     // The rows in the card's order; a skill's level entries after its description, behind a fold.
     const order = useMemo(() => {
         const out: ({ kind: "row"; i: number } | { kind: "levels"; idx: number; count: number })[] = [];
@@ -179,6 +206,8 @@ function Card({ section, item, me, showVariants, showDiff, showCn, t }: ICardPro
     const nickname = me.nickname ?? t("nickname.fallback");
     const share = item.total ? item.approved / item.total : 0;
     const code = query.data.code;
+    const speakers = rows.some((r) => r.line.owner !== null);
+    const columns = 3 + Number(speakers) + Number(showCn);
     return (
         <div className="flex flex-col gap-2">
             <p className="text-subtle-foreground text-xs">{t("sections.summary", { count: rows.length, ru: rows.filter((r) => r.line.ruGame).length })}</p>
@@ -213,6 +242,7 @@ function Card({ section, item, me, showVariants, showDiff, showCn, t }: ICardPro
                     <TableRow>
                         <TableHead className="w-12">{t("table.line")}</TableHead>
                         <TableHead className="w-44">{t("sections.field")}</TableHead>
+                        {speakers ? <TableHead className="w-36">{t("table.speaker")}</TableHead> : null}
                         <TableHead>{t("table.ru")}</TableHead>
                         <TableHead>{t("table.en")}</TableHead>
                         {showCn ? <TableHead>{t("table.cn")}</TableHead> : null}
@@ -224,6 +254,7 @@ function Card({ section, item, me, showVariants, showDiff, showCn, t }: ICardPro
                         <TableRow className="text-subtle-foreground">
                             <TableCell className="py-1.5" />
                             <TableCell className={PROSE}>{t("sections.code")}</TableCell>
+                            {speakers ? <TableCell className="py-1.5" /> : null}
                             <TableCell className={PROSE}>{code}</TableCell>
                             <TableCell className={PROSE}>{code}</TableCell>
                             {showCn ? <TableCell className={PROSE}>{code}</TableCell> : null}
@@ -236,7 +267,7 @@ function Card({ section, item, me, showVariants, showDiff, showCn, t }: ICardPro
                             return (
                                 <TableRow key={`levels-${entry.idx}`} className="bg-muted/30 hover:bg-muted/30">
                                     <TableCell className="py-1" />
-                                    <TableCell colSpan={showCn ? 4 : 3} className="py-1">
+                                    <TableCell colSpan={columns} className="py-1">
                                         <Button variant="link" size="xs" className="h-auto px-0 text-xs" aria-expanded={open} onClick={() => levelsOpen.toggle(String(entry.idx))}>
                                             {open ? <ChevronDown aria-hidden="true" /> : <ChevronRight aria-hidden="true" />}
                                             {t("sections.levels", { count: entry.count })}
@@ -248,13 +279,21 @@ function Card({ section, item, me, showVariants, showDiff, showCn, t }: ICardPro
                         const i = entry.i;
                         const r = rows[i];
                         if (!shows(i)) return null;
-                        const id = `${r.field}.${r.idx}.${r.line.editKey}`;
+                        const id = rowId(r);
                         const long = isLong(r.line.en, r.line.ruGame);
                         // An open editor needs the whole row.
                         const folded = long && !unfolded.has(id) && editing?.id !== id;
                         const open = all || opened.isOpen(id) || editing?.id === id;
                         return (
-                            <TableRow key={id} id={`n-${i + 1}`} className={cn("scroll-mt-(--site-header-height) target:bg-primary/10", !all && "cursor-pointer")} {...(all ? {} : opened.rowProps(id, editing?.id === id))} data-field={r.field} data-status={r.line.status} data-place={`${r.place.storyId}|0|0`}>
+                            <TableRow
+                                key={id}
+                                id={`n-${i + 1}`}
+                                className={cn("scroll-mt-(--site-header-height) target:bg-primary/10", i === namedAt && "bg-primary/10!", !all && "cursor-pointer")}
+                                {...(all ? {} : opened.rowProps(id, editing?.id === id))}
+                                data-field={r.field}
+                                data-status={r.line.status}
+                                data-place={`${r.place.storyId}|0|0`}
+                            >
                                 <TableCell className="py-1.5 align-top text-subtle-foreground text-xs tabular-nums leading-snug">
                                     <span className="flex items-center gap-1.5">
                                         {all ? null : <RowToggle open={open} onToggle={() => opened.toggle(id)} label={open ? t("row.fold") : t("row.open")} />}
@@ -279,6 +318,11 @@ function Card({ section, item, me, showVariants, showDiff, showCn, t }: ICardPro
                                         </Button>
                                     ) : null}
                                 </TableCell>
+                                {speakers ? (
+                                    <TableCell className={PROSE}>
+                                        <Speaker line={r.line} t={t} />
+                                    </TableCell>
+                                ) : null}
                                 <TableCell className={PROSE}>
                                     <Folded folded={folded} onOpen={() => unfolded.toggle(id)}>
                                         <RuCell

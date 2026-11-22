@@ -641,7 +641,7 @@ export function Proposals({ edits, place, me, nickname, onEdit, marks, compare =
                                             <Badge variant="warning" size="sm">
                                                 {t("proposal.onlyHere")}
                                             </Badge>
-                                            <GamePlace section={p.here.section} objectId={p.here.objectId} objectEn={p.here.objectEn ?? null} field={p.here.field} idx={p.here.idx} t={t} />
+                                            <GamePlace section={p.here.section} objectId={p.here.objectId} objectEn={p.here.objectEn ?? null} field={p.here.field} idx={p.here.idx} editKey={p.editKey} t={t} />
                                         </>
                                     ) : null}
                                     {p.context && p.approvedAt !== null ? (
@@ -785,7 +785,7 @@ export function PlacesList({ place, nickname, compact = false, t }: { place: Edi
     const nameOf = useStoryNames();
     if (query.isError) return <LoadFailed layout="inline" message={t("places.load")} onRetry={() => query.refetch()} />;
     if (!query.data) return <Skeleton className="h-16 w-full" />;
-    const { places, total } = query.data;
+    const { places, total, editKey } = query.data;
     return (
         <div className="flex flex-col gap-1">
             <ul className={cn("flex max-h-72 flex-col overflow-y-auto text-xs", compact ? "gap-1" : "gap-2")}>
@@ -796,7 +796,7 @@ export function PlacesList({ place, nickname, compact = false, t }: { place: Edi
                         return (
                             <li key={`${p.section}-${p.objectId}-${p.field}-${p.idx}`} className="flex flex-col gap-0.5 border-s-2 ps-2">
                                 <span className={compact ? undefined : "font-medium"}>
-                                    <GamePlace section={p.section} objectId={p.objectId} objectEn={p.objectEn} field={p.field} idx={p.idx} t={t} />
+                                    <GamePlace section={p.section} objectId={p.objectId} objectEn={p.objectEn} field={p.field} idx={p.idx} editKey={editKey} t={t} />
                                 </span>
                             </li>
                         );
@@ -843,7 +843,7 @@ export function PlacesPreview({ place, after, nickname, newTab = false, t }: { p
     const nameOf = useStoryNames();
     if (query.isError) return <LoadFailed layout="inline" message={t("places.load")} onRetry={() => query.refetch()} />;
     if (!query.data) return <Skeleton className="h-24 w-full" />;
-    const { places, total } = query.data;
+    const { places, total, editKey } = query.data;
     const cn = places.some((p) => p.cn);
     const prose = "whitespace-normal py-1.5 align-top leading-snug";
     return (
@@ -870,7 +870,7 @@ export function PlacesPreview({ place, after, nickname, newTab = false, t }: { p
                                     <TableCell className="py-1.5 align-top text-subtle-foreground tabular-nums">{i + 1}</TableCell>
                                     <TableCell className={prose}>
                                         {!story ? (
-                                            <GamePlace section={p.section} objectId={p.objectId} objectEn={p.objectEn} field={p.field} idx={p.idx} newTab={newTab} t={t} />
+                                            <GamePlace section={p.section} objectId={p.objectId} objectEn={p.objectEn} field={p.field} idx={p.idx} editKey={editKey} newTab={newTab} t={t} />
                                         ) : n ? (
                                             <Link to="/translators" search={{ group: n.groupId, story: p.storyId }} hash={`n-${p.ord + 1}`} className="underline-offset-4 hover:underline" {...(newTab ? { target: "_blank", rel: "noreferrer" } : {})}>
                                                 {t("places.item", { group: n.group, story: n.story, n: p.ord + 1 })}

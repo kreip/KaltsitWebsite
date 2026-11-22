@@ -66,6 +66,7 @@ import {
 import { LineHistoryDialog } from "./LineHistory";
 import { Marks } from "./Marks";
 import { OpenAll, RowToggle, useOpenRows } from "./openRows";
+import { MixedSpeakers, SpeakerName } from "./Speakers";
 import { type IFind, StoryText } from "./StoryText";
 import { DISPLAYED_KINDS, describeCommands } from "./service";
 import { TextDiff } from "./TextDiff";
@@ -78,6 +79,7 @@ type T = TypedT<typeof messages>;
 /** A prose cell wraps, reads from the top and stays dense (the kit cell is one nowrap line). */
 export const PROSE = "whitespace-normal py-1.5 align-top leading-snug";
 
+/** Who says the line: the story's speaker, else the operator whose text it is. */
 export function Speaker({ line, t }: { line: TranslatorLine; t: T }): React.ReactElement | null {
     if (line.kind === "option")
         return (
@@ -87,14 +89,8 @@ export function Speaker({ line, t }: { line: TranslatorLine; t: T }): React.Reac
         );
     if (line.kind === "subtitle") return <span className="text-muted-foreground">{t("line.subtitle")}</span>;
     if (line.kind === "sticker") return <span className="text-muted-foreground">{t("line.sticker")}</span>;
-    if (!line.speakerEn) return null;
-    const ru = line.speakerRu && line.speakerRu !== line.speakerEn ? line.speakerRu : null;
-    return (
-        <span className="flex flex-col">
-            <span className="font-medium">{ru ?? line.speakerEn}</span>
-            {ru ? <span className="text-muted-foreground text-xs">{line.speakerEn}</span> : null}
-        </span>
-    );
+    if (line.speakerEn) return <SpeakerName en={line.speakerEn} ru={line.speakerRu} gender={line.speakerGender} t={t} />;
+    return line.owner ? <SpeakerName en={line.owner.nameEn} ru={line.owner.nameRu} gender={line.owner.gender} t={t} /> : null;
 }
 
 interface ITermGroup {
@@ -439,6 +435,7 @@ function FullRuCell({ line, analysis, place, nickname, showVariants, showDiff, e
             ) : null}
             {line.ruGameMatch === "lines" ? <span className="text-subtle-foreground text-xs">{t("ru.lineByLine")}</span> : null}
             <Terms terms={line.terms} t={t} />
+            <MixedSpeakers line={line} t={t} />
             {settled ? null : (
                 <Proposals {...notes} nickname={nickname} compare={showDiff} ruGame={line.ruGame} levelTexts={line.levelTexts} marks={(p) => marks(`proposal:${p.id}`)} onEdit={(p) => onEditor({ kind: "proposal", text: p.text, source: isVariantSource(p.source) ? p.source : "own", context: p.context, here: p.here })} />
             )}

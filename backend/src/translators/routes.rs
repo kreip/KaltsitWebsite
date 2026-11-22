@@ -217,7 +217,7 @@ pub async fn story_lines(
     let member = require_reader(&state, &auth).await?;
     let mut lines = db::story_lines(&state.db, SERVER, &story_id, true).await?;
     let (edits, outdated) = edits::attach(&state.db, &story_id, &mut lines).await?;
-    super::texts::speakers::fill(&state.db, SERVER, &mut lines).await?;
+    super::texts::speakers::fill(&state.db, SERVER, &mut lines, &edits).await?;
     let places: Vec<edits::dto::EditPlace> = lines
         .iter()
         .map(|l| edits::dto::EditPlace {

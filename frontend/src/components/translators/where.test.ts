@@ -3,7 +3,7 @@ import { formatMessage } from "#/lib/i18n";
 import type { TypedT } from "#/lib/i18n/messages";
 import type { messages } from "./translators.messages";
 import ru from "./translators.ru.json";
-import { fieldLabel, fieldWords, fileWord, gameWhere, isCardSection, noteStories, noteWords, objectKey, plainText, tableWord } from "./where";
+import { anchoredRow, fieldLabel, fieldWords, fileWord, gameWhere, isCardSection, noteStories, noteWords, objectKey, plainText, rowAnchor, tableWord } from "./where";
 
 const t = ((key: string, args?: Parameters<typeof formatMessage>[2]) => formatMessage((ru as Record<string, string>)[key], "ru", args)) as unknown as TypedT<typeof messages>;
 
@@ -24,6 +24,20 @@ describe("where a text stands, in words", () => {
         expect(fieldLabel("operators", "class", 0, t)).toBe("Класс");
         expect(fieldLabel("operators", "trait", 0, t)).toBe("Черта");
         expect(fieldLabel("items", "obtain", 0, t)).toBe("Где получить");
+    });
+
+    it("names a card's row in an address", () => {
+        const rows = [
+            { field: "voice.text", idx: 1, editKey: "Hello." },
+            { field: "voice.text", idx: 17, editKey: "I'm all set." },
+            { field: "voice.text", idx: 17, editKey: "Another." },
+        ];
+        expect(anchoredRow(rowAnchor("voice.text", 17, "Another."), rows)).toBe(2);
+        expect(anchoredRow(rowAnchor("voice.text", 17), rows)).toBe(1);
+        expect(anchoredRow(rowAnchor("voice.text", 17, "Gone."), rows)).toBe(1);
+        // 1 is not the start of 17, nor is a story's row one.
+        expect(anchoredRow(rowAnchor("voice.text", 1), rows)).toBe(0);
+        expect(anchoredRow("n-2", rows)).toBe(-1);
     });
 
     it("names an object by its id for an operator and by its name for the rest", () => {

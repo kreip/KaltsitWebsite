@@ -198,7 +198,12 @@ pub async fn object_lines(
         })
         .collect();
     settle_here(&mut lines, &places, &here, &edits);
-    super::speakers::fill(&state.db, SERVER, &mut lines).await?;
+    super::speakers::fill(&state.db, SERVER, &mut lines, &edits).await?;
+    let owners: Vec<Option<&str>> = texts
+        .iter()
+        .map(|t| super::speakers::operator_at(&query.section, &t.object_id))
+        .collect();
+    super::speakers::fill_owners(&state.db, SERVER, &mut lines, &owners).await?;
     crate::translators::routes::mark_glossary(&state, &mut lines, &places, &edits).await?;
     // A reader outside the team: the game's texts only.
     let edits = if member.is_some() {
@@ -264,6 +269,8 @@ fn text_line(hit: &TextHit) -> TranslatorLine {
         cn: hit.cn.clone(),
         speaker_gender: None,
         mixed_gender: false,
+        mixed_speakers: Vec::new(),
+        owner: None,
         sova: None,
         artem: None,
         ai: None,
@@ -367,7 +374,16 @@ pub async fn search_lines(
     let edits = edits::attach_at(&state.db, &places, &mut lines, |_| false).await?;
     let here: Vec<Option<GameHere>> = hits.iter().map(game_here).collect();
     settle_here(&mut lines, &places, &here, &edits);
-    super::speakers::fill(&state.db, SERVER, &mut lines).await?;
+    super::speakers::fill(&state.db, SERVER, &mut lines, &edits).await?;
+    // A found text is its first operator's, as «Where» names its place.
+    let owners: Vec<Option<&str>> = hits
+        .iter()
+        .map(|h| {
+            h.at.iter()
+                .find_map(|a| super::speakers::operator_at(&a.section, a.object_id.as_deref()?))
+        })
+        .collect();
+    super::speakers::fill_owners(&state.db, SERVER, &mut lines, &owners).await?;
     crate::translators::routes::mark_glossary(&state, &mut lines, &places, &edits).await?;
     // A reader outside the team: the game's texts only.
     let edits = if member.is_some() {

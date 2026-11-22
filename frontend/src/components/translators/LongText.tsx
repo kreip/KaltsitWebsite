@@ -15,7 +15,7 @@ export function isLong(...texts: readonly (string | null | undefined)[]): boolea
 }
 
 /** Which rows of a table are unfolded, by the row's id. */
-export function useUnfolded(): { has: (id: string) => boolean; toggle: (id: string) => void } {
+export function useUnfolded(): { has: (id: string) => boolean; toggle: (id: string) => void; show: (id: string) => void } {
     const [open, setOpen] = useState<ReadonlySet<string>>(new Set());
     const toggle = useCallback((id: string) => {
         setOpen((before) => {
@@ -24,7 +24,8 @@ export function useUnfolded(): { has: (id: string) => boolean; toggle: (id: stri
             return next;
         });
     }, []);
-    return { has: (id) => open.has(id), toggle };
+    const show = useCallback((id: string) => setOpen((before) => (before.has(id) ? before : new Set([...before, id]))), []);
+    return { has: (id) => open.has(id), toggle, show };
 }
 
 /** A cell's content, cut to a few lines while `folded`; a plain click on it (not a selection, not a button) unfolds. */

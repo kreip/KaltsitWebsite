@@ -22,6 +22,8 @@ function line(over: Partial<TranslatorLine>): TranslatorLine {
         cn: null,
         speakerGender: null,
         mixedGender: false,
+        mixedSpeakers: [],
+        owner: null,
         artem: null,
         cnOnly: false,
         sova: null,

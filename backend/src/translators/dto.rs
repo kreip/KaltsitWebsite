@@ -76,6 +76,11 @@ pub struct TranslatorLine {
     /// Operators of both genders say the entry (one English, one translation in the game): a gendered
     /// translation of it needs a separate one for each.
     pub mixed_gender: bool,
+    /// Of such an entry with a gendered Russian: every operator who says it, with a place of it at each
+    /// (the voice line, else the first story line); empty otherwise.
+    pub mixed_speakers: Vec<LineSpeaker>,
+    /// A text outside the story that is an operator's (a card's, the archives'): that operator.
+    pub owner: Option<LineSpeaker>,
     /// Sova's translation: signed-in translators only.
     pub sova: Option<String>,
     /// The second translator's (Артём's corrections of the machine's text, arktr): members only.
@@ -102,6 +107,24 @@ pub struct TranslatorLine {
     /// A skill's description template: how many dictionary entries carry its
     /// levels' numbers ("Apply to the levels" fills them from a proposal).
     pub level_texts: i32,
+}
+
+/// An operator named beside a line: whose text it is, or one of those who say it.
+#[derive(Debug, Clone, Default, Serialize, TS, ToSchema)]
+#[serde(rename_all = "camelCase")]
+#[ts(export)]
+pub struct LineSpeaker {
+    pub name_en: String,
+    pub name_ru: Option<String>,
+    /// `f` or `m`; null when the game's files do not say.
+    pub gender: Option<String>,
+    /// The operator's id in the game data, unless known as a story's speaker only.
+    pub char_id: Option<String>,
+    /// Who says it by a voice line: the line's number in the archives.
+    pub voice: Option<i16>,
+    /// Who says it in the story: the first such line, its story and 0-based order.
+    pub story_id: Option<String>,
+    pub ord: Option<i32>,
 }
 
 /// One variant of a line and the glossary terms its Russian lacks.

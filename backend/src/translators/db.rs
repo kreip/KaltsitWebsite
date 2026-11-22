@@ -267,6 +267,8 @@ impl Row {
             cn: r.cn.clone(),
             speaker_gender: r.speaker_gender,
             mixed_gender: false,
+            mixed_speakers: Vec::new(),
+            owner: None,
             sova: r.sova,
             artem: r.artem,
             ai: r.ai,

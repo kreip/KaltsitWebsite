@@ -1,6 +1,6 @@
 {
     "generatedBy": "bun run i18n:extract",
-    "generatedAt": "2026-11-22T11:19:18.046Z",
+    "generatedAt": "2026-11-22T11:35:22.182Z",
     "entries": [
         {
             "key": "admin.home.access.everyList",
@@ -56760,6 +56760,15 @@
             "placeholders": []
         },
         {
+            "key": "translators.gender.sign",
+            "namespace": "translators",
+            "source_text": "{gender, select, f {Female (by the game’s data)} other {Male (by the game’s data)}}",
+            "description": "Tooltip of the ♀ / ♂ sign beside a speaker; gender is f or m.",
+            "placeholders": [
+                "gender"
+            ]
+        },
+        {
             "key": "translators.glossary.clear",
             "namespace": "translators",
             "source_text": "Clear search",
@@ -57631,6 +57640,31 @@
             "source_text": "Russifier",
             "description": "Browser tab title of the translators' section (/translators, also /rusifikator).",
             "placeholders": []
+        },
+        {
+            "key": "translators.mixed.list",
+            "namespace": "translators",
+            "source_text": "Operators who say this line",
+            "description": "Accessible name of the list of the operators who say one line.",
+            "placeholders": []
+        },
+        {
+            "key": "translators.mixed.others",
+            "namespace": "translators",
+            "source_text": "and {count} more",
+            "description": "Search, under the speaker’s name of a line said by several operators: how many others.",
+            "placeholders": [
+                "count"
+            ]
+        },
+        {
+            "key": "translators.mixed.title",
+            "namespace": "translators",
+            "source_text": "Who says this line: {count}. Each needs a separate translation:",
+            "description": "In an opened row of a line said by operators of both genders: the heading of the list of them.",
+            "placeholders": [
+                "count"
+            ]
         },
         {
             "key": "translators.nickname.fallback",

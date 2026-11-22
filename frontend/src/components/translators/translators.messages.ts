@@ -117,6 +117,10 @@ export const messages = {
         description: "Under a line's number, and before a stage command, when Service is on: its line in the English script file.",
     },
     "table.speaker": { text: "Speaker", description: "Column: who says the line." },
+    "gender.sign": {
+        text: "{gender, select, f {Female (by the game’s data)} other {Male (by the game’s data)}}",
+        description: "Tooltip of the ♀ / ♂ sign beside a speaker; gender is f or m.",
+    },
     "table.en": { text: "English", description: "Column: the English text." },
     "table.ru": { text: "Russian (in game)", description: "Column: the Russian the game shows now." },
     "table.cn": { text: "Chinese", description: "Column: the Chinese original." },
@@ -986,6 +990,18 @@ export const messages = {
     "checks.mixedGenderHint": {
         text: "A woman and a man both say this line, and the game has one translation for it. Each needs a separate translation.",
         description: "Tooltip of «one line for operators of different genders».",
+    },
+    "mixed.title": {
+        text: "Who says this line: {count}. Each needs a separate translation:",
+        description: "In an opened row of a line said by operators of both genders: the heading of the list of them.",
+    },
+    "mixed.list": {
+        text: "Operators who say this line",
+        description: "Accessible name of the list of the operators who say one line.",
+    },
+    "mixed.others": {
+        text: "and {count} more",
+        description: "Search, under the speaker’s name of a line said by several operators: how many others.",
     },
     "checks.addressCn": {
         text: "“{form}” by the Chinese",

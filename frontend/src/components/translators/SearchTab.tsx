@@ -72,9 +72,9 @@ export interface ISearchState {
 }
 
 /** One place of a found text: a link to the story line, or the game object's field in words. */
-function Place({ at, t }: { at: TextAt; t: T }): React.ReactElement {
+function Place({ at, editKey, t }: { at: TextAt; editKey: string; t: T }): React.ReactElement {
     const nameOf = useStoryNames();
-    if (at.storyId === null) return <GamePlace section={at.section} objectId={at.objectId} objectEn={at.objectEn} field={at.field} idx={at.idx} note={at.note} t={t} />;
+    if (at.storyId === null) return <GamePlace section={at.section} objectId={at.objectId} objectEn={at.objectEn} field={at.field} idx={at.idx} note={at.note} editKey={editKey} t={t} />;
     const n = nameOf(at.storyId);
     const label = t("where.item", { group: n?.group ?? "", story: n?.story ?? at.storyId, n: at.ord === null ? "?" : at.ord + 1 });
     if (!n) return <span>{label}</span>;
@@ -96,7 +96,7 @@ function Where({ row, nickname, t }: { row: SearchLine; nickname: string; t: T }
     return (
         <Collapsible open={open} onOpenChange={setOpen} className="flex flex-col items-start gap-0.5 text-xs">
             {open ? null : first ? (
-                <Place at={first} t={t} />
+                <Place at={first} editKey={hit.editKey} t={t} />
             ) : (
                 // An entry of the dictionaries tied to no known place: its section and where it is kept.
                 <Hint text={hit.file}>
@@ -168,8 +168,8 @@ function Results({ rows, edits, me, find, showVariants, showDiff, showCn, t }: I
     const unfolded = useUnfolded();
     const opened = useOpenRows();
     const all = useContext(OpenAll);
-    // Who says it, as in the story's table: the column is there once a story line is found.
-    const speakers = rows.some((r) => r.line.kind !== "text");
+    // Who says it, as in the story's table: the column is there once a story line or an operator's text is found.
+    const speakers = rows.some((r) => r.line.kind !== "text" || r.line.owner !== null);
     return (
         // Fixed widths: the Russian and the English share what the narrow columns leave, half each.
         <Table aria-label={t("search.table")} className="wrap-anywhere min-w-3xl table-fixed">
@@ -211,6 +211,7 @@ function Results({ rows, edits, me, find, showVariants, showDiff, showCn, t }: I
                             {speakers ? (
                                 <TableCell className={PROSE}>
                                     <Speaker line={r.line} t={t} />
+                                    {r.line.owner && r.line.mixedSpeakers.length > 1 ? <span className="block text-subtle-foreground text-xs">{t("mixed.others", { count: r.line.mixedSpeakers.length - 1 })}</span> : null}
                                 </TableCell>
                             ) : null}
                             <TableCell className={PROSE}>

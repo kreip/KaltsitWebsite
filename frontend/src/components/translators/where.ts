@@ -206,6 +206,29 @@ export const SPEAKER_FIELD = "speaker";
 /** The story id of a text outside the story (the backend's `TEXT_PLACE`): an edit there holds everywhere. */
 export const TEXT_PLACE = "@text";
 
+/** A short mark of an entry's English, to tell two texts of one field apart in an address. */
+function keyMark(key: string): string {
+    let h = 5381;
+    for (let i = 0; i < key.length; i++) h = (Math.imul(h, 33) + key.charCodeAt(i)) >>> 0;
+    return h.toString(36);
+}
+
+/** A card's row as the address names it (`#at-voice.text-17-1x2y3z`): its field, its number and, when known, its entry. */
+export function rowAnchor(field: string, idx: number, editKey?: string): string {
+    return `at-${field}-${idx}${editKey === undefined ? "" : `-${keyMark(editKey)}`}`;
+}
+
+/** The index of the row an address's `#at-…` names; -1 when none does. */
+export function anchoredRow(hash: string, rows: readonly { field: string; idx: number; editKey: string }[]): number {
+    const exact = rows.findIndex((r) => rowAnchor(r.field, r.idx, r.editKey) === hash);
+    if (exact >= 0) return exact;
+    // A link that did not know the entry, or one to a text the import has changed since: the field's first.
+    return rows.findIndex((r) => {
+        const field = rowAnchor(r.field, r.idx);
+        return hash === field || hash.startsWith(`${field}-`);
+    });
+}
+
 /** The English without its tags, as the search reads it. */
 export function plainText(s: string): string {
     return s.replace(/<[^>]*>/g, "").trim();

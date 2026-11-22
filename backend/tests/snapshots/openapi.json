@@ -28998,6 +28998,60 @@
           }
         }
       },
+      "LineSpeaker": {
+        "type": "object",
+        "description": "An operator named beside a line: whose text it is, or one of those who say it.",
+        "required": [
+          "nameEn"
+        ],
+        "properties": {
+          "charId": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The operator's id in the game data, unless known as a story's speaker only."
+          },
+          "gender": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "`f` or `m`; null when the game's files do not say."
+          },
+          "nameEn": {
+            "type": "string"
+          },
+          "nameRu": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "ord": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int32"
+          },
+          "storyId": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Who says it in the story: the first such line, its story and 0-based order."
+          },
+          "voice": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int32",
+            "description": "Who says it by a voice line: the line's number in the archives."
+          }
+        }
+      },
       "LineTerm": {
         "type": "object",
         "description": "A glossary term found in a line's English.",
@@ -41003,6 +41057,7 @@
           "speakerEn",
           "en",
           "mixedGender",
+          "mixedSpeakers",
           "terms",
           "editKey",
           "editable",
@@ -41071,6 +41126,24 @@
           "mixedGender": {
             "type": "boolean",
             "description": "Operators of both genders say the entry (one English, one translation in the game): a gendered\ntranslation of it needs a separate one for each."
+          },
+          "mixedSpeakers": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/LineSpeaker"
+            },
+            "description": "Of such an entry with a gendered Russian: every operator who says it, with a place of it at each\n(the voice line, else the first story line); empty otherwise."
+          },
+          "owner": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/LineSpeaker",
+                "description": "A text outside the story that is an operator's (a card's, the archives'): that operator."
+              }
+            ]
           },
           "part": {
             "type": "integer",
