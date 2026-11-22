@@ -1,13 +1,19 @@
 //! Who is a woman and who a man, as the game's own files say: an operator's
 //! file opens with «[Gender] Female» (EN) / «【性别】女» (CN). A story speaker
-//! is an operator when its EN name (or its CN name, paired with the CN script)
-//! is the operator's; a name two operators of different genders share tells
-//! nothing. Everyone else (nameless NPCs) has no gender here: never checked.
+//! is an operator when its EN name is the operator's, or its CN name (paired
+//! with the CN script) is that of an operator the EN client has not got yet —
+//! of a released one only the EN name counts: a nameless 医生 («A Doctor») is
+//! not Doc. A name two operators of different genders share tells nothing.
+//! Everyone else (nameless NPCs, `NAMESAKES`) has no gender here: never checked.
 
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::path::Path;
 
 use serde_json::Value;
+
+/// Nameless NPCs under an operator's EN name, told apart by the CN one: a Durin
+/// (the people), a courier (a messenger).
+const NAMESAKES: &[(&str, &str)] = &[("Durin", "杜林人"), ("Courier", "传令官")];
 
 /// `f` or `m` by operator id, and by the names a speaker goes by.
 #[derive(Debug, Default)]
@@ -73,11 +79,22 @@ fn from_files(excel: &Path, out: &mut HashMap<String, char>) {
     }
 }
 
-fn names(excel: &Path, by_char: &HashMap<String, char>, out: &mut HashMap<String, Option<char>>) {
+/// Each name's gender but for the operators to `skip`; returns the ids the table has.
+fn names(
+    excel: &Path,
+    by_char: &HashMap<String, char>,
+    skip: &HashSet<String>,
+    out: &mut HashMap<String, Option<char>>,
+) -> HashSet<String> {
+    let mut seen_ids = HashSet::new();
     let Some(table) = read(excel, "character_table") else {
-        return;
+        return seen_ids;
     };
     for (id, c) in entries(&table, "Characters") {
+        seen_ids.insert(id.to_owned());
+        if skip.contains(id) {
+            continue;
+        }
         let (Some(name), Some(g)) = (
             c.get("Name").and_then(Value::as_str).map(str::trim),
             by_char.get(id),
@@ -95,6 +112,7 @@ fn names(excel: &Path, by_char: &HashMap<String, char>, out: &mut HashMap<String
             })
             .or_insert(Some(*g));
     }
+    seen_ids
 }
 
 impl Genders {
@@ -105,10 +123,10 @@ impl Genders {
             from_files(cn, &mut by_char);
         }
         let mut by_en = HashMap::new();
-        names(en_excel, &by_char, &mut by_en);
+        let released = names(en_excel, &by_char, &HashSet::new(), &mut by_en);
         let mut by_cn = HashMap::new();
         if let Some(cn) = cn_excel {
-            names(cn, &by_char, &mut by_cn);
+            names(cn, &by_char, &released, &mut by_cn);
         }
         Self {
             by_char,
@@ -117,11 +135,21 @@ impl Genders {
         }
     }
 
-    /// A speaker's gender by its EN name, else by its CN name.
+    /// A speaker's gender by its EN name (also written with dots after it:
+    /// «Vulcan.»), else by the CN name of an operator not yet released in EN.
     pub fn speaker(&self, en: &str, cn: Option<&str>) -> Option<char> {
-        match self.by_en.get(en.trim()) {
+        let en = en.trim();
+        let cn = cn.map(str::trim);
+        if cn.is_some_and(|c| NAMESAKES.contains(&(en, c))) {
+            return None;
+        }
+        match self
+            .by_en
+            .get(en)
+            .or_else(|| self.by_en.get(en.trim_end_matches('.')))
+        {
             Some(g) => *g,
-            None => cn.and_then(|c| self.by_cn.get(c.trim()).copied().flatten()),
+            None => cn.and_then(|c| self.by_cn.get(c).copied().flatten()),
         }
     }
 }
@@ -132,9 +160,46 @@ mod tests {
 
     #[test]
     fn reads_the_gender_the_file_states() {
-        assert_eq!(stated("[Code Name] Amiya\n[Gender] Female\n[Race] Cautus"), Some('f'));
+        assert_eq!(
+            stated("[Code Name] Amiya\n[Gender] Female\n[Race] Cautus"),
+            Some('f')
+        );
         assert_eq!(stated("【代号】银灰\n【性别】男\n"), Some('m'));
         assert_eq!(stated("[Gender] Unknown"), None);
         assert_eq!(stated("no file"), None);
+    }
+
+    #[test]
+    fn a_nameless_namesake_is_no_operator() {
+        let en = tempfile::tempdir().unwrap();
+        let cn = tempfile::tempdir().unwrap();
+        let file = |id: &str, g: &str| {
+            format!(
+                r#"{{"key":"{id}","value":{{"StoryTextAudio":[{{"Stories":[{{"StoryText":"[Gender] {g}"}}]}}]}}}}"#
+            )
+        };
+        let name = |id: &str, n: &str| format!(r#"{{"key":"{id}","value":{{"Name":"{n}"}}}}"#);
+        let write = |dir: &Path, files: &[String], chars: &[String]| {
+            let book = format!(r#"{{"HandbookDict":[{}]}}"#, files.join(","));
+            std::fs::write(dir.join("handbook_info_table.json"), book).unwrap();
+            let table = format!(r#"{{"Characters":[{}]}}"#, chars.join(","));
+            std::fs::write(dir.join("character_table.json"), table).unwrap();
+        };
+        write(
+            en.path(),
+            &[file("c1", "Male"), file("c2", "Female")],
+            &[name("c1", "Doc"), name("c2", "Durin")],
+        );
+        write(
+            cn.path(),
+            &[file("c3", "Female")],
+            &[name("c1", "医生"), name("c2", "杜林"), name("c3", "塔露拉")],
+        );
+        let g = Genders::load(en.path(), Some(cn.path()));
+        assert_eq!(g.speaker("Doc", Some("医生")), Some('m'));
+        assert_eq!(g.speaker("A Doctor", Some("医生")), None);
+        assert_eq!(g.speaker("Doc..", None), Some('m'));
+        assert_eq!(g.speaker("Durin", Some("杜林人")), None);
+        assert_eq!(g.speaker("Talulah", Some("塔露拉")), Some('f'));
     }
 }
