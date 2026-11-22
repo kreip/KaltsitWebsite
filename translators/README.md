@@ -203,7 +203,8 @@ every test of the sort key tripled the time. Above the texts: the operators, ene
 and stages whose name answers the query, each with a link to its card.
 
 A word or phrase selected in any table (a double click, a drag; the blanks and punctuation at its edges are
-dropped — `edges.ts`, and so is a selection wrapped in a tag in the editor) opens a small menu: find it
+dropped — `edges.ts`, and so is a selection wrapped in a tag in the editor, where a double click also shows the
+word alone selected) opens a small menu: find it
 everywhere (the Search tab), find it in the glossary, or suggest it for the glossary. A
 suggestion (`translators.glossary_suggestions`; English, Russian, note, the line it was
 noticed in) shows in a list of its own on the Glossary tab, where a translator accepts or
@@ -517,8 +518,30 @@ has a tag the Russian lacks, the text whole), line breaks, a proposal noticeably
 game's text, ты / вы. The page works them out (`checks.ts`, `markup.ts::tagHealth`); for the
 search the backend keeps them per text (`texts.problems`, migration t019, `texts/problems.rs`,
 redone after every import and glossary download; `status=problems|glossary|brokenTag|noHighlight|
-newlines|longer`). `GET /api/translators/texts/summary` gives the overview above Search and Game
+newlines|longer`, and the marks to look at `gender|mixedGender|addressCn`). `GET /api/translators/texts/summary` gives the overview above Search and Game
 sections (texts, with Russian, checked) and each problem's count.
+
+## Check the gender
+
+Marks to look at, never errors (`texts/forms.rs` = `checks.ts`, the same test cases):
+
+- **«Check the gender»** (`gender`): after «я» a past verb or a short adjective / participle of the gender the speaker
+  is not («Я готов.» from Warmy). Nothing else is read: a noun or an adverb (`texts/not_verbs.txt` =
+  `notVerbs.ts`: change both), a name («Я Гавиал»), a word past a full stop; «сам / сама», «один / одна» are skipped
+  to the word after them. Also the Chinese 她 / 他 against «он» / «она» in the Russian.
+- **«One line for operators of different genders»** (`mixedGender`, instead of the mark above): the Russian has a
+  gender and operators of both say the English — as a voice line or as a story's speaker (`texts/speakers.rs`).
+  The game has one translation for it, so the editor asks for a separate one for each: «A separate translation is
+  needed» (`only_here.tsv`) at a voice line, «Only for this place» at a story line. The opened row lists every
+  operator who says it, with the gender and a link. A separate translation is checked against, and approves, its own
+  operator's row only. The entry itself stays in the Status item: the dictionary's text is the same.
+
+The genders are the operators' files' («[Gender] Male»; robots and «Unknown» have none). A story's speaker is an
+operator by the EN name, or by the CN name of an operator the EN client has not got yet
+(`import/genders.rs`; namesake NPCs in `NAMESAKES`); a change there takes an import.
+
+The speaker column shows ♀ / ♂; on an operator's card and archives, and in Search, an operator's text names the
+operator. A place's link opens the card in a new tab at its row (`#at-<field>-<number>-<entry's mark>`).
 
 ## Hints
 
