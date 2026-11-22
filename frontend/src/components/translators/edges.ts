@@ -5,8 +5,8 @@
  * hyphens and apostrophes stay («Фристон-3», «Ch'en»).
  */
 
-/** A character cut from the edges: a blank or punctuation. */
-const EDGE = /[\s\p{P}]/u;
+/** A character cut from the edges: a blank (the editor's zero-width guard too) or punctuation. */
+const EDGE = /[\s\u200B\p{P}]/u;
 
 export function trimEdges(text: string): string {
     const chars = [...text];
@@ -17,23 +17,47 @@ export function trimEdges(text: string): string {
     return chars.slice(start, end).join("");
 }
 
-/** The range moved inward past the edge characters of its text nodes (a range ending at an element stays). */
+/** An editor's chip (`data-token`) is one thing, whatever its text: never cut into. */
+function chipOf(text: Text): Element | null {
+    return text.parentElement?.closest("[data-token]") ?? null;
+}
+
+/** The text nodes the range touches, in order. */
+function textsIn(range: Range): Text[] {
+    const root = range.commonAncestorContainer;
+    if (root.nodeType === Node.TEXT_NODE) return [root as Text];
+    const walk = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+    const out: Text[] = [];
+    for (let node = walk.nextNode(); node; node = walk.nextNode()) if (range.intersectsNode(node)) out.push(node as Text);
+    return out;
+}
+
+/**
+ * The range moved inward past the edge characters, across text nodes (the space after a word may be a node of its
+ * own, or inside the next tag's span); collapsed when nothing else is in it.
+ */
 export function trimRange(range: Range): Range {
-    const r = range.cloneRange();
-    const { startContainer, endContainer } = r;
-    if (startContainer.nodeType === Node.TEXT_NODE) {
-        const s = startContainer.textContent ?? "";
-        let at = r.startOffset;
-        const limit = startContainer === endContainer ? r.endOffset : s.length;
-        while (at < limit && EDGE.test(s[at])) at++;
-        r.setStart(startContainer, at);
+    const out = range.cloneRange();
+    const spans = textsIn(range).map((node) => ({
+        node,
+        from: node === range.startContainer ? range.startOffset : 0,
+        to: node === range.endContainer ? range.endOffset : node.data.length,
+    }));
+    const inner = spans.filter(({ node, from, to }) => from < to && (chipOf(node) !== null || [...node.data.slice(from, to)].some((c) => !EDGE.test(c))));
+    if (inner.length === 0) {
+        out.collapse(true);
+        return out;
     }
-    if (endContainer.nodeType === Node.TEXT_NODE) {
-        const s = endContainer.textContent ?? "";
-        let at = r.endOffset;
-        const limit = startContainer === endContainer ? r.startOffset : 0;
-        while (at > limit && EDGE.test(s[at - 1])) at--;
-        r.setEnd(endContainer, at);
-    }
-    return r;
+    const last = inner[inner.length - 1];
+    let { from } = inner[0];
+    let { to } = last;
+    while (EDGE.test(inner[0].node.data.charAt(from))) from++;
+    while (EDGE.test(last.node.data.charAt(to - 1))) to--;
+    const chipFirst = chipOf(inner[0].node);
+    const chipLast = chipOf(last.node);
+    if (chipFirst) out.setStartBefore(chipFirst);
+    else out.setStart(inner[0].node, from);
+    if (chipLast) out.setEndAfter(chipLast);
+    else out.setEnd(last.node, to);
+    return out;
 }

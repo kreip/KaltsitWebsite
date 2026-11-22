@@ -10,7 +10,8 @@
  * that looks as in the game and is typed into like any text: select a word
  * and press the tag's button to wrap it; put the cursor inside a span and
  * "Remove the tag" unwraps it — the text stays, both halves of the tag go
- * together, so a tag is never left half open.
+ * together, so a tag is never left half open. A double click selects the
+ * word alone, without the space Windows takes after it.
  *
  * The buttons are the substitutions and the tags of the line's English, so
  * nothing the original lacks can be put in. The value is the text with its
@@ -273,6 +274,20 @@ export function TokenEditor({ id, initial, nickname, palette, tags, lookup, onCh
         caretAfter(el, span);
     };
 
+    // A double click on Windows takes the space after the word: show the word alone selected.
+    const selectWord = () => {
+        const el = ref.current;
+        const sel = window.getSelection();
+        if (!el || !sel || sel.rangeCount === 0 || sel.isCollapsed) return;
+        const range = sel.getRangeAt(0);
+        if (!el.contains(range.startContainer) || !el.contains(range.endContainer)) return;
+        const word = trimRange(range);
+        // Only blanks or punctuation: the selection stays as it is.
+        if (word.collapsed) return;
+        sel.removeAllRanges();
+        sel.addRange(word);
+    };
+
     const unwrap = (span: HTMLElement) => {
         const el = ref.current;
         if (!el) return;
@@ -318,6 +333,7 @@ export function TokenEditor({ id, initial, nickname, palette, tags, lookup, onCh
                     const owner = cross?.closest("[data-token]");
                     if (owner instanceof HTMLElement) remove(owner);
                 }}
+                onDoubleClick={selectWord}
                 onPaste={(e) => {
                     // Plain text only, also where `plaintext-only` is not supported.
                     e.preventDefault();
