@@ -288,7 +288,7 @@ function Card({ section, item, me, showVariants, showDiff, showCn, t }: ICardPro
                             <TableRow
                                 key={id}
                                 id={`n-${i + 1}`}
-                                className={cn("scroll-mt-(--site-header-height) target:bg-primary/10", i === namedAt && "bg-primary/10!", !all && "cursor-pointer")}
+                                className={cn("scroll-mt-(--site-header-height)", i === namedAt && "bg-primary/10!", !all && "cursor-pointer")}
                                 {...(all ? {} : opened.rowProps(id, editing?.id === id))}
                                 data-field={r.field}
                                 data-status={r.line.status}

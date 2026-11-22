@@ -674,7 +674,7 @@ export function LinesTable({ storyId, lines, edits, outdated, me, label, showCn,
                                 {commands && filter === "all" ? <ServiceRow commands={commandsBetween(commands, previous, line.line)} columns={columns} nameOf={nameOf} t={t} /> : null}
                                 <TableRow
                                     id={`n-${i + 1}`}
-                                    className={cn("scroll-mt-(--site-header-height) target:bg-primary/10", line.kind === "option" && "bg-primary/5", !all && "cursor-pointer")}
+                                    className={cn("scroll-mt-(--site-header-height)", line.kind === "option" && "bg-primary/5", line === hashed && "bg-primary/10!", !all && "cursor-pointer")}
                                     {...(all ? {} : opened.rowProps(id, editing?.id === id))}
                                     data-line={line.line}
                                     data-kind={line.kind}

@@ -45,6 +45,7 @@ import { Folded, isLong, useUnfolded } from "./LongText";
 import { NextUnchecked, TextCounts } from "./Overview";
 import { OpenAll, RowToggle, useOpenRows } from "./openRows";
 import { GamePlace } from "./PlaceWords";
+import { MixedNames } from "./Speakers";
 import { type IFind, StoryText } from "./StoryText";
 import { useStoryNames } from "./storyNames";
 import type { messages } from "./translators.messages";
@@ -169,7 +170,7 @@ function Results({ rows, edits, me, find, showVariants, showDiff, showCn, t }: I
     const opened = useOpenRows();
     const all = useContext(OpenAll);
     // Who says it, as in the story's table: the column is there once a story line or an operator's text is found.
-    const speakers = rows.some((r) => r.line.kind !== "text" || r.line.owner !== null);
+    const speakers = rows.some((r) => r.line.kind !== "text" || r.line.owner !== null || r.line.mixedSpeakers.length > 0);
     return (
         // Fixed widths: the Russian and the English share what the narrow columns leave, half each.
         <Table aria-label={t("search.table")} className="wrap-anywhere min-w-3xl table-fixed">
@@ -210,8 +211,8 @@ function Results({ rows, edits, me, find, showVariants, showDiff, showCn, t }: I
                             </TableCell>
                             {speakers ? (
                                 <TableCell className={PROSE}>
-                                    <Speaker line={r.line} t={t} />
-                                    {r.line.owner && r.line.mixedSpeakers.length > 1 ? <span className="block text-subtle-foreground text-xs">{t("mixed.others", { count: r.line.mixedSpeakers.length - 1 })}</span> : null}
+                                    {/* A line of both genders is found at one of its places: name who says it, not that one alone. */}
+                                    {r.line.mixedSpeakers.length > 0 ? <MixedNames list={r.line.mixedSpeakers} t={t} /> : <Speaker line={r.line} t={t} />}
                                 </TableCell>
                             ) : null}
                             <TableCell className={PROSE}>

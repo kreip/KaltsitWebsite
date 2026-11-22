@@ -46,6 +46,19 @@ export function SpeakerName({ en, ru, gender, t }: { en: string; ru: string | nu
     );
 }
 
+/** In a search's speaker cell of a line both say: the first woman and the first man of them, and how many others. */
+export function MixedNames({ list, t }: { list: readonly LineSpeaker[]; t: T }): React.ReactElement {
+    const shown = ["f", "m"].map((gender) => list.find((who) => who.gender === gender)).filter((who) => who !== undefined);
+    return (
+        <span className="flex flex-col gap-1">
+            {shown.map((who) => (
+                <SpeakerName key={who.charId ?? who.nameEn} en={who.nameEn} ru={who.nameRu} gender={who.gender} t={t} />
+            ))}
+            {list.length > shown.length ? <span className="text-subtle-foreground text-xs">{t("mixed.others", { count: list.length - shown.length })}</span> : null}
+        </span>
+    );
+}
+
 function SpeakerAt({ who, editKey, t }: { who: LineSpeaker; editKey: string; t: T }): React.ReactElement | null {
     const nameOf = useStoryNames();
     if (who.charId && who.voice !== null) return <GamePlace section="archives" objectId={who.charId} objectEn={who.nameEn} field="voice.text" idx={who.voice} editKey={editKey} t={t} />;
